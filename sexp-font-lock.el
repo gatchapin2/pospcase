@@ -112,5 +112,9 @@ supported (maybe `pcase' doesn't support it too?)."
   (interactive "xPattern to match: ")
   (let ((match (eval (macroexpand `(sexp-font-lock-match-at-point ,pat)))))
     (when match
-      (goto-char (car match))
-      (push-mark (cdr match) nil t))))
+      (if (numberp (car match))
+          (progn
+            (goto-char (car match))
+            (push-mark (cdr match) nil t))
+        (goto-char (cadr (car match)))
+        (push-mark (cddr (car (last match))) nil t)))))
