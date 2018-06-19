@@ -63,21 +63,27 @@ supported (as is in `pcase')."
                       (if (consp node)
                           (if (and (listp (cdr node))
                                    (not (eq (cadr node) '\,)))
-                              (case (car node)
-                                ('quote (cons node ',_))
-                                ('\, (if (eq (cadr node) '_)
-                                         (cons node ',_)
-                                       (list node
-                                             '\,
-                                             (intern
-                                              (concat (symbol-name (cadr node)) "-meta-pos")))))
-                                ('\` (list '\`
-                                           (cl-loop for sexp in (cdr node)
-                                                    collect (walker sexp))
-                                           ',_))
-                                (t (cons (cl-loop for sexp in node
-                                                  collect (walker sexp))
-                                         ',_)))
+                              (cond
+                               ((eq (car node) 'quote)
+                                (cons node ',_))
+                               ((eq (car node) '\,)
+                                (if (or (eq (cadr node) '_)
+                                        (and
+                                         (consp (cadr node))
+                                         (memq (caadr node) '(or and \\= pred guard let app))))
+                                    (cons node ',_)
+                                  (list node
+                                        '\,
+                                        (intern
+                                         (concat (symbol-name (cadr node)) "-meta-pos")))))
+                               ((eq (car node) '\`)
+                                (list '\`
+                                      (cl-loop for sexp in (cdr node)
+                                               collect (walker sexp))
+                                      ',_))
+                               (t (cons (cl-loop for sexp in node
+                                                 collect (walker sexp))
+                                        ',_)))
                             (cons (cons (walker (car node))
                                         (walker (cdr node)))
                                   ',_))
