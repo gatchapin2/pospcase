@@ -125,16 +125,26 @@ supported (maybe `pcase' doesn't support it too?)."
                       (symbol-name (cadr case)) "-meta-pos")))
             (t (error "This macro is designed for extracting \
 positional metadata, and not to be used as generic control \
-structure. Complex operations are not supported."))))))
-     cases)))
+structure. Complex operations are not supported.")))))
+        cases)))
 
 (defun sexp-mark-pattern-at-point (pat)
   (interactive "xPattern to match: ")
   (let ((match (eval (macroexpand `(sexp-font-lock-match-at-point ,pat)))))
     (when match
-      (if (numberp (car match))
-          (progn
-            (goto-char (car match))
-            (push-mark (cdr match) nil t))
+      (cond
+       ((numberp (cdr match))         ; (beg . end)
+        (goto-char (car match))
+        (push-mark (cdr match) nil t))
+       ((and (consp (cdr (car match)))
+             (numberp (cddr (car match)))) ; ((sexp beg . end) ... (sexp beg . end))
         (goto-char (cadr (car match)))
-        (push-mark (cddr (car (last match))) nil t)))))
+        (push-mark (cddr (car (last match))) nil t))
+       (t
+        (goto-char (if (numberp (car (car match))) ; ((beg . end) ...)
+                       (car (car match))
+                     (cadar (car match)))) ; (((sexp beg . end) ...) ...)
+        (push-mark (if (numberp (cdr (car (last match)))) ; (... (beg . end))
+                       (cdr (car (last match)))
+                     (cddr (car (last (car (last match)))))) ; (... (... (sexp beg . end)))
+                   nil t))))))
