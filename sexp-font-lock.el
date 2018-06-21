@@ -60,7 +60,8 @@ of the token as a cons in (begin . end)."
 `sexp-font-lock-read-at-point'. Nested backquote is not
 supported (maybe `pcase' doesn't support it too?)."
   (cl-labels
-      ((walker (node &optional last)
+      ((meta-pos-symbol (sym) (list '\,(intern (concat (symbol-name (cadr node)) "-meta-pos"))))
+       (walker (node)
                (if (consp node) ; note that in elisp `,foo' is `(\, foo)'
                    (cond
                     ((eq (car node) 'quote)
@@ -74,29 +75,27 @@ supported (maybe `pcase' doesn't support it too?)."
                               (consp (cadr node))
                               (memq (caadr node) '(or and pred guard let app))))
                          (cons node ',_)
-                       (append
-                        (if last nil (list node)) ; couldn't design better grammar
-                        (list
-                         '\,
-                         (intern
-                          (concat (symbol-name (cadr node)) "-meta-pos"))))))
+                       (cons node (meta-pos-symbol (cadr node)))))
                     (t (cons
                         (cl-loop with result
-                                 for temp = (reverse node) ; for last cdr cell. Clever technique.
-                                 then (if (memq (cadr temp) '(quote \` \,))
-                                          (cddr temp)
-                                        (cdr temp))
-                                 if (memq (cadr temp) '(quote \` \,))
-                                 do (setq result (append
-                                                  (walker (list (cadr temp) (car temp)) t)
-                                                  result))
-                                 else if (car temp)
-                                 do (setq result (append
-                                                  (list (walker (car temp)))
-                                                  result))
-                                 while temp
-                                 finally return result)
-                             ',_)))
+                                 do (cond
+                                     ((and (atom (cdr node))
+                                           (cdr node))
+                                      (cl-return (cons (append result (list (walker (car node)))) (walker (cdr node)))))
+                                     ((memq (car node) '(quote \` \,))
+                                      (setq result (append result
+                                                           (if (and ; cdr cell ,foo matches the rest of a list
+                                                                (null (cddr node))
+                                                                (symbolp (cadr node)))
+                                                               (meta-pos-symbol (cadr node))
+                                                             (walker (list (car node) (cadr node)))))
+                                            node (cddr node)))
+                                     ((or (car node)
+                                          (cdr node))
+                                      (setq result (append result (list (walker (car node))))
+                                            node (cdr node)))
+                                     (t (cl-return result))))
+                        ',_)))
                  (cons node ',_))))
     (if (consp exp)
         (case (car exp)
@@ -133,18 +132,18 @@ structure. Complex operations are not supported.")))))
   (let ((match (eval (macroexpand `(sexp-font-lock-match-at-point ,pat)))))
     (when match
       (cond
-       ((numberp (cdr match))         ; (beg . end)
+       ((numberp (cdr match))                                ; (beg . end)
         (goto-char (car match))
         (push-mark (cdr match) nil t))
        ((and (consp (cdr (car match)))
-             (numberp (cddr (car match)))) ; ((sexp beg . end) ... (sexp beg . end))
+             (numberp (cddr (car match))))                   ; ((sexp beg . end) ... (sexp beg . end))
         (goto-char (cadr (car match)))
         (push-mark (cddr (car (last match))) nil t))
        (t
-        (goto-char (if (numberp (car (car match))) ; ((beg . end) ...)
+        (goto-char (if (numberp (car (car match)))           ; ((beg . end) ...)
                        (car (car match))
-                     (cadar (car match)))) ; (((sexp beg . end) ...) ...)
-        (push-mark (if (numberp (cdr (car (last match)))) ; (... (beg . end))
+                     (cadar (car match))))                   ; (((sexp beg . end) ...) ...)
+        (push-mark (if (numberp (cdr (car (last match))))    ; (... (beg . end))
                        (cdr (car (last match)))
                      (cddr (car (last (car (last match)))))) ; (... (... (sexp beg . end)))
                    nil t))))))
