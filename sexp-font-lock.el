@@ -51,9 +51,8 @@ of the token as a cons in (begin . end)."
                              (condition-case nil
                                  (forward-sexp)
                                (error nil))
-                             (skip-chars-forward ")")
-                             (forward-comment lim)
-                             (skip-chars-forward ")")
+                             (while (> (skip-chars-forward ")") 0)
+                               (forward-comment lim))
                              (>= (point) lim))
                      finally return result))
                   (cons start lim)))))
