@@ -12,7 +12,7 @@ of the token as a cons in (begin . end)."
                  (forward-comment lim)
                  (cons
                   (if (or (atom sexp)
-                          (memq (car sexp) '(quote \`)))
+                          (memq (car sexp) '(\` quote)))
                       sexp
                     (down-list)
                     (cl-loop with str
@@ -37,7 +37,7 @@ of the token as a cons in (begin . end)."
                                            (read-from-string str))))
                                       rlim (+ (point) (cdr rpair))
                                       temp (if (or (atom (car rpair))
-                                                   (memq (car rpair) '(quote \`)))
+                                                   (memq (car rpair) '(\` quote)))
                                                (cons (car rpair) (cons (point) rlim))
                                              (save-excursion
                                                (walker rlim))))
@@ -82,7 +82,7 @@ supported (maybe `pcase' doesn't support it too?)."
                                      ((and (atom (cdr node))
                                            (cdr node))
                                       (cl-return (cons (append result (list (walker (car node)))) (walker (cdr node)))))
-                                     ((memq (car node) '(quote \` \,))
+                                     ((memq (car node) '(\` \, quote))
                                       (setq result (append result
                                                            (if (and ; cdr cell ,foo matches the rest of a list
                                                                 (null (cddr node))
