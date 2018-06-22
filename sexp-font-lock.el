@@ -7,7 +7,8 @@ of the token as a cons in (begin . end)."
       ((walker (limit)
                (destructuring-bind (start sexp . lim)
                    (cons (point)
-                         (read-from-string (buffer-substring-no-properties (point) limit)))
+                         (read-from-string
+                          (buffer-substring-no-properties (point) limit)))
                  (incf lim (point))
                  (forward-comment lim)
                  (cons
@@ -15,43 +16,44 @@ of the token as a cons in (begin . end)."
                           (memq (car sexp) '(\` quote)))
                       sexp
                     (down-list)
-                    (cl-loop with str
-                             with rpair
-                             with dot
-                             with temp
-                             with result
-                             do (setq str (progn
-                                            (forward-comment lim)
-                                            (buffer-substring-no-properties (point) lim))
-                                      rpair
-                                      (condition-case err
-                                          (read-from-string str)
-                                        (invalid-read-syntax
-                                         (when (string= (cadr err) ".")
-                                           (setq dot t
-                                                 str (progn
-                                                       (forward-sexp)
-                                                       (forward-comment lim)
-                                                       (string-match "[ \t]*\\.[ \t]+" str)
-                                                       (replace-match "" nil nil str)))
-                                           (read-from-string str))))
-                                      rlim (+ (point) (cdr rpair))
-                                      temp (if (or (atom (car rpair))
-                                                   (memq (car rpair) '(\` quote)))
-                                               (cons (car rpair) (cons (point) rlim))
-                                             (save-excursion
-                                               (walker rlim))))
-                             if dot
-                             do (setq result (cons result temp))
-                             else
-                             do (setq result (append result (list temp)))
-                             until (progn
-                                     (condition-case nil
-                                         (forward-sexp)
-                                       (error nil))
-                                     (skip-chars-forward ")")
-                                     (>= (point) lim))
-                             finally return result))
+                    (cl-loop
+                     with str
+                     with rpair
+                     with dot
+                     with temp
+                     with result
+                     do (setq str (progn
+                                    (forward-comment lim)
+                                    (buffer-substring-no-properties (point) lim))
+                              rpair
+                              (condition-case err
+                                  (read-from-string str)
+                                (invalid-read-syntax
+                                 (when (string= (cadr err) ".")
+                                   (setq dot t
+                                         str (progn
+                                               (forward-sexp)
+                                               (forward-comment lim)
+                                               (string-match "[ \t]*\\.[ \t]+" str)
+                                               (replace-match "" nil nil str)))
+                                   (read-from-string str))))
+                              rlim (+ (point) (cdr rpair))
+                              temp (if (or (atom (car rpair))
+                                           (memq (car rpair) '(\` quote)))
+                                       (cons (car rpair) (cons (point) rlim))
+                                     (save-excursion
+                                       (walker rlim))))
+                     if dot
+                     do (setq result (cons result temp))
+                     else
+                     do (setq result (append result (list temp)))
+                     until (progn
+                             (condition-case nil
+                                 (forward-sexp)
+                               (error nil))
+                             (skip-chars-forward ")")
+                             (>= (point) lim))
+                     finally return result))
                   (cons start lim)))))
     (save-excursion (walker (scan-sexps (point) 1)))))
 
@@ -60,7 +62,11 @@ of the token as a cons in (begin . end)."
 `sexp-font-lock-read-at-point'. Nested backquote is not
 supported (maybe `pcase' doesn't support it too?)."
   (cl-labels
-      ((meta-pos-symbol (sym) (list '\,(intern (concat (symbol-name (cadr node)) "-meta-pos"))))
+      ((meta-pos-symbol (sym)
+                        (list '\,
+                              (intern (concat
+                                       (symbol-name (cadr node))
+                                       "-meta-pos"))))
        (walker (node)
                (if (consp node) ; note that in elisp `,foo' is `(\, foo)'
                    (cond
@@ -77,24 +83,29 @@ supported (maybe `pcase' doesn't support it too?)."
                          (cons node ',_)
                        (cons node (meta-pos-symbol (cadr node)))))
                     (t (cons
-                        (cl-loop with result
-                                 do (cond
-                                     ((and (atom (cdr node))
-                                           (cdr node))
-                                      (cl-return (cons (append result (list (walker (car node)))) (walker (cdr node)))))
-                                     ((memq (car node) '(\` \, quote))
-                                      (setq result (append result
-                                                           (if (and ; cdr cell ,foo matches the rest of a list
-                                                                (null (cddr node))
-                                                                (symbolp (cadr node)))
-                                                               (meta-pos-symbol (cadr node))
-                                                             (walker (list (car node) (cadr node)))))
-                                            node (cddr node)))
-                                     ((or (car node)
-                                          (cdr node))
-                                      (setq result (append result (list (walker (car node))))
-                                            node (cdr node)))
-                                     (t (cl-return result))))
+                        (cl-loop
+                         with result
+                         do (cond
+                             ((and (atom (cdr node))
+                                   (cdr node))
+                              (cl-return
+                               (cons
+                                (append result (list (walker (car node))))
+                                (walker (cdr node)))))
+                             ((memq (car node) '(\` \, quote))
+                              (setq result (append
+                                            result
+                                            (if ; cdr cell ,foo matches the rest of a list
+                                                (and (null (cddr node))
+                                                     (symbolp (cadr node)))
+                                                (meta-pos-symbol (cadr node))
+                                              (walker (list (car node) (cadr node)))))
+                                    node (cddr node)))
+                             ((or (car node)
+                                  (cdr node))
+                              (setq result (append result (list (walker (car node))))
+                                    node (cdr node)))
+                             (t (cl-return result))))
                         ',_)))
                  (cons node ',_))))
     (if (consp exp)
@@ -136,7 +147,8 @@ structure. Complex operations are not supported.")))))
         (goto-char (car match))
         (push-mark (cdr match) nil t))
        ((and (consp (cdr (car match)))
-             (numberp (cddr (car match))))                   ; ((sexp beg . end) ... (sexp beg . end))
+             (numberp (cddr (car match))))                   ; ((sexp beg . end)
+                                                             ;  ... (sexp beg . end))
         (goto-char (cadr (car match)))
         (push-mark (cddr (car (last match))) nil t))
        (t
