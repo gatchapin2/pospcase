@@ -34,7 +34,7 @@ of the token as a cons in (begin . end)."
                                          str (progn
                                                (forward-sexp)
                                                (forward-comment lim)
-                                               (string-match "[ \t]*\\.[ \t]+" str)
+                                               (string-match "[ \t\n]*\\.[ \t\n]+" str)
                                                (replace-match "" nil nil str)))
                                    (read-from-string str))))
                               rlim (+ (point) (cdr rpair))
@@ -51,7 +51,7 @@ of the token as a cons in (begin . end)."
                              (condition-case nil
                                  (forward-sexp)
                                (error nil))
-                             (skip-chars-forward ")")
+                             (skip-chars-forward ") \t\n")
                              (>= (point) lim))
                      finally return result))
                   (cons start lim)))))
