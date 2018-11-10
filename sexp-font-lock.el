@@ -1,3 +1,5 @@
+;;; generic matching codes
+
 (defun sexp-font-lock-read-at-point ()
   "Parse the s-expression at the cursor position. Return a
 s-expression with the tokens being replaced with the cons. With
@@ -47,9 +49,7 @@ of the token as a cons in (begin . end)."
                      else
                      do (setq result (append result (list temp)))
                      until (progn
-                             (condition-case nil
-                                 (forward-sexp)
-                               (error nil))
+                             (ignore-errors (forward-sexp))
                              (forward-comment lim)
                              (while (> (skip-chars-forward ")") 0)
                                (forward-comment lim))
@@ -139,43 +139,20 @@ positional metadata, and not to be used as generic control \
 structure. Complex operations are not supported.")))))
         cases)))
 
-(defun sexp-font-lock-match-at-point-do (pat)
+(defun sexp-font-lock-match-at-point-do (pat) ; to delay macro expansion
   (eval (macroexpand `(sexp-font-lock-match-at-point ,pat))))
 
-(defun sexp-mark-pattern-at-point (pat)
-  (interactive "xPattern to match: ")
-  (let ((match (sexp-font-lock-match-at-point-do pat)))
-    (when match
-      (cond
-       ((numberp (cdr match))                                ; (BEG . END)
-        (goto-char (car match))
-        (push-mark (cdr match) nil t))
-       ((and (consp (cdr (car match)))
-             (numberp (cddr (car match))))                   ; ((SEXP BEG . END)
-                                                             ;  ... (SEXP BEG . END))
-        (goto-char (cadr (car match)))
-        (push-mark (cddr (car (last match))) nil t))
-       (t
-        (goto-char (if (numberp (car (car match)))           ; ((BEG . END) ...)
-                       (car (car match))
-                     (cadar (car match))))                   ; (((SEXP BEG . END) ...) ...)
-        (push-mark (if (numberp (cdr (car (last match))))    ; (... (BEG . END))
-                       (cdr (car (last match)))
-                     (cddr (car (last (car (last match)))))) ; (... (... (SEXP BEG . END)))
-                   nil t))))))
 
 
-;; (sexp-mark-pattern-at-point '(`(defun ,name . ,rest) name))
-
-;;; Work-in-progress codes
+;;; font-lock specific codes
 
 (defvar sexp-font-lock--matches nil)
+
 (defun sexp-font-lock--iterator ()
   (if sexp-font-lock--matches
       (let ((mlist (cl-loop for pair in (car sexp-font-lock--matches)
                             append (-cons-to-list pair))))
-        (set-match-data (append (cons (car mlist)
-                                      (last mlist))
+        (set-match-data (append '(nil nil)
                                 mlist))
         (setq sexp-font-lock--matches (cdr sexp-font-lock--matches))
         t)
@@ -192,73 +169,442 @@ structure. Complex operations are not supported.")))))
 
 (defun  sexp-font-lock-match-flat-list (limit)
   (sexp-font-lock-iterate
-   (progn
-     ;; (backward-char)                    ; lisp-extra-font-lock-keywards compatibility
-     (mapcar (lambda (srpair) (list (cdr srpair)))
-             (car (sexp-font-lock-read-at-point))))
+   (mapcar (lambda (srpair) (list (cdr srpair)))
+           (car (sexp-font-lock-read-at-point)))
    limit))
-
-;; (fset #'lisp-extra-font-lock-match-argument-list-orig (symbol-function #'lisp-extra-font-lock-match-argument-list))
-;; (fset #'lisp-extra-font-lock-match-argument-list (symbol-function #'sexp-font-lock-match-flat-list))
-;; (font-lock-fontify-buffer)
-;; (fset #'lisp-extra-font-lock-match-argument-list (symbol-function #'lisp-extra-font-lock-match-argument-list-orig))
-
-;; (and (sexp-font-lock-match-flat-list (scan-sexps (point) 1))
-;;      (match-string 1))
-
-;; (foo bar baz)
-
-;; (setq sexp-font-lock--matches nil)
-
-;; (cl-loop with p = (scan-sexps (point) 1)
-;;          while (sexp-font-lock-match-flat-list p)
-;;          collect (match-string 1))
-
-;; (foo bar)
 
 (defun sexp-font-lock-match-varlist (limit)
   (sexp-font-lock-iterate
-   (progn
-     ;; (backward-char)     ; lisp-extra-font-lock-keywards compatibility
-     (mapcar
-      (lambda (srpair)
-        (or (progn
-              (goto-char (cadr srpair))
-              (sexp-font-lock-match-at-point-do '(`(,name ,type) (list name type))))
-            (list (cdr srpair))))
-      (car (sexp-font-lock-read-at-point))))
+   (mapcar
+    (lambda (srpair)
+      (or (progn
+            (goto-char (cadr srpair))
+            (sexp-font-lock-match-at-point-do '(`(,name ,type) (list name type))))
+          (list (cdr srpair))))
+    (car (sexp-font-lock-read-at-point)))
    limit))
-
-;; (defvar sexp-debug-counter 0)
-;; (setq sexp-debug-counter 0)
-;; (setq sexp-font-lock--matches nil)
-
-;; (and (sexp-font-lock-match-varlist (scan-sexps (point) 1))
-;;      (match-string 1))
-
-;; (cl-loop with p = (scan-sexps (point) 1)
-;;          while (sexp-font-lock-match-varlist p)
-;;          collect (list (cons 'name (match-string-no-properties 1))
-;;                        (cons 'type (or (match-string-no-properties 2) 'unknown))))
-
-;; ((foo bar) baz (quux meow))
-
 
 (defun sexp-font-lock-match-flet (limit)
   (sexp-font-lock-iterate
-   (progn
-     ;; (backward-char)     ; lisp-extra-font-lock-keywards compatibility
-     (mapcar
-      (lambda (srpair)
-        (goto-char (cadr srpair))
-        (multiple-value-bind
-            (name args)
-            (sexp-font-lock-match-at-point-do '(`(,name ,args . ,rest) (list name args)))
-          (list name
-                (progn
-                  (goto-char (1- (cadr args)))
-                  (mapcar (lambda (srpair) (list (cdr srpair)))
-                          (car (sexp-font-lock-read-at-point)))))))
-      (car (sexp-font-lock-read-at-point))))((foo (bar) baz))
+   (cl-loop for srpair in (car (sexp-font-lock-read-at-point))
+            append
+            (progn
+              (goto-char (cadr srpair))
+              (multiple-value-bind
+                  (name args)
+                  (sexp-font-lock-match-at-point-do '(`(,name ,args . ,rest) (list name args)))
+                (cons (list name)
+                      (progn
+                        (goto-char (car args))
+                        (mapcar (lambda (var) (list '(nil . nil) (cdr var)))
+                                (car (sexp-font-lock-read-at-point))))))))
    limit))
+
+
+(defgroup sexp-font-lock nil
+  "Highlight bound variables and quoted expressions in lisp."
+  :group 'faces)
+
+;;;###autoload
+(defcustom sexp-font-lock-modes '(emacs-lisp-mode lisp-mode)
+  "List of modes where Lisp Extra Font Lock Global mode should be enabled."
+  :type '(repeat symbol)
+  :group 'sexp-font-lock)
+
+;;;###autoload
+(define-minor-mode sexp-font-lock-mode
+  "Minor mode that highlights bound variables and quoted expressions in lisp."
+  :group 'sexp-font-lock
+  (if sexp-font-lock-mode
+      (sexp-font-lock-add-keywords)
+    (sexp-font-lock-remove-keywords))
+  ;; As of Emacs 24.4, `font-lock-fontify-buffer' is not legal to
+  ;; call, instead `font-lock-flush' should be used.
+  (if (fboundp 'font-lock-flush)
+      (font-lock-flush)
+    (when font-lock-mode
+      (with-no-warnings
+        (font-lock-fontify-buffer)))))
+
+
+;;;###autoload
+(define-global-minor-mode sexp-font-lock-global-mode
+  sexp-font-lock-mode
+  (lambda ()
+    (when (apply 'derived-mode-p sexp-font-lock-modes)
+      (sexp-font-lock-mode 1)))
+  :group 'sexp-font-lock)
+
+(defun sexp-font-lock-keywords ()
+  "Font-lock keywords used by `sexp-font-lock'.
+The keywords highlight variable bindings and quoted expressions."
+  `(;; Function and lambda parameters
+    (,(concat "("
+              "\\(?:"
+              "\\(?:"
+              (regexp-opt lisp-extra-font-lock-defun-functions)
+              "[ \t\n]+"
+              "\\(?:"
+              "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
+              "\\|"
+              "(setf[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>)"
+              "\\)"
+              "\\)"
+              "\\|"
+              (regexp-opt lisp-extra-font-lock-lambda-functions)
+              "\\)"
+              "[ \t\n]+(")
+     (sexp-font-lock-match-flat-list
+      ;; Pre-match form
+      (progn
+        (goto-char (match-end 0))
+        (backward-char)
+        ;; Search limit
+        (ignore-errors (scan-sexps (point) 1)))
+      ;; Post-match form
+      nil
+      (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+         nil t)))
+    ;; ;; Variables bound by `let'.
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-let-functions)
+    ;;           "[ \t\n]+(")
+    ;;  (sexp-font-lock-match-let
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 ,(sexp-font-lock-variable-face-form '(match-string 0)))))
+    ;; ;; Variables bound by `cl-dolist' etc.
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-dolist-functions)
+    ;;           "[ \t\n]+(\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
+    ;;  (1 ,(sexp-font-lock-variable-face-form '(match-string 1))))
+    ;; ;; Bind first argument like `condition-case'.
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-bind-first-functions)
+    ;;           "[ \t\n]+\\_<\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
+    ;;  (1 (and (not (string= (match-string 1) "nil"))
+    ;;          ,(sexp-font-lock-variable-face-form '(match-string 1)))))
+    ;; ;; Bind variables and named arguments to `cl-loop'.
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-loop-functions)
+    ;;           "\\_>")
+    ;;  (sexp-font-lock-match-loop-keywords
+    ;;   ;; Pre-match form. Value of expression is limit for submatcher.
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     (save-excursion
+    ;;       (goto-char (match-beginning 0))
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form.
+    ;;   (goto-char (match-end 0))
+    ;;   (1 font-lock-builtin-face)
+    ;;   (2 ,(sexp-font-lock-variable-face-form '(match-string 2)) nil t)))
+    ;; (;; Quote and backquote.
+    ;;  ;;
+    ;;  ;; Matcher: Set match-data 1 if backquote.
+    ;;  sexp-font-lock-match-quote-and-backquote
+    ;;  (1 sexp-font-lock-backquote-face nil t)
+    ;;  (;; Submatcher, match part of quoted expression or comma.
+    ;;   sexp-font-lock-match-quoted-content
+    ;;   ;; Pre-match form. Value of expression is limit for submatcher.
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (ignore-errors (scan-sexps (point) 1)))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   ;; Highlight rules for submatcher.
+    ;;   (1 sexp-font-lock-quoted-face append)
+    ;;   (2 sexp-font-lock-backquote-face nil t)))
+    ;; ;; Function read syntax
+    ;; ("#'\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>"
+    ;;  1 sexp-font-lock-quoted-function-face)
+
+    ;; ;; Function name bound by `flet'.
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-flet-functions)
+    ;;           "[ \t\n]+(")
+    ;;  (sexp-font-lock-match-let ; FIXME: doesn't match when without argument
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 font-lock-function-name-face)))
+    ;; ;;  Function argument list for `flet'.
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-flet-functions)
+    ;;           "[ \t\n]+(")
+    ;;  (sexp-font-lock-match-flet-argument-list
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 ,(sexp-font-lock-variable-face-form '(match-string 0))
+    ;;      nil t)))
+
+    ;; ;; `symbol-macrolet'
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-symbol-macrolet-functions)
+    ;;           "[ \t\n]+(")
+    ;;  (sexp-font-lock-match-defmethod-argument-list-type
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 font-lock-constant-face)))
+
+    ;; ;; Variables bound by `&key' or `&aux'.
+    ;; ,@(mapcar
+    ;;    (lambda (k)
+    ;;      `(,(concat k
+    ;;                 "[ \t\n]+")
+    ;;        (sexp-font-lock-match-let
+    ;;         ;; Pre-match form
+    ;;         (progn
+    ;;           (goto-char (match-end 0))
+    ;;           ;; Search limit
+    ;;           (let* ((p (point))
+    ;;                  (limit
+    ;;                   (save-excursion
+    ;;                     (condition-case nil
+    ;;                         (progn
+    ;;                           (up-list)
+    ;;                           (point))
+    ;;                       (error p)))))
+    ;;             (or (save-excursion
+    ;;                   (and
+    ;;                    (re-search-forward (regexp-opt sexp-argument-list-keywards)
+    ;;                                       limit t)
+    ;;                    (match-beginning 0)))
+    ;;                 limit)))
+    ;;         ;; Post-match form
+    ;;         (goto-char (match-end 0))
+    ;;         (0 ,(sexp-font-lock-variable-face-form '(match-string 0))))))
+    ;;    sexp-argument-list-key-keywards)
+
+    ;; ;; `defmethod' parameters
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-defmethod-functions)
+    ;;           "[ \t\n]+"
+    ;;           "\\(?:"
+    ;;           "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
+    ;;           "\\|"
+    ;;           "(setf[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>)"
+    ;;           "\\)"
+    ;;           "[ \t\n]+"
+    ;;           (regexp-opt sexp-font-lock-defmethod-keywords)
+    ;;           "?"
+    ;;           "[ \t\n]*"
+    ;;           "(")
+    ;;  (sexp-font-lock-match-defmethod-argument-list
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 ,(sexp-font-lock-variable-face-form '(match-string 0))
+    ;;      nil t)))
+    ;; ;; `defmethod' types
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-defmethod-functions)
+    ;;           "[ \t\n]+"
+    ;;           "\\(?:"
+    ;;           "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
+    ;;           "\\|"
+    ;;           "(setf[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>)"
+    ;;           "\\)"
+    ;;           "[ \t\n]+"
+    ;;           (regexp-opt sexp-font-lock-defmethod-keywords)
+    ;;           "?"
+    ;;           "[ \t\n]*"
+    ;;           "(")
+    ;;  (sexp-font-lock-match-defmethod-argument-list-type
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 font-lock-type-face nil t)))
+
+    ;; ;; `defclass' types
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-defclass-functions)
+    ;;           "[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
+    ;;           "[ \t\n]+"
+    ;;           "(")
+    ;;  (sexp-font-lock-match-argument-list
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 font-lock-type-face nil t)))
+    ;; ;; `defclass' slots
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-defclass-functions)
+    ;;           "[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
+    ;;           "[ \t\n]+"
+    ;;           "("
+    ;;           "[^)]*"
+    ;;           ")" ; Reason some people write comment here is `defclass' has no docstring.
+    ;;           "\\(?:[ \t\n]*;[^\n]*\n\\)*" ; Needs font-lock-fontify-block to work properly?
+    ;;           "[ \t\n]*(")
+    ;;  (sexp-font-lock-match-let
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 ,(sexp-font-lock-variable-face-form '(match-string 0)))))
+
+    ;; ;; Variables bound by `defstruct'.
+    ;; (,(concat "("
+    ;;           "defstruct"
+    ;;           "[ \t\n]+")
+    ;;  (sexp-font-lock-match-let
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     (condition-case nil
+    ;;         (forward-sexp)
+    ;;       (error (end-of-defun)))
+    ;;     (forward-comment (buffer-size))
+    ;;     (when (= (following-char) ?\")
+    ;;       (condition-case nil
+    ;;           (forward-sexp)
+    ;;         (error (end-of-defun)))
+    ;;       (forward-comment (buffer-size)))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (condition-case nil
+    ;;           (progn
+    ;;             (up-list)
+    ;;             (point))
+    ;;         (error (end-of-defun)))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 ,(sexp-font-lock-variable-face-form '(match-string 0)))))
+
+    ;; ;; defstar function type
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-defcommand-functions)
+    ;;           "[ \t\n]+(")
+    ;;  (sexp-font-lock-match-defstar-type
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 font-lock-type-face)))
+
+    ;; ;; defstar argument list name
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-defcommand-functions)
+    ;;           "[ \t\n]+")
+    ;;  (sexp-font-lock-match-defmethod-argument-list
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     (condition-case nil
+    ;;         (forward-sexp)
+    ;;       (error (end-of-defun)))
+    ;;     (forward-comment (buffer-size))
+    ;;     (and
+    ;;      (looking-at (regexp-opt sexp-font-lock-defmethod-keywords))
+    ;;      (goto-char (match-end 0)))
+    ;;     (forward-comment (buffer-size))
+    ;;     (forward-char)
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 ,(sexp-font-lock-variable-face-form '(match-string 0))
+    ;;      nil t)))
+
+    ;; ;; defstar argument list type
+    ;; (,(concat "("
+    ;;           (regexp-opt sexp-font-lock-defstar-functions)
+    ;;           "[ \t']+")
+    ;;  (sexp-font-lock-match-defmethod-argument-list-type
+    ;;   ;; Pre-match form
+    ;;   (progn
+    ;;     (goto-char (match-end 0))
+    ;;     (condition-case nil
+    ;;         (forward-sexp)
+    ;;       (error (end-of-defun)))
+    ;;     (forward-comment (buffer-size))
+    ;;     (and
+    ;;      (looking-at (regexp-opt sexp-font-lock-defmethod-keywords))
+    ;;      (goto-char (match-end 0)))
+    ;;     (forward-comment (buffer-size))
+    ;;     (forward-char)
+    ;;     ;; Search limit
+    ;;     (save-excursion
+    ;;       (backward-char)               ; Position point before "(".
+    ;;       (ignore-errors (scan-sexps (point) 1))))
+    ;;   ;; Post-match form
+    ;;   (goto-char (match-end 0))
+    ;;   (0 font-lock-type-face)))
+  ))
+
+(defvar sexp-font-lock--installed-keywords nil)
+
+(defun sexp-font-lock-add-keywords ()
+  "Add extra font-lock keywords to lisp."
+  (set (make-local-variable 'font-lock-multiline) t)
+  (when (local-variable-p 'sexp-font-lock--installed-keywords)
+    (font-lock-remove-keywords nil sexp-font-lock--installed-keywords))
+  (let ((keywords (sexp-font-lock-keywords)))
+    (set (make-local-variable 'sexp-font-lock--installed-keywords)
+         keywords)
+    (font-lock-add-keywords nil keywords 'append)))
+
+
+(defun sexp-font-lock-remove-keywords ()
+  "Remove font-lock keywords for extra lisp highlithing."
+  (font-lock-remove-keywords nil sexp-font-lock--installed-keywords))
 
