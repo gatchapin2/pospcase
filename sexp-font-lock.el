@@ -139,9 +139,12 @@ positional metadata, and not to be used as generic control \
 structure. Complex operations are not supported.")))))
         cases)))
 
+(defun sexp-font-lock-match-at-point-do (pat)
+  (eval (macroexpand `(sexp-font-lock-match-at-point ,pat))))
+
 (defun sexp-mark-pattern-at-point (pat)
   (interactive "xPattern to match: ")
-  (let ((match (eval (macroexpand `(sexp-font-lock-match-at-point ,pat)))))
+  (let ((match (sexp-font-lock-match-at-point-do pat)))
     (when match
       (cond
        ((numberp (cdr match))                                ; (BEG . END)
@@ -160,3 +163,102 @@ structure. Complex operations are not supported.")))))
                        (cdr (car (last match)))
                      (cddr (car (last (car (last match)))))) ; (... (... (SEXP BEG . END)))
                    nil t))))))
+
+
+;; (sexp-mark-pattern-at-point '(`(defun ,name . ,rest) name))
+
+;;; Work-in-progress codes
+
+(defvar sexp-font-lock--matches nil)
+(defun sexp-font-lock--iterator ()
+  (if sexp-font-lock--matches
+      (let ((mlist (cl-loop for pair in (car sexp-font-lock--matches)
+                            append (-cons-to-list pair))))
+        (set-match-data (append (cons (car mlist)
+                                      (last mlist))
+                                mlist))
+        (setq sexp-font-lock--matches (cdr sexp-font-lock--matches))
+        t)
+    (set-match-data nil)))
+(defmacro sexp-font-lock-iterate (clause limit) ; is macro to catch parsing error
+  `(condition-case nil
+       (when (or (< (point) limit) sexp-font-lock--matches)
+         (unless sexp-font-lock--matches ; initialize
+           (setq sexp-font-lock--matches ,clause)
+           (goto-char ,limit)) ; whole parsing is already done, it's not crawler
+         (sexp-font-lock--iterator))
+     (error
+      (goto-char ,limit))))
+
+(defun  sexp-font-lock-match-flat-list (limit)
+  (sexp-font-lock-iterate
+   (progn
+     ;; (backward-char)                    ; lisp-extra-font-lock-keywards compatibility
+     (mapcar (lambda (srpair) (list (cdr srpair)))
+             (car (sexp-font-lock-read-at-point))))
+   limit))
+
+;; (fset #'lisp-extra-font-lock-match-argument-list-orig (symbol-function #'lisp-extra-font-lock-match-argument-list))
+;; (fset #'lisp-extra-font-lock-match-argument-list (symbol-function #'sexp-font-lock-match-flat-list))
+;; (font-lock-fontify-buffer)
+;; (fset #'lisp-extra-font-lock-match-argument-list (symbol-function #'lisp-extra-font-lock-match-argument-list-orig))
+
+;; (and (sexp-font-lock-match-flat-list (scan-sexps (point) 1))
+;;      (match-string 1))
+
+;; (foo bar baz)
+
+;; (setq sexp-font-lock--matches nil)
+
+;; (cl-loop with p = (scan-sexps (point) 1)
+;;          while (sexp-font-lock-match-flat-list p)
+;;          collect (match-string 1))
+
+;; (foo bar)
+
+(defun sexp-font-lock-match-varlist (limit)
+  (sexp-font-lock-iterate
+   (progn
+     ;; (backward-char)     ; lisp-extra-font-lock-keywards compatibility
+     (mapcar
+      (lambda (srpair)
+        (or (progn
+              (goto-char (cadr srpair))
+              (sexp-font-lock-match-at-point-do '(`(,name ,type) (list name type))))
+            (list (cdr srpair))))
+      (car (sexp-font-lock-read-at-point))))
+   limit))
+
+;; (defvar sexp-debug-counter 0)
+;; (setq sexp-debug-counter 0)
+;; (setq sexp-font-lock--matches nil)
+
+;; (and (sexp-font-lock-match-varlist (scan-sexps (point) 1))
+;;      (match-string 1))
+
+;; (cl-loop with p = (scan-sexps (point) 1)
+;;          while (sexp-font-lock-match-varlist p)
+;;          collect (list (cons 'name (match-string-no-properties 1))
+;;                        (cons 'type (or (match-string-no-properties 2) 'unknown))))
+
+;; ((foo bar) baz (quux meow))
+
+
+(defun sexp-font-lock-match-flet (limit)
+  (sexp-font-lock-iterate
+   (progn
+     ;; (backward-char)     ; lisp-extra-font-lock-keywards compatibility
+     (mapcar
+      (lambda (srpair)
+        (goto-char (cadr srpair))
+        (multiple-value-bind
+            (name args)
+            (sexp-font-lock-match-at-point-do '(`(,name ,args . ,rest) (list name args)))
+          (list name
+                (progn
+                  (goto-char (1- (cadr args)))
+                  (mapcar (lambda (srpair) (list (cdr srpair)))
+                          (car (sexp-font-lock-read-at-point)))))))
+      (car (sexp-font-lock-read-at-point))))((foo (bar) baz))
+   limit))
+
