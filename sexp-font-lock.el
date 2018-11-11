@@ -1,7 +1,8 @@
-;;; Should I get rid of the dependency?
+;;; Should I get rid of this dependency?
 (require 'lisp-extra-font-lock)
 
-;;; generic matching codes
+
+;;; generic matchers
 
 (defun sexp-font-lock-read-at-point ()
   "Parse the s-expression at the cursor position. Return a
@@ -143,7 +144,7 @@ structure. Complex operations are not supported.")))))
         cases)))
 
 (defun sexp-font-lock-match-at-point-do (pat) ; prevents macro expansion at declaration
-  (sexp-font-lock-match-at-point pat))
+  (eval (macroexpand `(sexp-font-lock-match-at-point ,pat))))
 
 
 
@@ -169,7 +170,7 @@ structure. Complex operations are not supported.")))))
         t)
     (set-match-data nil)))
 
-(defmacro sexp-font-lock-iterate (clause limit) ; is macro to catch parsing error
+(defmacro sexp-font-lock-iterate (clause limit) ; for catching parsing error
   `(condition-case nil
        (when (or (< (point) limit) sexp-font-lock--matches)
          (unless sexp-font-lock--matches ; initialize
@@ -182,12 +183,6 @@ structure. Complex operations are not supported.")))))
          (sexp-font-lock--iterator))
      (error
       (goto-char ,limit))))
-
-(defun  sexp-font-lock-match-flat-list (limit) ; so far nobody is using it.
-  (sexp-font-lock-iterate
-   (mapcar (lambda (srpair) (list (cdr srpair)))
-           (car (sexp-font-lock-read-at-point)))
-   limit))
 
 (defun sexp-font-lock-match-varlist (limit)
   (sexp-font-lock-iterate
@@ -219,7 +214,8 @@ structure. Complex operations are not supported.")))))
               (goto-char (cadr srpair))
               (multiple-value-bind
                   (name args)
-                  (sexp-font-lock-match-at-point-do '(`(,name ,args . ,rest) (list name args)))
+                  (sexp-font-lock-match-at-point-do
+                   '(`(,name ,args . ,rest) (list name args)))
                 (progn
                   (goto-char (car args))
                   (mapcar (lambda (var) (list name (cdr var)))
@@ -230,7 +226,7 @@ structure. Complex operations are not supported.")))))
   "Font-lock keywords used by `sexp-font-lock'.
 The keywords highlight variable bindings and quoted expressions."
   `(;;;;;;;;;;;;;;;;;;;;
-    ;; non-pcase users
+    ;; non `pcase' powered
     ;;;;;;;;;;;;;;;;;;;;
     ;; For `cl-dolist'
     (,(concat "("
@@ -280,7 +276,7 @@ The keywords highlight variable bindings and quoted expressions."
      1 lisp-extra-font-lock-quoted-function-face)
 
     ;;;;;;;;;;;;;;;;;;;;
-    ;; pcase users
+    ;; `pcase' powered
     ;;;;;;;;;;;;;;;;;;;;
     ;; For `defun' and `lambda'
     (,(concat "("
