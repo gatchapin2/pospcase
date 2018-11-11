@@ -1,3 +1,6 @@
+;;; Should I get rid of the dependency?
+(require 'lisp-extra-font-lock)
+
 ;;; generic matching codes
 
 (defun sexp-font-lock-read-at-point ()
@@ -139,8 +142,8 @@ positional metadata, and not to be used as generic control \
 structure. Complex operations are not supported.")))))
         cases)))
 
-(defun sexp-font-lock-match-at-point-do (pat) ; to delay macro expansion
-  (eval (macroexpand `(sexp-font-lock-match-at-point ,pat))))
+(defun sexp-font-lock-match-at-point-do (pat) ; prevents macro expansion at declaration
+  (sexp-font-lock-match-at-point pat))
 
 
 
