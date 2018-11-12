@@ -189,6 +189,7 @@ structure. Complex operations are not supported.")))))
              (setq sexp-font-lock--matches (sexp-font-lock-after-anchor
                                             sexp-font-lock--matches)
                    sexp-font-lock--anchor nil)))
+          (goto-char (1- ,limit)) ; whole parsing is already done, no crawling
          (sexp-font-lock--iterator ,limit))
      (error
       (goto-char ,limit))))
@@ -386,7 +387,10 @@ The keywords highlight variable bindings and quoted expressions."
         ;; Post-match form
         nil
         ;; Faces
-        (2 font-lock-constant-face nil t)))
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)
+        (2 font-lock-constant-face
+           nil t)))
 
       ;; For `defmethod'
       (,(concat "("
@@ -468,7 +472,7 @@ The keywords highlight variable bindings and quoted expressions."
         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
            nil t)))
 
-      ;; For `defstruct'.
+      ;; For `defstruct'
       (,(concat "("
                 "\\(?:cl-\\)?defstruct"
                 space-regexp)
