@@ -221,219 +221,248 @@ structure. Complex operations are not supported.")))))
 (defun sexp-font-lock-keywords ()
   "Font-lock keywords used by `sexp-font-lock'.
 The keywords highlight variable bindings and quoted expressions."
-  `(;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; non-`pcase' powered
-    ;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; For `cl-dolist'
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-dolist-functions)
-              "[ \t\n]+(\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
-     (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
-    ;; For `condition-case'
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-bind-first-functions)
-              "[ \t\n]+\\_<\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
-     (1 (and (not (string= (match-string 1) "nil"))
-             ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
-    ;; For `cl-loop'
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-loop-functions)
-              "\\_>")
-     (lisp-extra-font-lock-match-loop-keywords
-      ;; Pre-match form. Value of expression is limit for submatcher.
-      (progn
+  (let ((symbol-regexp "\\(?:\\sw\\|\\s_\\)+"))
+    `(;;
+      ;; non-`pcase' powered
+      ;;
+
+      ;; For `cl-dolist'
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-dolist-functions)
+                "[ \t\n]+(\\("
+                symbol-regexp
+                "\\)\\_>")
+       (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
+      ;; For `condition-case'
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-bind-first-functions)
+                "[ \t\n]+\\_<\\("
+                symbol-regexp
+                "\\)\\_>")
+       (1 (and (not (string= (match-string 1) "nil"))
+               ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
+      ;; For `cl-loop'
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-loop-functions)
+                "\\_>")
+       (lisp-extra-font-lock-match-loop-keywords
+        ;; Pre-match form. Value of expression is limit for submatcher.
+        (progn
+          (goto-char (match-end 0))
+          (save-excursion
+            (goto-char (match-beginning 0))
+            (ignore-errors (scan-lisp-extras (point) 1))))
+        ;; Post-match form.
         (goto-char (match-end 0))
-        (save-excursion
+        (1 font-lock-builtin-face)
+        (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2)) nil t)))
+      (;; For quote and backquote
+       ;;
+       ;; Matcher: Set match-data 1 if backquote.
+       lisp-extra-font-lock-match-quote-and-backquote
+       (1 lisp-extra-font-lock-backquote-face nil t)
+       (;; Submatcher, match part of quoted expression or comma.
+        lisp-extra-font-lock-match-quoted-content
+        ;; Pre-match form. Value of expression is limit for submatcher.
+        (progn
+          (goto-char (match-end 0))
+          ;; Search limit
+          (ignore-errors (scan-lisp-extras (point) 1)))
+        ;; Post-match form
+        (goto-char (match-end 0))
+        ;; Highlight rules for submatcher.
+        (1 lisp-extra-font-lock-quoted-face append)
+        (2 lisp-extra-font-lock-backquote-face nil t)))
+      ;; For function read syntax
+      ("#'\\("
+       symbol-regexp
+       "\\)\\_>"
+       1 lisp-extra-font-lock-quoted-function-face)
+
+      ;;
+      ;; `pcase' powered
+      ;;
+
+      ;; For `defun' and `lambda'
+      (,(concat "("
+                "\\(?:"
+                "\\(?:"
+                (regexp-opt lisp-extra-font-lock-defun-functions)
+                "[ \t\n]+"
+                "\\(?:"
+                "\\_<"
+                symbol-regexp
+                "\\_>"
+                "\\|"
+                "(setf[ \t\n]+\\_<"
+                symbol-regexp
+                "\\_>)"
+                "\\)"
+                "\\)"
+                "\\|"
+                (regexp-opt lisp-extra-font-lock-lambda-functions)
+                "\\)"
+                "[ \t\n]+(")
+       (sexp-font-lock-match-varlist
+        ;; Pre-match form
+        (progn
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)))
+
+      ;; For `let'.
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-let-functions)
+                "[ \t\n]+(")
+       (sexp-font-lock-match-varlist
+        ;; Pre-match form
+        (progn
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
+
+      ;; For `flet'.
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-flet-functions)
+                "[ \t\n]+(")
+       (sexp-font-lock-match-flet
+        ;; Pre-match form
+        (progn
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 font-lock-function-name-face)
+        (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2))
+           nil t)))
+
+      ;; For `symbol-macrolet'
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-symbol-macrolet-functions)
+                "[ \t\n]+(")
+       (sexp-font-lock-match-varlist
+        ;; Pre-match form
+        (progn
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (2 font-lock-constant-face)))
+
+      ;; For `defmethod'
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-defmethod-functions)
+                "[ \t\n]+"
+                "\\(?:"
+                "\\_<"
+                symbol-regexp
+                "\\_>"
+                "\\|"
+                "(setf[ \t\n]+\\_<"
+                symbol-regexp
+                "\\_>)"
+                "\\)"
+                "[ \t\n]+"
+                (regexp-opt lisp-extra-font-lock-defmethod-keywords)
+                "?"
+                "[ \t\n]*"
+                "(")
+       (sexp-font-lock-match-varlist
+        ;; Pre-match form
+        (progn
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)
+        (2 font-lock-type-face nil t)))
+
+      ;; For `defclass'
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-defclass-functions)
+                "[ \t\n]+\\_<"
+                symbol-regexp
+                "\\_>"
+                "[ \t\n]+"
+                "(")
+       (sexp-font-lock-match-varlist
+        ;; Pre-match form
+        (progn
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 font-lock-type-face nil t)))
+
+      ;; For `defclass' slots
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-defclass-functions)
+                "[ \t\n]+\\_<"
+                symbol-regexp
+                "\\_>"
+                "[ \t\n]+"
+                "("
+                "[^)]*"
+                ")" ; Reason some people write comment here is `defclass' has no docstring.
+                "\\(?:[ \t\n]*;[^\n]*\n\\)*" ; Needs font-lock-fontify-block to work properly?
+                "[ \t\n]*(")
+       (sexp-font-lock-match-varlist-cars
+        ;; Pre-match form
+        (progn
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
+
+      ;; For `defstruct'.
+      (,(concat "("
+                "\\(?:cl-\\)?defstruct"
+                "[ \t\n]+")
+       (sexp-font-lock-match-varlist-cars
+        ;; Pre-match form
+        (progn
           (goto-char (match-beginning 0))
-          (ignore-errors (scan-lisp-extras (point) 1))))
-      ;; Post-match form.
-      (goto-char (match-end 0))
-      (1 font-lock-builtin-face)
-      (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2)) nil t)))
-    (;; For quote and backquote
-     ;;
-     ;; Matcher: Set match-data 1 if backquote.
-     lisp-extra-font-lock-match-quote-and-backquote
-     (1 lisp-extra-font-lock-backquote-face nil t)
-     (;; Submatcher, match part of quoted expression or comma.
-      lisp-extra-font-lock-match-quoted-content
-      ;; Pre-match form. Value of expression is limit for submatcher.
-      (progn
-        (goto-char (match-end 0))
-        ;; Search limit
-        (ignore-errors (scan-lisp-extras (point) 1)))
-      ;; Post-match form
-      (goto-char (match-end 0))
-      ;; Highlight rules for submatcher.
-      (1 lisp-extra-font-lock-quoted-face append)
-      (2 lisp-extra-font-lock-backquote-face nil t)))
-    ;; For function read syntax
-    ("#'\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>"
-     1 lisp-extra-font-lock-quoted-function-face)
+          (save-excursion
+            (condition-case nil
+                (progn
+                  (forward-char)
+                  (forward-sexp 2)      ; skip keyword and name
+                  (forward-comment (buffer-size))
+                  (when (= (following-char) ?\") ; skip docstring
+                    (forward-sexp)
+                    (forward-comment (buffer-size)))
+                  (setq sexp-font-lock--anchor (1- (point)))
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; `pcase' powered
-    ;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; For `defun' and `lambda'
-    (,(concat "("
-              "\\(?:"
-              "\\(?:"
-              (regexp-opt lisp-extra-font-lock-defun-functions)
-              "[ \t\n]+"
-              "\\(?:"
-              "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
-              "\\|"
-              "(setf[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>)"
-              "\\)"
-              "\\)"
-              "\\|"
-              (regexp-opt lisp-extra-font-lock-lambda-functions)
-              "\\)"
-              "[ \t\n]+(")
-     (sexp-font-lock-match-varlist
-      ;; Pre-match form
-      (progn
-        (goto-char (1- (match-end 0)))
-        ;; Search limit
-        (ignore-errors (scan-sexps (point) 1)))
-      ;; Post-match form
-      nil
-      (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
-         nil t)))
+                  ;; Search limit
+                  (up-list)
+                  (point))
 
-    ;; For `let'.
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-let-functions)
-              "[ \t\n]+(")
-     (sexp-font-lock-match-varlist
-      ;; Pre-match form
-      (progn
-        (goto-char (1- (match-end 0)))
-        ;; Search limit
-        (ignore-errors (scan-sexps (point) 1)))
-      ;; Post-match form
-      nil
-      (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
-
-    ;; For `flet'.
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-flet-functions)
-              "[ \t\n]+(")
-     (sexp-font-lock-match-flet
-      ;; Pre-match form
-      (progn
-        (goto-char (1- (match-end 0)))
-        ;; Search limit
-        (ignore-errors (scan-sexps (point) 1)))
-      ;; Post-match form
-      nil
-      (1 font-lock-function-name-face)
-      (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2))
-         nil t)))
-
-    ;; For `symbol-macrolet'
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-symbol-macrolet-functions)
-              "[ \t\n]+(")
-     (sexp-font-lock-match-varlist
-      ;; Pre-match form
-      (progn
-        (goto-char (1- (match-end 0)))
-        ;; Search limit
-        (ignore-errors (scan-sexps (point) 1)))
-      ;; Post-match form
-      nil
-      (2 font-lock-constant-face)))
-
-    ;; For `defmethod'
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-defmethod-functions)
-              "[ \t\n]+"
-              "\\(?:"
-              "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
-              "\\|"
-              "(setf[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>)"
-              "\\)"
-              "[ \t\n]+"
-              (regexp-opt lisp-extra-font-lock-defmethod-keywords)
-              "?"
-              "[ \t\n]*"
-              "(")
-     (sexp-font-lock-match-varlist
-      ;; Pre-match form
-      (progn
-        (goto-char (1- (match-end 0)))
-        ;; Search limit
-        (ignore-errors (scan-sexps (point) 1)))
-      ;; Post-match form
-      nil
-      (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
-         nil t)
-      (2 font-lock-type-face nil t)))
-
-    ;; For `defclass'
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-defclass-functions)
-              "[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
-              "[ \t\n]+"
-              "(")
-     (sexp-font-lock-match-varlist
-      ;; Pre-match form
-      (progn
-        (goto-char (1- (match-end 0)))
-        ;; Search limit
-        (ignore-errors (scan-sexps (point) 1)))
-      ;; Post-match form
-      nil
-      (1 font-lock-type-face nil t)))
-
-    ;; For `defclass' slots
-    (,(concat "("
-              (regexp-opt lisp-extra-font-lock-defclass-functions)
-              "[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
-              "[ \t\n]+"
-              "("
-              "[^)]*"
-              ")" ; Reason some people write comment here is `defclass' has no docstring.
-              "\\(?:[ \t\n]*;[^\n]*\n\\)*" ; Needs font-lock-fontify-block to work properly?
-              "[ \t\n]*(")
-     (sexp-font-lock-match-varlist-cars
-      ;; Pre-match form
-      (progn
-        (goto-char (1- (match-end 0)))
-        ;; Search limit
-        (ignore-errors (scan-sexps (point) 1)))
-      ;; Post-match form
-      nil
-      (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
-
-    ;; For `defstruct'.
-    (,(concat "("
-              "\\(?:cl-\\)?defstruct"
-              "[ \t\n]+")
-     (sexp-font-lock-match-varlist-cars
-      ;; Pre-match form
-      (progn
-        (goto-char (match-beginning 0))
-        (save-excursion
-          (condition-case nil
-              (progn
-                (forward-char)
-                (forward-sexp 2)          ; skip keyword and name
-                (forward-comment (buffer-size))
-                (when (= (following-char) ?\") ; skip docstring
-                  (forward-sexp)
-                  (forward-comment (buffer-size)))
-                (setq sexp-font-lock--anchor (1- (point)))
-
-                ;; Search limit
-                (up-list)
-                (point))
-
-            (error (end-of-defun)))))
-      ;; Post-match form
-      nil
-      (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))))
+              (error (end-of-defun)))))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))))))
 
 
 (defvar sexp-font-lock--installed-keywords nil)
