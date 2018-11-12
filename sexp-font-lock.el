@@ -226,13 +226,14 @@ The keywords highlight variable bindings and quoted expressions."
       ;; non-`pcase' powered
       ;;
 
-      ;; For `cl-dolist'
+      ;; For `dolist'
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-dolist-functions)
                 space-regexp
                 "(\\("
                 symbol-regexp
                 "\\)\\_>")
+       ;; Faces
        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
       ;; For `condition-case'
       (,(concat "("
@@ -241,6 +242,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "\\_<\\("
                 symbol-regexp
                 "\\)\\_>")
+       ;; Faces
        (1 (and (not (string= (match-string 1) "nil"))
                ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
       ;; For `cl-loop'
@@ -248,7 +250,7 @@ The keywords highlight variable bindings and quoted expressions."
                 (regexp-opt lisp-extra-font-lock-loop-functions)
                 "\\_>")
        (lisp-extra-font-lock-match-loop-keywords
-        ;; Pre-match form. Value of expression is limit for submatcher.
+        ;; Pre-match form
         (progn
           (goto-char (match-end 0))
           (save-excursion
@@ -256,6 +258,7 @@ The keywords highlight variable bindings and quoted expressions."
             (ignore-errors (scan-lisp-extras (point) 1))))
         ;; Post-match form.
         (goto-char (match-end 0))
+        ;; Faces
         (1 font-lock-builtin-face)
         (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2)) nil t)))
       (;; For quote and backquote
@@ -272,7 +275,7 @@ The keywords highlight variable bindings and quoted expressions."
           (ignore-errors (scan-lisp-extras (point) 1)))
         ;; Post-match form
         (goto-char (match-end 0))
-        ;; Highlight rules for submatcher.
+        ;; Faces
         (1 lisp-extra-font-lock-quoted-face append)
         (2 lisp-extra-font-lock-backquote-face nil t)))
       ;; For function read syntax
