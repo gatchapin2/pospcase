@@ -211,7 +211,8 @@ structure. Complex operations are not supported.")))))
 
 (defvar poscase--matches nil
   "Place to store currently working list of positional
-  metadata. Structured like:
+metadata. Structured like:
+
   (((start . end)   ; (match-string 1) of first (match-data)
     (start . end))  ; (match-string 2) of first (match-data)
    ((start . end)   ; (match-string 1) of second (match-data)
