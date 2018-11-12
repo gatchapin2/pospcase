@@ -1,3 +1,8 @@
+(sexp-font-lock-match-at-point '(('() t)))
+(sexp-font-lock-read-at-point)()
+
+(pcase () ('() t))
+
 (sexp-font-lock-match-at-point '((`(,name . ,_) name)))
 (foo bar baz)
 
@@ -44,14 +49,15 @@
 ;; (defun foo (bar baz &rest quux)
 ;;   body)
 
-(flet ((foo (bar baz) quux)
-       (meow (woof) oink))
-  body)
+(flet ((baz (qux) quux)
+       (foo () bar)
+       (meow (woof oink) body))
+  (foo))
 
 (cl-symbol-macrolet ((foo bar))
   foo)
 
-(defun foo (bar (baz quux) meow woof)
+(defun foo (bar baz quux meow woof)
   body)
 
 (sexp-font-lock-match-at-point (`(,foo ,bar . ,rest) bar))
@@ -77,7 +83,7 @@
   (sexp-font-lock-match-varlist-cars
          (scan-sexps (point) 1))
   (match-string-no-properties 1))
-
+(cl-defstruct foo bar (baz quux))
 (cl-defstruct package-desc
   name
   version
@@ -121,3 +127,10 @@
 
 (defmacro foo (bar (baz quux) &body meow)
   `,body)
+
+(let ((foo (bar baz))
+      (meow (woof quaack))
+      (qux quux)
+      ouch
+      (oink ugh))
+  (foo))

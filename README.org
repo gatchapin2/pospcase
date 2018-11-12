@@ -3,3 +3,6 @@
 ** TODO ~let~ [1/1]
    - State "TODO"       from              [2018-11-12 Mon 10:24]
    - [X] the last of varlist is entirely highlighted
+** TODO flet [1/1]
+   - State "TODO"       from              [2018-11-12 Mon 11:47]
+   - [X] declaration with empty arglist isn’t supported

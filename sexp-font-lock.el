@@ -227,8 +227,10 @@ structure. Complex operations are not supported.")))))
                   (sexp-font-lock-match-at-point '((`(,name ,args . ,_) (list name args))))
                 (progn
                   (goto-char (car args))
-                  (mapcar (lambda (var) (list name (cdr var)))
-                          (car (sexp-font-lock-read-at-point)))))))
+                  (let ((mlist (car (sexp-font-lock-read-at-point))))
+                    (if mlist
+                        (mapcar (lambda (var) (list name (cdr var))) mlist)
+                      (list (list name))))))))
    limit))
 
 (defun sexp-font-lock-keywords ()
