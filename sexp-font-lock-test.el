@@ -44,7 +44,7 @@
 ;; (defun foo (bar baz &rest quux)
 ;;   body)
 
-(flet ((foo (bar baz) quux)
+(flet ((foo (bar baz quux))
        (meow (woof) oink))
   body)
 
