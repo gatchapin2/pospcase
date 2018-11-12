@@ -125,6 +125,13 @@
 
 ((foo bar) baz (quux meow))
 
+(and (sexp-font-lock-match-destructuring (scan-sexps (point) 1))
+     (match-data)
+     (match-string-no-properties 1))
+
+(destructuring-bind (((foo auto-mode-alist))) '((baz) quux)
+  (list foo bar))
+
 (defmacro foo (bar (baz quux) &body meow)
   `,body)
 
