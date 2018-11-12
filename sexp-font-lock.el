@@ -220,7 +220,8 @@ structure. Complex operations are not supported.")))))
 (defun sexp-font-lock-keywords ()
   "Font-lock keywords used by `sexp-font-lock'.
 The keywords highlight variable bindings and quoted expressions."
-  (let ((symbol-regexp "\\(?:\\sw\\|\\s_\\)+"))
+  (let ((symbol-regexp "\\(?:\\sw\\|\\s_\\)+")
+        (space-regexp "[ \t\n]+"))
     `(;;
       ;; non-`pcase' powered
       ;;
@@ -228,14 +229,16 @@ The keywords highlight variable bindings and quoted expressions."
       ;; For `cl-dolist'
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-dolist-functions)
-                "[ \t\n]+(\\("
+                space-regexp
+                "(\\("
                 symbol-regexp
                 "\\)\\_>")
        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
       ;; For `condition-case'
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-bind-first-functions)
-                "[ \t\n]+\\_<\\("
+                space-regexp
+                "\\_<\\("
                 symbol-regexp
                 "\\)\\_>")
        (1 (and (not (string= (match-string 1) "nil"))
@@ -287,13 +290,15 @@ The keywords highlight variable bindings and quoted expressions."
                 "\\(?:"
                 "\\(?:"
                 (regexp-opt lisp-extra-font-lock-defun-functions)
-                "[ \t\n]+"
+                space-regexp
                 "\\(?:"
                 "\\_<"
                 symbol-regexp
                 "\\_>"
                 "\\|"
-                "(setf[ \t\n]+\\_<"
+                "(setf"
+                space-regexp
+                "\\_<"
                 symbol-regexp
                 "\\_>)"
                 "\\)"
@@ -301,7 +306,8 @@ The keywords highlight variable bindings and quoted expressions."
                 "\\|"
                 (regexp-opt lisp-extra-font-lock-lambda-functions)
                 "\\)"
-                "[ \t\n]+(")
+                space-regexp
+                "(")
        (sexp-font-lock-match-varlist
         ;; Pre-match form
         (progn
@@ -317,7 +323,8 @@ The keywords highlight variable bindings and quoted expressions."
       ;; For `let'.
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-let-functions)
-                "[ \t\n]+(")
+                space-regexp
+                "(")
        (sexp-font-lock-match-varlist
         ;; Pre-match form
         (progn
@@ -332,7 +339,8 @@ The keywords highlight variable bindings and quoted expressions."
       ;; For `flet'.
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-flet-functions)
-                "[ \t\n]+(")
+                space-regexp
+                "(")
        (sexp-font-lock-match-flet
         ;; Pre-match form
         (progn
@@ -349,7 +357,8 @@ The keywords highlight variable bindings and quoted expressions."
       ;; For `symbol-macrolet'
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-symbol-macrolet-functions)
-                "[ \t\n]+(")
+                space-regexp
+                "(")
        (sexp-font-lock-match-varlist
         ;; Pre-match form
         (progn
@@ -364,17 +373,19 @@ The keywords highlight variable bindings and quoted expressions."
       ;; For `defmethod'
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-defmethod-functions)
-                "[ \t\n]+"
+                space-regexp
                 "\\(?:"
                 "\\_<"
                 symbol-regexp
                 "\\_>"
                 "\\|"
-                "(setf[ \t\n]+\\_<"
+                "(setf"
+                space-regexp
+                "\\_<"
                 symbol-regexp
                 "\\_>)"
                 "\\)"
-                "[ \t\n]+"
+                space-regexp
                 (regexp-opt lisp-extra-font-lock-defmethod-keywords)
                 "?"
                 "[ \t\n]*"
@@ -395,10 +406,11 @@ The keywords highlight variable bindings and quoted expressions."
       ;; For `defclass'
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-defclass-functions)
-                "[ \t\n]+\\_<"
+                space-regexp
+                "\\_<"
                 symbol-regexp
                 "\\_>"
-                "[ \t\n]+"
+                space-regexp
                 "(")
        (sexp-font-lock-match-varlist
         ;; Pre-match form
@@ -414,10 +426,11 @@ The keywords highlight variable bindings and quoted expressions."
       ;; For `defclass' slots
       (,(concat "("
                 (regexp-opt lisp-extra-font-lock-defclass-functions)
-                "[ \t\n]+\\_<"
+                space-regexp
+                "\\_<"
                 symbol-regexp
                 "\\_>"
-                "[ \t\n]+"
+                space-regexp
                 "("
                 "[^)]*"
                 ")" ; Reason some people write comment here is `defclass' has no docstring.
@@ -437,7 +450,7 @@ The keywords highlight variable bindings and quoted expressions."
       ;; For `defstruct'.
       (,(concat "("
                 "\\(?:cl-\\)?defstruct"
-                "[ \t\n]+")
+                space-regexp)
        (sexp-font-lock-match-varlist-cars
         ;; Pre-match form
         (progn
