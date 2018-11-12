@@ -210,8 +210,8 @@ structure. Complex operations are not supported.")))))
               (goto-char (cadr srpair))
               (multiple-value-bind
                   (name args)
-                  (sexp-font-lock-match-at-point-do
-                   '(`(,name ,args . ,rest) (list name args)))
+                  (eval '(sexp-font-lock-match-at-point
+                          (`(,name ,args . ,_) (list name args))))
                 (progn
                   (goto-char (car args))
                   (mapcar (lambda (var) (list name (cdr var)))
