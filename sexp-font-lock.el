@@ -125,7 +125,7 @@ supported (maybe `pcase' doesn't support it too?)."
      ,@(mapcar
         (lambda (case)
           (list
-           (eval (macroexpand `(sexp-font-lock-translate-pattern ,(car case))))
+           (eval `(sexp-font-lock-translate-pattern ,(car case)))
            (cond
             ((and (listp (cadr case))
                   (eq (caadr case) 'list))
@@ -142,10 +142,6 @@ supported (maybe `pcase' doesn't support it too?)."
 positional metadata, and not to be used as generic control \
 structure. Complex operations are not supported.")))))
         cases)))
-
-(defun sexp-font-lock-match-at-point-do (pat) ; prevents macro expansion at declaration
-  (eval (macroexpand `(sexp-font-lock-match-at-point ,pat))))
-
 
 
 ;;; font-lock specific codes
@@ -190,7 +186,7 @@ structure. Complex operations are not supported.")))))
     (lambda (srpair)
       (or (progn
             (goto-char (cadr srpair))
-            (sexp-font-lock-match-at-point-do '(`(,name ,type) (list name type))))
+            (eval '(sexp-font-lock-match-at-point (`(,name ,type) (list name type)))))
           (list (cdr srpair))))
     (car (sexp-font-lock-read-at-point)))
    limit))
@@ -201,7 +197,7 @@ structure. Complex operations are not supported.")))))
     (lambda (srpair)
       (or (progn
             (goto-char (cadr srpair))
-            (sexp-font-lock-match-at-point-do '(`(,name . ,rest) (list name))))
+            (eval '(sexp-font-lock-match-at-point (`(,name . ,rest) (list name)))))
           (list (cdr srpair))))
     (car (sexp-font-lock-read-at-point)))
    limit))
@@ -225,9 +221,9 @@ structure. Complex operations are not supported.")))))
 (defun sexp-font-lock-keywords ()
   "Font-lock keywords used by `sexp-font-lock'.
 The keywords highlight variable bindings and quoted expressions."
-  `(;;;;;;;;;;;;;;;;;;;;
-    ;; non `pcase' powered
-    ;;;;;;;;;;;;;;;;;;;;
+  `(;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; non-`pcase' powered
+    ;;;;;;;;;;;;;;;;;;;;;;;;
     ;; For `cl-dolist'
     (,(concat "("
               (regexp-opt lisp-extra-font-lock-dolist-functions)
@@ -275,9 +271,9 @@ The keywords highlight variable bindings and quoted expressions."
     ("#'\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>"
      1 lisp-extra-font-lock-quoted-function-face)
 
-    ;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;
     ;; `pcase' powered
-    ;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;
     ;; For `defun' and `lambda'
     (,(concat "("
               "\\(?:"
@@ -423,12 +419,12 @@ The keywords highlight variable bindings and quoted expressions."
           (condition-case nil
               (progn
                 (forward-char)
-                (forward-sexp)          ; skip name
+                (forward-sexp 2)          ; skip keyword and name
                 (forward-comment (buffer-size))
                 (when (= (following-char) ?\") ; skip docstring
                   (forward-sexp)
                   (forward-comment (buffer-size)))
-                (setq sexp-font-lock--anchor (point))
+                (setq sexp-font-lock--anchor (1- (point)))
 
                 ;; Search limit
                 (up-list)

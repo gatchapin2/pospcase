@@ -115,3 +115,5 @@
 
 ((foo bar) baz (quux meow))
 
+(defmacro foo (bar (baz quux) &body meow)
+  `,body)
