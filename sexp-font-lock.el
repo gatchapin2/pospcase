@@ -233,6 +233,15 @@ structure. Complex operations are not supported.")))))
                       (list (list name))))))))
    limit))
 
+(defun sexp-font-lock-match-destructuring (limit)
+  (sexp-font-lock-call-iterator
+   (cl-labels ((walk (node) (if (symbolp (car node))
+                                (list (list (cdr node)))
+                              (cl-loop for child in (car node)
+                                       append (walk child)))))
+     (walk (sexp-font-lock-read-at-point)))
+   limit))
+
 (defun sexp-font-lock-keywords ()
   "Font-lock keywords used by `sexp-font-lock'.
 The keywords highlight variable bindings and quoted expressions."
@@ -502,8 +511,31 @@ The keywords highlight variable bindings and quoted expressions."
         nil
         ;; Faces
         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
-           nil t))))))
+           nil t)))
 
+      ;; For `destructuring-bind'
+      (,(concat "(\\(?:"
+               (regexp-opt
+                '("destructuring-bind"
+                  "cl-destructuring-bind"))
+               "\\|"
+               (concat "\\(?:cl-\\)?defmacro"
+                       space-regexp
+                       symbol-regexp)
+               "\\)"
+               space-regexp
+               "(")
+       (sexp-font-lock-match-destructuring
+        ;; Pre-match form
+        (progn
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t))))))
 
 (defvar sexp-font-lock--installed-keywords nil)
 
@@ -517,11 +549,9 @@ The keywords highlight variable bindings and quoted expressions."
          keywords)
     (font-lock-add-keywords nil keywords 'append)))
 
-
 (defun sexp-font-lock-remove-keywords ()
   "Remove font-lock keywords for extra lisp highlithing."
   (font-lock-remove-keywords nil sexp-font-lock--installed-keywords))
-
 
 (defgroup sexp-font-lock nil
   "Highlight bound variables and quoted expressions in lisp."
@@ -547,7 +577,6 @@ The keywords highlight variable bindings and quoted expressions."
     (when font-lock-mode
       (with-no-warnings
         (font-lock-fontify-buffer)))))
-
 
 ;;;###autoload
 (define-global-minor-mode sexp-font-lock-global-mode
