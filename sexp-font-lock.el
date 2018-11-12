@@ -554,3 +554,5 @@ The keywords highlight variable bindings and quoted expressions."
     (when (apply 'derived-mode-p sexp-font-lock-modes)
       (sexp-font-lock-mode 1)))
   :group 'sexp-font-lock)
+
+(provide 'sexp-font-lock)
