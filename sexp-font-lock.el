@@ -2,7 +2,7 @@
 (require 'lisp-extra-font-lock)
 
 
-;;; generic matchers
+;;; `pcase' powered matcher
 
 (defun sexp-font-lock-read-at-point ()
   "Parse the s-expression at the cursor position. Return a
@@ -119,29 +119,29 @@ supported (maybe `pcase' doesn't support it too?)."
           ('\` (list 'quote (list '\` (walker (cadr exp)))))
           (otherwise (list 'quote (walker exp)))))))
 
-(defmacro sexp-font-lock-match-at-point (&rest cases)
-  `(pcase
-       ,(list 'quote (sexp-font-lock-read-at-point))
-     ,@(mapcar
-        (lambda (case)
-          (list
-           (eval `(sexp-font-lock-translate-pattern ,(car case)))
-           (cond
-            ((and (listp (cadr case))
-                  (eq (caadr case) 'list))
-             (cons
-              'list
-              (mapcar (lambda (sym)
-                        (intern (concat
-                                 (symbol-name sym) "-meta-pos")))
-                      (cdadr case))))
-            ((symbolp (cadr case))
-             (intern (concat
-                      (symbol-name (cadr case)) "-meta-pos")))
-            (t (error "This macro is designed for extracting \
+(defun sexp-font-lock-match-at-point (cases)
+  (eval `(pcase
+             ,(list 'quote (sexp-font-lock-read-at-point))
+           ,@(mapcar
+              (lambda (case)
+                (list
+                 (eval `(sexp-font-lock-translate-pattern ,(car case)))
+                 (cond
+                  ((and (listp (cadr case))
+                        (eq (caadr case) 'list))
+                   (cons
+                    'list
+                    (mapcar (lambda (sym)
+                              (intern (concat
+                                       (symbol-name sym) "-meta-pos")))
+                            (cdadr case))))
+                  ((symbolp (cadr case))
+                   (intern (concat
+                            (symbol-name (cadr case)) "-meta-pos")))
+                  (t (error "This macro is designed for extracting \
 positional metadata, and not to be used as generic control \
 structure. Complex operations are not supported.")))))
-        cases)))
+              cases))))
 
 
 ;;; font-lock specific codes
@@ -186,7 +186,7 @@ structure. Complex operations are not supported.")))))
     (lambda (srpair)
       (or (progn
             (goto-char (cadr srpair))
-            (eval '(sexp-font-lock-match-at-point (`(,name ,type) (list name type)))))
+            (sexp-font-lock-match-at-point '((`(,name ,type) (list name type)))))
           (list (cdr srpair))))
     (car (sexp-font-lock-read-at-point)))
    limit))
@@ -197,7 +197,7 @@ structure. Complex operations are not supported.")))))
     (lambda (srpair)
       (or (progn
             (goto-char (cadr srpair))
-            (eval '(sexp-font-lock-match-at-point (`(,name . ,rest) (list name)))))
+            (sexp-font-lock-match-at-point '((`(,name . ,_) (list name)))))
           (list (cdr srpair))))
     (car (sexp-font-lock-read-at-point)))
    limit))
@@ -210,8 +210,7 @@ structure. Complex operations are not supported.")))))
               (goto-char (cadr srpair))
               (multiple-value-bind
                   (name args)
-                  (eval '(sexp-font-lock-match-at-point
-                          (`(,name ,args . ,_) (list name args))))
+                  (sexp-font-lock-match-at-point '((`(,name ,args . ,_) (list name args))))
                 (progn
                   (goto-char (car args))
                   (mapcar (lambda (var) (list name (cdr var)))
@@ -274,9 +273,9 @@ The keywords highlight variable bindings and quoted expressions."
         (1 lisp-extra-font-lock-quoted-face append)
         (2 lisp-extra-font-lock-backquote-face nil t)))
       ;; For function read syntax
-      ("#'\\("
-       symbol-regexp
-       "\\)\\_>"
+      (,(concat "#'\\("
+                symbol-regexp
+                "\\)\\_>")
        1 lisp-extra-font-lock-quoted-function-face)
 
       ;;
