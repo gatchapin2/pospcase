@@ -166,7 +166,7 @@ structure. Complex operations are not supported.")))))
         t)
     (set-match-data nil)))
 
-(defmacro sexp-font-lock-iterate (clause limit) ; for catching parsing error
+(defmacro sexp-font-lock-call-iterator (clause limit) ; for catching parsing error
   `(condition-case nil
        (when (or (< (point) limit) sexp-font-lock--matches)
          (unless sexp-font-lock--matches ; initialize
@@ -181,7 +181,7 @@ structure. Complex operations are not supported.")))))
       (goto-char ,limit))))
 
 (defun sexp-font-lock-match-varlist (limit)
-  (sexp-font-lock-iterate
+  (sexp-font-lock-call-iterator
    (mapcar
     (lambda (srpair)
       (or (progn
@@ -192,7 +192,7 @@ structure. Complex operations are not supported.")))))
    limit))
 
 (defun sexp-font-lock-match-varlist-cars (limit)
-  (sexp-font-lock-iterate
+  (sexp-font-lock-call-iterator
    (mapcar
     (lambda (srpair)
       (or (progn
@@ -203,7 +203,7 @@ structure. Complex operations are not supported.")))))
    limit))
 
 (defun sexp-font-lock-match-flet (limit)
-  (sexp-font-lock-iterate
+  (sexp-font-lock-call-iterator
    (cl-loop for srpair in (car (sexp-font-lock-read-at-point))
             append
             (progn
