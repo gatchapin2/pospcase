@@ -149,6 +149,18 @@ structure. Complex operations are not supported.")))))
 (defvar sexp-font-lock--matches nil)
 (defvar sexp-font-lock--anchor nil)
 
+(defun sexp-font-lock-reset ()
+  (setq sexp-font-lock--matches nil
+        sexp-font-lock--anchor nil))
+;; (advice-add #'font-lock-fontify-region :around (lambda (orig-func beg end &optional loudly)
+;;                                                  (sexp-font-lock-reset)
+;;                                                  (funcall orig-func beg end loudly)
+;;                                                  (sexp-font-lock-reset)))
+;; (advice-add #'font-lock-fontify-block :around (lambda (orig-func &optional arg)
+;;                                                 (sexp-font-lock-reset)
+;;                                                 (funcall orig-func arg)
+;;                                                 (sexp-font-lock-reset)))
+
 (defun sexp-font-lock-after-anchor (mlist)
   (cl-loop for list in mlist
            with temp
@@ -157,14 +169,16 @@ structure. Complex operations are not supported.")))))
                                   collect pair))
            when temp collect temp))
 
-(defun sexp-font-lock--iterator ()
+(defun sexp-font-lock--iterator (limit)
   (if sexp-font-lock--matches
       (let ((mlist (cl-loop for pair in (car sexp-font-lock--matches)
                             append (-cons-to-list pair))))
         (set-match-data (append '(nil nil) mlist))
         (setq sexp-font-lock--matches (cdr sexp-font-lock--matches))
         t)
-    (set-match-data nil)))
+    (goto-char limit)
+    (set-match-data nil)
+    nil))
 
 (defmacro sexp-font-lock-call-iterator (clause limit) ; for catching parsing error
   `(condition-case nil
@@ -174,9 +188,8 @@ structure. Complex operations are not supported.")))))
            (when sexp-font-lock--anchor
              (setq sexp-font-lock--matches (sexp-font-lock-after-anchor
                                             sexp-font-lock--matches)
-                   sexp-font-lock--anchor nil))
-           (goto-char ,limit)) ; whole parsing is already done, it's not crawler
-         (sexp-font-lock--iterator))
+                   sexp-font-lock--anchor nil)))
+         (sexp-font-lock--iterator ,limit))
      (error
       (goto-char ,limit))))
 
@@ -337,7 +350,8 @@ The keywords highlight variable bindings and quoted expressions."
         ;; Post-match form
         nil
         ;; Faces
-        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)))
 
       ;; For `flet'.
       (,(concat "("
@@ -353,7 +367,8 @@ The keywords highlight variable bindings and quoted expressions."
         ;; Post-match form
         nil
         ;; Faces
-        (1 font-lock-function-name-face)
+        (1 font-lock-function-name-face
+           nil t)
         (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2))
            nil t)))
 
@@ -371,7 +386,7 @@ The keywords highlight variable bindings and quoted expressions."
         ;; Post-match form
         nil
         ;; Faces
-        (2 font-lock-constant-face)))
+        (2 font-lock-constant-face nil t)))
 
       ;; For `defmethod'
       (,(concat "("
@@ -404,7 +419,8 @@ The keywords highlight variable bindings and quoted expressions."
         ;; Faces
         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
            nil t)
-        (2 font-lock-type-face nil t)))
+        (2 font-lock-type-face
+           nil t)))
 
       ;; For `defclass'
       (,(concat "("
@@ -424,7 +440,8 @@ The keywords highlight variable bindings and quoted expressions."
         ;; Post-match form
         nil
         ;; Faces
-        (1 font-lock-type-face nil t)))
+        (1 font-lock-type-face
+           nil t)))
 
       ;; For `defclass' slots
       (,(concat "("
@@ -448,7 +465,8 @@ The keywords highlight variable bindings and quoted expressions."
         ;; Post-match form
         nil
         ;; Faces
-        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)))
 
       ;; For `defstruct'.
       (,(concat "("
@@ -477,7 +495,8 @@ The keywords highlight variable bindings and quoted expressions."
         ;; Post-match form
         nil
         ;; Faces
-        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))))))
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t))))))
 
 
 (defvar sexp-font-lock--installed-keywords nil)

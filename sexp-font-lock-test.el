@@ -1,3 +1,6 @@
+(sexp-font-lock-match-at-point '((`(,name . ,_) name)))
+(foo bar baz)
+
 (and (sexp-font-lock-match-flat-list (scan-sexps (point) 1))
      (match-string 1))
 
@@ -15,13 +18,13 @@
 
 (setq sexp-font-lock--matches nil)
 
-(and (sexp-font-lock-match-varlist (scan-sexps (point) 1))
-     (match-string 1))
-
 (cl-loop with p = (scan-sexps (point) 1)
          while (sexp-font-lock-match-varlist p)
          collect (list (cons 'name (match-string-no-properties 1))
                        (cons 'type (or (match-string-no-properties 2) 'unknown))))
+
+(and (sexp-font-lock-match-varlist (scan-sexps (point) 1))
+     (match-string 1))
 
 ((foo bar) baz (quux meow))
 
@@ -41,7 +44,8 @@
 ;; (defun foo (bar baz &rest quux)
 ;;   body)
 
-(cl-flet ((foo (bar baz) quux))
+(flet ((foo (bar baz) quux)
+       (meow (woof) oink))
   body)
 
 (cl-symbol-macrolet ((foo bar))
