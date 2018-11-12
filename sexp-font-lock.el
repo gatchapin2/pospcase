@@ -235,11 +235,11 @@ structure. Complex operations are not supported.")))))
 
 (defun sexp-font-lock-match-destructuring (limit)
   (sexp-font-lock-call-iterator
-   (cl-labels ((walk (node) (if (symbolp (car node))
-                                (list (list (cdr node)))
-                              (cl-loop for child in (car node)
-                                       append (walk child)))))
-     (walk (sexp-font-lock-read-at-point)))
+   (cl-labels ((collect (node) (if (symbolp (car node))
+                                   (list (list (cdr node)))
+                                 (cl-loop for child in (car node)
+                                          append (collect child)))))
+     (collect (sexp-font-lock-read-at-point)))
    limit))
 
 (defun sexp-font-lock-keywords ()
@@ -501,11 +501,9 @@ The keywords highlight variable bindings and quoted expressions."
                     (forward-sexp)
                     (forward-comment (buffer-size)))
                   (setq sexp-font-lock--anchor (1- (point)))
-
                   ;; Search limit
                   (up-list)
                   (point))
-
               (error (end-of-defun)))))
         ;; Post-match form
         nil
@@ -515,16 +513,14 @@ The keywords highlight variable bindings and quoted expressions."
 
       ;; For `destructuring-bind'
       (,(concat "(\\(?:"
-               (regexp-opt
-                '("destructuring-bind"
-                  "cl-destructuring-bind"))
-               "\\|"
-               (concat "\\(?:cl-\\)?defmacro"
-                       space-regexp
-                       symbol-regexp)
-               "\\)"
-               space-regexp
-               "(")
+                "\\(?:cl-\\)?destructuring-bind"
+                "\\|"
+                (concat "\\(?:cl-\\|sb!xc:\\)?defmacro"
+                        space-regexp
+                        symbol-regexp)
+                "\\)"
+                space-regexp
+                "(")
        (sexp-font-lock-match-destructuring
         ;; Pre-match form
         (progn
