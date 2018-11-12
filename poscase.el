@@ -57,7 +57,7 @@ to collect every occurring symbol positions (actual code from
 Or let `poscase' use it indirectly like:
 
   (poscase (point-min)
-              '((`(defun ,name ,args . ,body) (list name args body))))
+           '((`(defun ,name ,args . ,body) (list name args body))))
 
 Which returns:
 
@@ -67,7 +67,7 @@ Which returns:
       (bar 24 . 27)
       (baz 34 . 37)      ; Note dot notation matches the rest of
       (((quux 43 . 47))  ; s-expression. You have to `cdr' to get
-       42 . 48))         ; positional metadata.
+       42 . 48))         ; positional metadata in this case.
      20 . 49)))"
   (cl-labels
       ((walk (limit)
