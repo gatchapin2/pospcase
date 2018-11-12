@@ -44,14 +44,14 @@
 ;; (defun foo (bar baz &rest quux)
 ;;   body)
 
-(flet ((foo (bar baz quux))
+(flet ((foo (bar baz) quux)
        (meow (woof) oink))
   body)
 
 (cl-symbol-macrolet ((foo bar))
   foo)
 
-(defun foo (bar (baz quux) (meow woof))
+(defun foo (bar (baz quux) meow woof)
   body)
 
 (sexp-font-lock-match-at-point (`(,foo ,bar . ,rest) bar))

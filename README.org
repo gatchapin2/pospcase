@@ -1,0 +1,5 @@
+#+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
+* Bugs
+** TODO ~let~ [0/1]
+   - State "TODO"       from              [2018-11-12 Mon 10:24]
+   - [ ] the last of varlist is entirely highlighted
