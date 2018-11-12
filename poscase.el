@@ -626,7 +626,7 @@ The keywords highlight variable bindings and quoted expressions."
   (set (make-local-variable 'font-lock-multiline) t)
   (when (local-variable-p 'poscase--installed-keywords)
     (font-lock-remove-keywords nil poscase--installed-keywords))
-  (let ((keywords (poscase-keywords)))
+  (let ((keywords (poscase-lisp-keywords)))
     (set (make-local-variable 'poscase--installed-keywords)
          keywords)
     (font-lock-add-keywords nil keywords 'append)))
