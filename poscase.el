@@ -201,7 +201,7 @@ supported (maybe `pcase' doesn't support it too?)."
                   ((symbolp (cadr case))
                    (intern (concat
                             (symbol-name (cadr case)) "-meta-pos")))
-                  (t (error "This macro is designed for extracting \
+                  (t (error "This function is designed for extracting \
 positional metadata, and not to be used as generic control \
 structure. Complex operations are not supported.")))))
               cases))))
