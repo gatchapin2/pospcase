@@ -56,8 +56,8 @@ to collect every occurring symbol positions (actual code from
 
 Or let `poscase' use it indirectly like:
 
-  (pp(poscase (point-min)
-              '((`(defun ,name ,args . ,body) (list name args body)))))
+  (poscase (point-min)
+              '((`(defun ,name ,args . ,body) (list name args body))))
 
 Which returns:
 
@@ -624,16 +624,16 @@ The keywords highlight variable bindings and quoted expressions."
 (defun poscase-add-lisp-keywords ()
   "Add extra font-lock keywords to lisp."
   (set (make-local-variable 'font-lock-multiline) t)
-  (when (local-variable-p 'poscase--installed-keywords)
-    (font-lock-remove-keywords nil poscase--installed-keywords))
+  (when (local-variable-p 'poscase--installed-lisp-keywords)
+    (font-lock-remove-keywords nil poscase--installed-lisp-keywords))
   (let ((keywords (poscase-lisp-keywords)))
-    (set (make-local-variable 'poscase--installed-keywords)
+    (set (make-local-variable 'poscase--installed-lisp-keywords)
          keywords)
     (font-lock-add-keywords nil keywords 'append)))
 
 (defun poscase-remove-lisp-keywords ()
   "Remove font-lock keywords for extra lisp highlithing."
-  (font-lock-remove-keywords nil poscase--installed-keywords))
+  (font-lock-remove-keywords nil poscase--installed-lisp-keywords))
 
 (defgroup poscase nil
   "Highlight bound variables and quoted expressions in lisp."
