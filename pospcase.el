@@ -55,21 +55,38 @@ to collect every occurring symbol positions (actual code from
    ((34 . 37))
    ((43 . 47)))
 
-Or let `pospcase' use it indirectly like:
+Or let `pospcase' or `pospcase-at' use it indirectly like:
 
-  (pospcase (point-min)
-           '((`(defun ,name ,args . ,body) (list name args body))))
+  (pospcase-at
+   (point-min)
+   '( ; quote and extra parenthesis are necessary because
+      ; `pospcase' and `pospcase-at' are functions, unlike `pcase'
+     (`(defun ,name ,args . ,body)
+      (list name args body))))
 
 Which returns:
 
-  ((8 . 11)              ; foo
-   (12 . 17)             ; (bar)
-   ((((if 21 . 23)       ; (if bar baz (quux))
+  ((8 . 11)             ; foo
+   (12 . 17)            ; (bar)
+   ((((if 21 . 23)      ; (if bar baz (quux))
       (bar 24 . 27)
-      (baz 34 . 37)      ; Note dot notation matches the rest of
-      (((quux 43 . 47))  ; s-expression. You have to `cdr' to get
-       42 . 48))         ; positional metadata in this case.
-     20 . 49)))"
+      (baz 34 . 37)     ; Note dot notation matches the rest of
+      (((quux 43 . 47)) ; s-expression. You have to `cdr' to get
+       42 . 48))        ; positional metadata in this case.
+     20 . 49)))
+
+You can reparse trees returned by `pospcase-read' or dot notation
+of `pospcase':
+
+(pospcase
+ (car ; dot notation returns with extra list wrap
+  (pospcase-at (point-min)
+               '((`(defun ,_ ,_ . ,temp) temp))))
+ '((`,body body)))
+
+which returns:
+
+(20 . 49)"
   (cl-labels
       ((walk (limit)
              (destructuring-bind (start sexp . lim)
@@ -182,10 +199,10 @@ by `pospcase-read'. Nested backquote is not supported (maybe
           ('\` (list 'quote (list '\` (walk (cadr exp)))))
           (otherwise (list 'quote (walk exp)))))))
 
-(defun pospcase (pos cases)
+(defun pospcase (exp cases)
   "`pcase'-variant for getting positional metadata."
   (eval `(pcase
-             ,(list 'quote (pospcase-read pos))
+             ,(list 'quote exp)
            ,@(mapcar
               (lambda (case)
                 (list
@@ -206,6 +223,10 @@ by `pospcase-read'. Nested backquote is not supported (maybe
 positional metadata, and not to be used as generic control \
 structure. Complex operations are not supported.")))))
               cases))))
+
+(defun pospcase-at (pos cases)
+  "`pospcase' at position POS of buffer."
+  (pospcase (pospcase-read pos) cases))
 
 
 ;;; font-lock specific codes
@@ -283,7 +304,7 @@ occurrence uncertainty in `defstruct'"
     (lambda (srpair)
       (or (progn
             (goto-char (cadr srpair))
-            (pospcase (point)
+            (pospcase-at (point)
                      '((`(,name ,type) (list name type)))))
           (list (cdr srpair))))
     (car (pospcase-read (point))))
@@ -297,7 +318,7 @@ length lists"
     (lambda (srpair)
       (or (progn
             (goto-char (cadr srpair))
-            (pospcase (point)
+            (pospcase-at (point)
                      '((`(,name . ,_) (list name)))))
           (list (cdr srpair))))
     (car (pospcase-read (point))))
@@ -312,7 +333,7 @@ length lists"
               (goto-char (cadr srpair))
               (multiple-value-bind
                   (name args)
-                  (pospcase (point)
+                  (pospcase-at (point)
                            '((`(,name ,args . ,_) (list name args))))
                 (progn
                   (goto-char (car args))
