@@ -78,11 +78,11 @@ Which returns:
 You can reparse trees returned by `pospcase-read' or dot notation
 of `pospcase':
 
-(pospcase
- (car ; dot notation returns with extra list wrap
-  (pospcase-at (point-min)
-               '((`(defun ,_ ,_ . ,temp) temp))))
- '((`,body body)))
+  (pospcase
+   (car ; dot notation returns with extra list wrap
+    (pospcase-at (point-min)
+                 '((`(defun ,_ ,_ . ,temp) temp))))
+   '((`,body body)))
 
 which returns:
 
