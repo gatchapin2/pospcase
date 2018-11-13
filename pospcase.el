@@ -334,7 +334,7 @@ length lists"
               (multiple-value-bind
                   (name args)
                   (pospcase-at (point)
-                           '((`(,name ,args . ,_) (list name args))))
+                           '((`(,name ,args . ,_) (values name args))))
                 (progn
                   (goto-char (car args))
                   (let ((mlist (car (pospcase-read (point)))))
