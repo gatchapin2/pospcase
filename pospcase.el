@@ -243,6 +243,9 @@ metadata. Structured like:
 (defvar pospcase--anchor nil
   "Integer used for discarding unnecessary positional data before it.")
 
+(defvar pospcase-match-beginning nil
+  "Place to store beginning of submatch 0 used by multiline font lock.")
+
 (defun pospcase-reset ()
   "Necessary for jit-lock?"
   (setq pospcase--matches nil
@@ -275,7 +278,9 @@ occurrence uncertainty in `defstruct'"
   (if pospcase--matches
       (let ((mlist (cl-loop for pair in (car pospcase--matches)
                             append (-cons-to-list pair))))
-        (set-match-data (append '(nil nil) mlist))
+        (set-match-data (append (list pospcase-match-beginning
+                                      limit)
+                                mlist))
         (setq pospcase--matches (cdr pospcase--matches))
         t)
     (goto-char limit)
@@ -352,6 +357,12 @@ length lists"
                                           append (collect child)))))
      (collect (pospcase-read (point))))
    limit))
+
+(defmacro pospcase-preform (&rest body)
+  "Multiline font lock use submatch 0 for jit fontification."
+  `(progn
+     (setq pospcase-match-beginning (match-beginning 0))
+     ,@body))
 
 (defun pospcase-lisp-keywords ()
   "Font-lock keywords used by `pospcase-lisp-mode'.
@@ -449,7 +460,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -466,7 +477,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -483,7 +494,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-flet
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -502,7 +513,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -536,7 +547,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -559,7 +570,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -584,7 +595,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "[ \t\n]*(")
        (pospcase-match-varlist-cars
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -600,7 +611,7 @@ The keywords highlight variable bindings and quoted expressions."
                 space-regexp)
        (pospcase-match-varlist-cars
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (match-beginning 0))
           (save-excursion
             (condition-case nil
@@ -634,7 +645,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-destructuring
         ;; Pre-match form
-        (progn
+        (pospcase-preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
