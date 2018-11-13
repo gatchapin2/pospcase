@@ -201,28 +201,38 @@ by `pospcase-read'. Nested backquote is not supported (maybe
 
 (defun pospcase (exp cases)
   "`pcase'-variant for getting positional metadata."
-  (eval `(pcase
-             ,(list 'quote exp)
-           ,@(mapcar
-              (lambda (case)
-                (list
-                 (eval `(pospcase-translate ,(car case)))
-                 (cond
-                  ((and (listp (cadr case))
-                        (eq (caadr case) 'list))
-                   (cons
-                    'list
-                    (mapcar (lambda (sym)
-                              (intern (concat
-                                       (symbol-name sym) "-meta-pos")))
-                            (cdadr case))))
-                  ((symbolp (cadr case))
-                   (intern (concat
-                            (symbol-name (cadr case)) "-meta-pos")))
-                  (t (error "This function is designed for extracting \
-positional metadata, and not to be used as generic control \
-structure. Complex operations are not supported.")))))
-              cases))))
+  (eval
+   `(pcase
+        ,(list 'quote exp)
+      ,@(mapcar
+         (lambda (case)
+           (list
+            (eval `(pospcase-translate ,(car case)))
+            (let ((symbols
+                   (cl-labels
+                       ((collect (node)
+                                 (cl-loop for child in node
+                                          if (listp child)
+                                          if (eq (car child) '\,)
+                                          collect (cadr child)
+                                          else
+                                          append (collect child))))
+                     (if (and
+                          (consp (car case))
+                          (eq (caar case) '\`))
+                         (collect (cadar case))
+                       nil))))
+              (cl-labels
+                  ((translate (node)
+                              (cond
+                               ((member node symbols)
+                                (intern (concat (symbol-name node) "-meta-pos")))
+                               ((consp node) (cons
+                                              (translate (car node))
+                                              (translate (cdr node))))
+                               (t node))))
+                (translate (cadr case))))))
+         cases))))
 
 (defun pospcase-at (pos cases)
   "`pospcase' at position POS of buffer."
@@ -307,11 +317,10 @@ occurrence uncertainty in `defstruct'"
   (pospcase-call-iterator
    (mapcar
     (lambda (srpair)
-      (or (progn
-            (goto-char (cadr srpair))
-            (pospcase-at (point)
-                     '((`(,name ,type) (list name type)))))
-          (list (cdr srpair))))
+      (goto-char (cadr srpair))
+      (pospcase-at (point)
+                   '((`(,name ,type) (list name type))
+                     (`,name (list name)))))
     (car (pospcase-read (point))))
    limit))
 
@@ -321,11 +330,10 @@ length lists"
   (pospcase-call-iterator
    (mapcar
     (lambda (srpair)
-      (or (progn
-            (goto-char (cadr srpair))
-            (pospcase-at (point)
-                     '((`(,name . ,_) (list name)))))
-          (list (cdr srpair))))
+      (goto-char (cadr srpair))
+      (pospcase-at (point)
+                   '((`(,name . ,_) (list name))
+                     (`,name (list name)))))
     (car (pospcase-read (point))))
    limit))
 
@@ -342,9 +350,14 @@ length lists"
                            '((`(,name ,args . ,_) (values name args))))
                 (progn
                   (goto-char (car args))
-                  (let ((mlist (car (pospcase-read (point)))))
-                    (if mlist
-                        (mapcar (lambda (var) (list name (cdr var))) mlist)
+                  (let ((arglist (car (pospcase-read (point)))))
+                    (if arglist
+                        (mapcar
+                         (lambda (exp)
+                           (list name
+                                 (pospcase exp '((`(,arg . ,_) arg)
+                                                 (`,arg arg)))))
+                         arglist)
                       (list (list name))))))))
    limit))
 
@@ -365,7 +378,7 @@ length lists"
      ,@body))
 
 (defun pospcase-lisp-keywords ()
-  "Font-lock keywords used by `pospcase-lisp-mode'.
+  "Font-lock keywords used by `pospcase-lisp-font-lock-mode'.
 The keywords highlight variable bindings and quoted expressions."
   (let ((symbol-regexp "\\(?:\\sw\\|\\s_\\)+")
         (space-regexp "[ \t\n]+"))
@@ -458,7 +471,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "\\)"
                 space-regexp
                 "(")
-       (pospcase-match-varlist
+       (pospcase-match-varlist-cars
         ;; Pre-match form
         (pospcase-preform
           (goto-char (1- (match-end 0)))
@@ -475,7 +488,7 @@ The keywords highlight variable bindings and quoted expressions."
                 (regexp-opt lisp-extra-font-lock-let-functions)
                 space-regexp
                 "(")
-       (pospcase-match-varlist
+       (pospcase-match-varlist-cars
         ;; Pre-match form
         (pospcase-preform
           (goto-char (1- (match-end 0)))
@@ -682,10 +695,10 @@ The keywords highlight variable bindings and quoted expressions."
   :group 'pospcase)
 
 ;;;###autoload
-(define-minor-mode pospcase-lisp-mode
+(define-minor-mode pospcase-lisp-font-lock-mode
   "Minor mode that highlights bound variables and quoted expressions in lisp."
   :group 'pospcase
-  (if pospcase-lisp-mode
+  (if pospcase-lisp-font-lock-mode
       (pospcase-add-lisp-keywords)
     (pospcase-remove-lisp-keywords))
   ;; As of Emacs 24.4, `font-lock-fontify-buffer' is not legal to
@@ -697,11 +710,11 @@ The keywords highlight variable bindings and quoted expressions."
         (font-lock-fontify-buffer)))))
 
 ;;;###autoload
-(define-global-minor-mode pospcase-global-lisp-mode
-  pospcase-lisp-mode
+(define-global-minor-mode pospcase-global-lisp-font-lock-mode
+  pospcase-lisp-font-lock-mode
   (lambda ()
     (when (apply 'derived-mode-p pospcase-lisp-modes)
-      (pospcase-lisp-mode 1)))
+      (pospcase-lisp-font-lock-mode 1)))
   :group 'pospcase)
 
 (provide 'pospcase)
