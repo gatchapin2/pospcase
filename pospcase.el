@@ -243,7 +243,7 @@ metadata. Structured like:
 (defvar pospcase--anchor nil
   "Integer used for discarding unnecessary positional data before it.")
 
-(defvar pospcase-match-beginning nil
+(defvar pospcase--match-beginning nil
   "Place to store beginning of submatch 0 used by multiline font lock.")
 
 (defun pospcase-reset ()
@@ -361,7 +361,7 @@ length lists"
 (defmacro pospcase-preform (&rest body)
   "Multiline font lock use submatch 0 for jit fontification."
   `(progn
-     (setq pospcase-match-beginning (match-beginning 0))
+     (setq pospcase--match-beginning (match-beginning 0))
      ,@body))
 
 (defun pospcase-lisp-keywords ()
