@@ -246,11 +246,6 @@ metadata. Structured like:
    ((start . end)   ; (match-string 1) of second (match-data)
     (start . end))) ; (match-string 2) of second (match-data)")
 
-(defvar pospcase--fence-start nil
-  "Integer used for discarding unnecessary positional data before it.")
-(defvar pospcase--fence-end nil
-  "Integer used for discarding unnecessary positional data after it.")
-
 (defvar pospcase--match-beginning nil
   "Place to store beginning of submatch 0 used by multiline font lock.")
 
@@ -264,19 +259,23 @@ metadata. Structured like:
   (pospcase--reset)
   (funcall orig-func beg end loudly)
   (pospcase--reset))
-(advice-add #'font-lock-fontify-region :around
-            #'pospcase-wrap-font-lock-fontify-region)
+(advice-add #'font-lock-fontify-region :around #'pospcase-wrap-font-lock-fontify-region)
+
 (defun pospcase-wrap-font-lock-fontify-block (orig-func &optional arg)
        (pospcase--reset)
        (funcall orig-func arg)
        (pospcase--reset))
-(advice-add #'font-lock-fontify-block :around
-            #'pospcase-wrap-font-lock-fontify-block)
+(advice-add #'font-lock-fontify-block :around #'pospcase-wrap-font-lock-fontify-block)
+
+(defvar pospcase--fence-start nil
+  "Integer used for discarding unnecessary positional data before it.")
+(defvar pospcase--fence-end nil
+  "Integer used for discarding unnecessary positional data after it.")
 
 (defun pospcase-fence (mlist)
-  "Discard every positional pair (start . end) occurring before
-`pospcase--fence-start' in the given list. Used to overcome docstring
-occurrence uncertainty in `defstruct'"
+  "Discard everything before `pospcase--fence-start' and after
+ `pospcase--fence-end' in MLIST. Made to overcome docstring
+ occurrence uncertainty in `defstruct'"
   (cl-loop for list in mlist
            with temp
            do (setq temp
