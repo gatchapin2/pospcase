@@ -208,22 +208,17 @@ by `pospcase-read'. Nested backquote is not supported (maybe
          (lambda (case)
            (list
             (eval `(pospcase-translate ,(car case)))
-            (let ((symbols
-                   (cl-labels
-                       ((collect (node)
-                                 (cl-loop for child in node
-                                          if (listp child)
-                                          if (eq (car child) '\,)
-                                          collect (cadr child)
-                                          else
-                                          append (collect child))))
-                     (if (and
-                          (consp (car case))
-                          (eq (caar case) '\`))
-                         (collect (cadar case))
-                       nil))))
+            (let (symbols)
               (cl-labels
-                  ((translate (node)
+                  ((collect (node)
+                            (cond
+                             ((and (listp node)
+                                   (eq (car node) '\,))
+                              (setq symbols (cons (cadr node) symbols)))
+                             ((consp node)
+                              (collect (car node))
+                              (collect (cdr node)))))
+                   (translate (node)
                               (cond
                                ((member node symbols)
                                 (intern (concat (symbol-name node) "-meta-pos")))
@@ -231,6 +226,7 @@ by `pospcase-read'. Nested backquote is not supported (maybe
                                               (translate (car node))
                                               (translate (cdr node))))
                                (t node))))
+                (collect (cadar case))
                 (translate (cadr case))))))
          cases))))
 
@@ -256,21 +252,21 @@ metadata. Structured like:
 (defvar pospcase--match-beginning nil
   "Place to store beginning of submatch 0 used by multiline font lock.")
 
-(defun pospcase-reset ()
+(defun pospcase--reset ()
   "Necessary for jit-lock?"
   (setq pospcase--matches nil
         pospcase--anchor nil))
 
 (advice-add #'font-lock-fontify-region :around
             (lambda (orig-func beg end &optional loudly)
-              (pospcase-reset)
+              (pospcase--reset)
               (funcall orig-func beg end loudly)
-              (pospcase-reset)))
+              (pospcase--reset)))
 (advice-add #'font-lock-fontify-block :around
             (lambda (orig-func &optional arg)
-              (pospcase-reset)
+              (pospcase--reset)
               (funcall orig-func arg)
-              (pospcase-reset)))
+              (pospcase--reset)))
 
 (defun pospcase-after-anchor (mlist)
   "Discard every positional pair (start . end) occurring before
@@ -288,7 +284,7 @@ occurrence uncertainty in `defstruct'"
   (if pospcase--matches
       (let ((mlist (cl-loop for pair in (car pospcase--matches)
                             append (-cons-to-list pair))))
-        (set-match-data (append (list pospcase-match-beginning
+        (set-match-data (append (list pospcase--match-beginning
                                       limit)
                                 mlist))
         (setq pospcase--matches (cdr pospcase--matches))
@@ -297,7 +293,7 @@ occurrence uncertainty in `defstruct'"
     (set-match-data nil)
     nil))
 
-(defmacro pospcase-call-iterator (clause limit)
+(defmacro pospcase--call-iterator (clause limit)
   "Catch parsing error, and call `pospcase--iterator'."
   `(condition-case nil
        (when (or (< (point) limit) pospcase--matches)
@@ -314,7 +310,7 @@ occurrence uncertainty in `defstruct'"
 
 (defun pospcase-match-varlist (limit)
   "Matcher iterator for a list of symbol or two length lists."
-  (pospcase-call-iterator
+  (pospcase--call-iterator
    (mapcar
     (lambda (srpair)
       (goto-char (cadr srpair))
@@ -327,7 +323,7 @@ occurrence uncertainty in `defstruct'"
 (defun pospcase-match-varlist-cars (limit)
   "Matcher iterator for the `car's of a list of two or longer
 length lists"
-  (pospcase-call-iterator
+  (pospcase--call-iterator
    (mapcar
     (lambda (srpair)
       (goto-char (cadr srpair))
@@ -339,7 +335,7 @@ length lists"
 
 (defun pospcase-match-flet (limit)
   "Matcher iterator for a list of `flet' bindings"
-  (pospcase-call-iterator
+  (pospcase--call-iterator
    (cl-loop for srpair in (car (pospcase-read (point)))
             append
             (progn
@@ -363,7 +359,7 @@ length lists"
 
 (defun pospcase-match-destructuring (limit)
   "Matcher iterator for symbols in an arbitrarily nested list."
-  (pospcase-call-iterator
+  (pospcase--call-iterator
    (cl-labels ((collect (node) (if (symbolp (car node))
                                    (list (list (cdr node)))
                                  (cl-loop for child in (car node)
@@ -371,7 +367,7 @@ length lists"
      (collect (pospcase-read (point))))
    limit))
 
-(defmacro pospcase-preform (&rest body)
+(defmacro pospcase--preform (&rest body)
   "Multiline font lock use submatch 0 for jit fontification."
   `(progn
      (setq pospcase--match-beginning (match-beginning 0))
@@ -473,7 +469,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist-cars
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -490,7 +486,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist-cars
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -507,7 +503,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-flet
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -526,7 +522,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -560,7 +556,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -583,7 +579,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-varlist
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -608,7 +604,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "[ \t\n]*(")
        (pospcase-match-varlist-cars
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -624,7 +620,7 @@ The keywords highlight variable bindings and quoted expressions."
                 space-regexp)
        (pospcase-match-varlist-cars
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (match-beginning 0))
           (save-excursion
             (condition-case nil
@@ -658,7 +654,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "(")
        (pospcase-match-destructuring
         ;; Pre-match form
-        (pospcase-preform
+        (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
           (ignore-errors (scan-sexps (point) 1)))
@@ -685,7 +681,7 @@ The keywords highlight variable bindings and quoted expressions."
   (font-lock-remove-keywords nil pospcase--installed-lisp-keywords))
 
 (defgroup pospcase nil
-  "Highlight bound variables and quoted expressions in lisp."
+  "`pcase' powered font lock."
   :group 'faces)
 
 ;;;###autoload
