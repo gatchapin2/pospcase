@@ -393,8 +393,7 @@ length lists"
 (defun pospcase-match-destructuring (limit)
   "Matcher iterator for symbols in an arbitrarily nested list."
   (pospcase--call-iterator
-   (cl-labels ()
-     (pospcase-collect-all-symbols (pospcase-read (point))))
+   (pospcase-collect-all-symbols (pospcase-read (point)))
    limit))
 
 (defun pospcase-match-macrolet (limit)
@@ -412,7 +411,7 @@ length lists"
                   (goto-char (car args))
                   (let ((arglist (pospcase-read (point))))
                     (if (car arglist)
-                        (mapcar (lambda (arg) (list name arg))
+                        (mapcar (lambda (arg) (cons name arg))
                                 (pospcase-collect-all-symbols arglist))
                       (list (list name))))))))
    limit))

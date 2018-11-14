@@ -266,8 +266,10 @@ foo
 ;;; pospcase-math-macrolet
 
 (macrolet ((foo (bar (&optional (bzzt eek)) ouch) baz)
-           (quux ((meow woof) oink) quaak))
+           (quux ((meow woof) oink) quaak)
+           ())
   body)
 
 (pospcase-match-macrolet nil)
 ((foo (bar (baz) &key (qux (quux)))))
+
