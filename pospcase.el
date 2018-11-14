@@ -492,7 +492,7 @@ The keywords highlight variable bindings and quoted expressions."
       ;; `pcase' powered
       ;;
 
-      ;; For `defun', `lambda', and `let'
+      ;; For `defun', `lambda', `let', `defclass' slots
       (,(concat "("
                 "\\(?:"
                 "\\(?:"
@@ -514,6 +514,18 @@ The keywords highlight variable bindings and quoted expressions."
                 (regexp-opt lisp-extra-font-lock-lambda-functions)
                 "\\|"
                 (regexp-opt lisp-extra-font-lock-let-functions)
+                "\\|"
+                (regexp-opt lisp-extra-font-lock-defclass-functions)
+                space-regexp
+                "\\_<"
+                symbol-regexp
+                "\\_>"
+                space-regexp
+                "("
+                "[^)]*"
+                ")" ; Reason some people write comment here is `defclass' has no docstring.
+                "\\(?:[ \t\n]*;[^\n]*\n\\)*" ; Needs font-lock-fontify-block to work properly?
+                "[ \t\n]*"
                 "\\)"
                 space-regexp
                 "(")
@@ -527,6 +539,27 @@ The keywords highlight variable bindings and quoted expressions."
         nil
         ;; Faces
         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)))
+
+      ;; For `defclass'
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-defclass-functions)
+                space-regexp
+                "\\_<"
+                symbol-regexp
+                "\\_>"
+                space-regexp
+                "(")
+       (pospcase-match-varlist-cars
+        ;; Pre-match form
+        (pospcase--preform
+          (goto-char (1- (match-end 0)))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 font-lock-type-face
            nil t)))
 
       ;; For `flet'.
@@ -599,52 +632,6 @@ The keywords highlight variable bindings and quoted expressions."
         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
            nil t)
         (2 font-lock-type-face
-           nil t)))
-
-      ;; For `defclass'
-      (,(concat "("
-                (regexp-opt lisp-extra-font-lock-defclass-functions)
-                space-regexp
-                "\\_<"
-                symbol-regexp
-                "\\_>"
-                space-regexp
-                "(")
-       (pospcase-match-varlist-cars
-        ;; Pre-match form
-        (pospcase--preform
-          (goto-char (1- (match-end 0)))
-          ;; Search limit
-          (ignore-errors (scan-sexps (point) 1)))
-        ;; Post-match form
-        nil
-        ;; Faces
-        (1 font-lock-type-face
-           nil t)))
-
-      ;; For `defclass' slots
-      (,(concat "("
-                (regexp-opt lisp-extra-font-lock-defclass-functions)
-                space-regexp
-                "\\_<"
-                symbol-regexp
-                "\\_>"
-                space-regexp
-                "("
-                "[^)]*"
-                ")" ; Reason some people write comment here is `defclass' has no docstring.
-                "\\(?:[ \t\n]*;[^\n]*\n\\)*" ; Needs font-lock-fontify-block to work properly?
-                "[ \t\n]*(")
-       (pospcase-match-varlist-cars
-        ;; Pre-match form
-        (pospcase--preform
-          (goto-char (1- (match-end 0)))
-          ;; Search limit
-          (ignore-errors (scan-sexps (point) 1)))
-        ;; Post-match form
-        nil
-        ;; Faces
-        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
            nil t)))
 
       ;; For `defstruct'
