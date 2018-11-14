@@ -492,7 +492,7 @@ The keywords highlight variable bindings and quoted expressions."
       ;; `pcase' powered
       ;;
 
-      ;; For `defun' and `lambda'
+      ;; For `defun', `lambda', and `let'
       (,(concat "("
                 "\\(?:"
                 "\\(?:"
@@ -512,24 +512,9 @@ The keywords highlight variable bindings and quoted expressions."
                 "\\)"
                 "\\|"
                 (regexp-opt lisp-extra-font-lock-lambda-functions)
-                "\\)"
-                space-regexp
-                "(")
-       (pospcase-match-varlist-cars
-        ;; Pre-match form
-        (pospcase--preform
-          (goto-char (1- (match-end 0)))
-          ;; Search limit
-          (ignore-errors (scan-sexps (point) 1)))
-        ;; Post-match form
-        nil
-        ;; Faces
-        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
-           nil t)))
-
-      ;; For `let'.
-      (,(concat "("
+                "\\|"
                 (regexp-opt lisp-extra-font-lock-let-functions)
+                "\\)"
                 space-regexp
                 "(")
        (pospcase-match-varlist-cars

@@ -273,3 +273,17 @@ foo
 (pospcase-match-macrolet nil)
 ((foo (bar (baz) &key (qux (quux)))))
 
+
+;;; DSL
+
+(pospcase-register `(defun ,name ,(varlist arg) . ,_)
+                   (name . 'font-lock-function-name-face)
+                   (arg . 'font-lock-variable-name-face))
+
+(pospcase-register `(defmacro ,name ,(destruct arg) . ,_)
+                   (name . 'font-lock-function-name-face)
+                   (arg . 'font-lock-variable-name-face))
+
+(pospcase-register `(flet ,name ,(destruct arg) . ,_)
+                   (name . 'font-lock-function-name-face)
+                   (arg . 'font-lock-variable-name-face))
