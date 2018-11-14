@@ -222,6 +222,9 @@ foo
 
 ;;; pospcase-match-destructuring
 
+(pospcase-match-destructuring (scan-sexps (point) 1))
+(foo (bar baz))
+
 (and (pospcase-match-destructuring (scan-sexps (point) 1))
      (match-data)
      (match-string-no-properties 1))
@@ -258,10 +261,11 @@ foo
     '(foo)
   (list foo bar))
 
+(defmacro foo (bar (&optional (bzzt eek)) ouch) baz)
 
 ;;; pospcase-math-macrolet
 
-(macrolet ((foo (bar &optional (bzzt eek)) baz)
+(macrolet ((foo (bar (&optional (bzzt eek)) ouch) baz)
            (quux ((meow woof) oink) quaak))
   body)
 
