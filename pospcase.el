@@ -331,6 +331,19 @@ occurrence uncertainty in `defstruct'"
     (car (pospcase-read (point))))
    limit))
 
+(defun pospcase-match-key (limit)
+  "Matcher iterator for a list of symbol or two or three length lists."
+  (pospcase--call-iterator
+   (mapcar
+    (lambda (srpair)
+      (goto-char (cadr srpair))
+      (pospcase-at (point)
+                   '((`(,name ,init ,sup) (list name init sup))
+                     (`(,name ,init) (list name init))
+                     (`,name (list name)))))
+    (car (pospcase-read (point))))
+   limit))
+
 (defun pospcase-match-varlist-cars (limit)
   "Matcher iterator for the `car's of a list of two or longer
 length lists"
@@ -394,12 +407,6 @@ length lists"
                                '((`(,name ,args . ,_) (values name args))))
                 (progn
                   (goto-char (car args))
-                  (save-excursion
-                    (and
-                     (re-search-forward
-                      (funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
-                      limit t)
-                     (setq pospcase--fence-end (match-beginning 0))))
                   (cl-labels ((collect (node) (if (symbolp (car node))
                                                   (list (cdr node))
                                                 (cl-loop for child in (car node)
@@ -689,7 +696,7 @@ The keywords highlight variable bindings and quoted expressions."
 
       ;; For `&key'
       (,(funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
-       (pospcase-match-varlist-cars
+       (pospcase-match-key
         ;; Pre-match form
         (pospcase--preform
          (setq pospcase--fence-start (match-end 0))
@@ -702,6 +709,10 @@ The keywords highlight variable bindings and quoted expressions."
         nil
         ;; Faces
         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)
+        (2 'default
+           nil t)
+        (3 'default
            nil t)))
 
       ;; For `destructuring-bind'
@@ -719,14 +730,7 @@ The keywords highlight variable bindings and quoted expressions."
         (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
-          (let ((limit (ignore-errors (scan-sexps (point) 1))))
-            (save-excursion
-              (and
-               (re-search-forward
-                (funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
-                limit t)
-               (setq pospcase--fence-end (match-beginning 0))))
-            limit))
+          (ignore-errors (scan-sexps (point) 1)))
         ;; Post-match form
         nil
         ;; Faces
