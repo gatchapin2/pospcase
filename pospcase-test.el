@@ -46,6 +46,13 @@
                  (t node))))
   (translate (cadr '(`,name (list name))))))
 
+(pp (pospcase-translate `(,foo)))
+
+(pcase 1 (`,(pred integerp) t))
+(pp (pospcase-translate `,(pred integerp)))
+
+(pospcase-at (point) '((`,(pred integerp) t)))
+1
 
 ;;; pospcase-match-flat-list
 
@@ -222,5 +229,41 @@ foo
 (destructuring-bind (((foo auto-mode-alist))) '((baz) quux)
   (list foo bar))
 
-(defmacro foo (bar (baz quux) &body meow)
+(defmacro foo (bar (baz quux) &key (woof oink) &body meow)
   `,body)
+
+(let ((limit (ignore-errors (scan-sexps (point) 1))))
+  (goto-char
+   (or
+    (and
+     (save-excursion
+       (re-search-forward
+        (funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
+        limit t))
+     (match-beginning 0))
+    limit)))
+
+(cl-labels ((collect (node) (if (symbolp (car node))
+                                (list (list (cdr node)))
+                              (cl-loop for child in (car node)
+                                       unless (and
+                                               (consp (car child))
+                                               (member (caar child) '(quote \`)))
+                                       append (collect child)))))
+  (collect (pospcase-read (point))))
+
+(foo 'bar)
+
+(destructuring-bind (foo &optional (bar 'baz))
+    '(foo)
+  (list foo bar))
+
+
+;;; pospcase-math-macrolet
+
+(macrolet ((foo (bar &optional (bzzt eek)) baz)
+           (quux ((meow woof) oink) quaak))
+  body)
+
+(pospcase-match-macrolet nil)
+((foo (bar (baz) &key (qux (quux)))))

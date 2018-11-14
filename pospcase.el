@@ -47,7 +47,7 @@ You can directly use it like:
                            append (collect child)))))
     (collect (pospcase-read (point-min))))
 
-to collect every occurring symbol positions (actual code from
+to collect every occurring symbol positions (simplified version of
 `pospcase-match-destructuring'):
 
   (((2 . 7)) ((8 . 11)) ((13 . 16))
@@ -246,8 +246,10 @@ metadata. Structured like:
    ((start . end)   ; (match-string 1) of second (match-data)
     (start . end))) ; (match-string 2) of second (match-data)")
 
-(defvar pospcase--anchor nil
+(defvar pospcase--fence-start nil
   "Integer used for discarding unnecessary positional data before it.")
+(defvar pospcase--fence-end nil
+  "Integer used for discarding unnecessary positional data after it.")
 
 (defvar pospcase--match-beginning nil
   "Place to store beginning of submatch 0 used by multiline font lock.")
@@ -255,28 +257,38 @@ metadata. Structured like:
 (defun pospcase--reset ()
   "Necessary for jit-lock?"
   (setq pospcase--matches nil
-        pospcase--anchor nil))
+        pospcase--fence-start nil
+        pospcase--fence-end nil))
 
+(defun pospcase-wrap-font-lock-fontify-region (orig-func beg end &optional loudly)
+  (pospcase--reset)
+  (funcall orig-func beg end loudly)
+  (pospcase--reset))
 (advice-add #'font-lock-fontify-region :around
-            (lambda (orig-func beg end &optional loudly)
-              (pospcase--reset)
-              (funcall orig-func beg end loudly)
-              (pospcase--reset)))
+            #'pospcase-wrap-font-lock-fontify-region)
+(defun pospcase-wrap-font-lock-fontify-block (orig-func &optional arg)
+       (pospcase--reset)
+       (funcall orig-func arg)
+       (pospcase--reset))
 (advice-add #'font-lock-fontify-block :around
-            (lambda (orig-func &optional arg)
-              (pospcase--reset)
-              (funcall orig-func arg)
-              (pospcase--reset)))
+            #'pospcase-wrap-font-lock-fontify-block)
 
-(defun pospcase-after-anchor (mlist)
+(defun pospcase-fence (mlist)
   "Discard every positional pair (start . end) occurring before
-`pospcase--anchor' in the given list. Used to overcome docstring
+`pospcase--fence-start' in the given list. Used to overcome docstring
 occurrence uncertainty in `defstruct'"
   (cl-loop for list in mlist
            with temp
-           do (setq temp (cl-loop for pair in list
-                                  when (<= pospcase--anchor (car pair))
-                                  collect pair))
+           do (setq temp
+                    (cl-loop for pair in list
+                             when (and
+                                   (if pospcase--fence-start
+                                       (<= pospcase--fence-start (car pair))
+                                     t)
+                                   (if pospcase--fence-end
+                                       (>= pospcase--fence-end (cdr pair))
+                                     t))
+                             collect pair))
            when temp collect temp))
 
 (defun pospcase--iterator (limit)
@@ -299,10 +311,9 @@ occurrence uncertainty in `defstruct'"
        (when (or (< (point) limit) pospcase--matches)
          (unless pospcase--matches ; initialize
            (setq pospcase--matches ,clause)
-           (when pospcase--anchor
-             (setq pospcase--matches (pospcase-after-anchor
-                                            pospcase--matches)
-                   pospcase--anchor nil)))
+           (when (or pospcase--fence-start pospcase--fence-end)
+             (setq pospcase--matches (pospcase-fence pospcase--matches)
+                   pospcase--fence-start nil)))
           (goto-char (1- ,limit)) ; whole parsing is already done, no crawling
          (pospcase--iterator ,limit))
      (error
@@ -363,8 +374,42 @@ length lists"
    (cl-labels ((collect (node) (if (symbolp (car node))
                                    (list (list (cdr node)))
                                  (cl-loop for child in (car node)
+                                          unless (and
+                                                  (consp (car child))
+                                                  (member (caar child) '(quote \`)))
                                           append (collect child)))))
      (collect (pospcase-read (point))))
+   limit))
+
+(defun pospcase-match-macrolet (limit)
+  "Matcher iterator for a lit of `macrolet' bindings"
+  (pospcase--call-iterator
+   (cl-loop for srpair in (car (pospcase-read (point)))
+            append
+            (progn
+              (goto-char (cadr srpair))
+              (multiple-value-bind
+                  (name args)
+                  (pospcase-at (point)
+                               '((`(,name ,args . ,_) (values name args))))
+                (progn
+                  (goto-char (car args))
+                  (save-excursion
+                    (and
+                     (re-search-forward
+                      (funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
+                      limit t)
+                     (setq pospcase--fence-end (match-beginning 0))))
+                  (cl-labels ((collect (node) (if (symbolp (car node))
+                                                  (list (cdr node))
+                                                (cl-loop for child in (car node)
+                                                         append (collect child)))))
+                    (let ((symbols (collect (pospcase-read (point)))))
+                      (when pospcase--fence-end
+                        (setq symbols (car (pospcase-fence (list symbols)))
+                              pospcase--fence-end nil))
+                      (mapcar (lambda (arg) (list name arg))
+                              symbols)))))))
    limit))
 
 (defmacro pospcase--preform (&rest body)
@@ -577,7 +622,7 @@ The keywords highlight variable bindings and quoted expressions."
                 "\\_>"
                 space-regexp
                 "(")
-       (pospcase-match-varlist
+       (pospcase-match-varlist-cars
         ;; Pre-match form
         (pospcase--preform
           (goto-char (1- (match-end 0)))
@@ -631,11 +676,28 @@ The keywords highlight variable bindings and quoted expressions."
                   (when (= (following-char) ?\") ; skip docstring
                     (forward-sexp)
                     (forward-comment (buffer-size)))
-                  (setq pospcase--anchor (1- (point)))
+                  (setq pospcase--fence-start (1- (point)))
                   ;; Search limit
                   (up-list)
                   (point))
               (error (end-of-defun)))))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)))
+
+      ;; For `&key'
+      (,(funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
+       (pospcase-match-varlist-cars
+        ;; Pre-match form
+        (pospcase--preform
+         (setq pospcase--fence-start (match-end 0))
+         (condition-case nil
+             (backward-up-list)
+           (error (match-beginning 0)))
+         ;; Search limit
+         (ignore-errors (scan-sexps (point 1))))
         ;; Post-match form
         nil
         ;; Faces
@@ -657,11 +719,37 @@ The keywords highlight variable bindings and quoted expressions."
         (pospcase--preform
           (goto-char (1- (match-end 0)))
           ;; Search limit
-          (ignore-errors (scan-sexps (point) 1)))
+          (let ((limit (ignore-errors (scan-sexps (point) 1))))
+            (save-excursion
+              (and
+               (re-search-forward
+                (funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
+                limit t)
+               (setq pospcase--fence-end (match-beginning 0))))
+            limit))
         ;; Post-match form
         nil
         ;; Faces
         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           nil t)))
+
+      ;; For `macrolet'
+      (,(concat "("
+                (regexp-opt lisp-extra-font-lock-macrolet-functions)
+                space-regexp
+                "(")
+       (pospcase-match-macrolet
+        ;; Pre-match form
+        (pospcase--preform
+         (goto-char (1- (match-end 0)))
+         ;; Search limit
+         (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        nil
+        ;; Faces
+        (1 font-lock-function-name-face
+           nil t)
+        (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2))
            nil t))))))
 
 (defvar pospcase--installed-lisp-keywords nil)
