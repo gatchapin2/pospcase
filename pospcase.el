@@ -410,12 +410,11 @@ length lists"
                                '((`(,name ,args . ,_) (values name args))))
                 (progn
                   (goto-char (car args))
-                  (let ((symbols (pospcase-collect-all-symbols (pospcase-read (point)))))
-                    (when pospcase--fence-end
-                      (setq symbols (car (pospcase-fence (list symbols)))
-                            pospcase--fence-end nil))
-                    (mapcar (lambda (arg) (list name arg))
-                            symbols))))))
+                  (let ((arglist (pospcase-read (point))))
+                    (if (car arglist)
+                        (mapcar (lambda (arg) (list name arg))
+                                (pospcase-collect-all-symbols arglist))
+                      (list (list name))))))))
    limit))
 
 (defmacro pospcase--preform (&rest body)
