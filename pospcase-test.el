@@ -286,6 +286,19 @@ foo
                     (name . 'font-lock-function-name-face)
                     (arg . 'font-lock-variable-name-face))
 
+`(,(concat "(defun" space+)
+  (pospcase-match-varlist-ncars
+   (pospcase--preform
+    (multiple-value-bind
+        (name varlist-cars) (pospcase-at (match-beginning 0)
+                                         '((`(defun ,name ,varlist-cars . ,_)
+                                            (values name varlist-cars))))
+      (setq pospcase--match-data-1 name)
+      (goto-char (car varlist-cars))
+      (cdr varlist-cars)))
+   nil
+   (1 'font-lock-function-name-face nil t)
+   (2 'font-lock-variable-name-face nil t)))
 
 (pospcase-font-lock lisp-mode
                     `(defun (setf ,name) `(varlist-cars ,arg) . ,_)

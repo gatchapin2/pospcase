@@ -43,8 +43,8 @@
     (pospcase-global-lisp-font-lock-mode 1)
   #+END_SRC
 
-  If you have another reason to get positions of S-expression is a
-  buffer, you can use ~pospcase-at~ like:
+  If you have some reason to get positions of S-expression in a
+  buffer, you can use ~pospcase-at~ like this:
 
   #+BEGIN_SRC emacs-lisp
     (pospcase-at (point-min) '((`,exp exp)))
@@ -53,5 +53,4 @@
   #+RESULTS:
   : (1 . 41)
 
-  More detailed technical explanation can be found in ~pospcase-read~
-  docstring.
+  More detailed explanation can be found in ~pospcase-read~ docstring.

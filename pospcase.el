@@ -249,24 +249,6 @@ metadata. Structured like:
 (defvar pospcase--match-beginning nil
   "Place to store beginning of submatch 0 used by multiline font lock.")
 
-(defun pospcase--reset ()
-  "Necessary for jit-lock?"
-  (setq pospcase--matches nil
-        pospcase--fence-start nil
-        pospcase--fence-end nil))
-
-(defun pospcase-wrap-font-lock-fontify-region (orig-func beg end &optional loudly)
-  (pospcase--reset)
-  (funcall orig-func beg end loudly)
-  (pospcase--reset))
-(advice-add #'font-lock-fontify-region :around #'pospcase-wrap-font-lock-fontify-region)
-
-(defun pospcase-wrap-font-lock-fontify-block (orig-func &optional arg)
-       (pospcase--reset)
-       (funcall orig-func arg)
-       (pospcase--reset))
-(advice-add #'font-lock-fontify-block :around #'pospcase-wrap-font-lock-fontify-block)
-
 (defvar pospcase--fence-start nil
   "Integer used for discarding unnecessary positional data before it.")
 (defvar pospcase--fence-end nil
@@ -421,6 +403,14 @@ length lists"
      (setq pospcase--match-beginning (match-beginning 0))
      ,@body))
 
+(defmacro pospcase--postform (&rest body)
+  "Necessary for jit-lock?"
+  `(progn
+     (setq pospcase--matches nil
+           pospcase--fence-start nil
+           pospcase--fence-end nil)
+     ,@body))
+
 (defun pospcase-lisp-keywords ()
   "Font-lock keywords used by `pospcase-lisp-font-lock-mode'.
 The keywords highlight variable bindings and quoted expressions."
@@ -532,13 +522,11 @@ The keywords highlight variable bindings and quoted expressions."
            space+
            "(")
          (pospcase-match-varlist-cars
-          ;; Pre-match form
           (pospcase--preform
            (goto-char (1- (match-end 0)))
            ;; Search limit
            (ignore-errors (scan-sexps (point) 1)))
-          ;; Post-match form
-          nil
+          (pospcase--postform)
           ;; Faces
           (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
              nil t)))
@@ -551,13 +539,11 @@ The keywords highlight variable bindings and quoted expressions."
                   space+
                   "(")
          (pospcase-match-varlist-cars
-          ;; Pre-match form
           (pospcase--preform
            (goto-char (1- (match-end 0)))
            ;; Search limit
            (ignore-errors (scan-sexps (point) 1)))
-          ;; Post-match form
-          nil
+          (pospcase--postform)
           ;; Faces
           (1 font-lock-type-face
              nil t)))
@@ -568,13 +554,11 @@ The keywords highlight variable bindings and quoted expressions."
                   space+
                   "(")
          (pospcase-match-flet
-          ;; Pre-match form
           (pospcase--preform
            (goto-char (1- (match-end 0)))
            ;; Search limit
            (ignore-errors (scan-sexps (point) 1)))
-          ;; Post-match form
-          nil
+          (pospcase--postform)
           ;; Faces
           (1 font-lock-function-name-face
              nil t)
@@ -587,13 +571,11 @@ The keywords highlight variable bindings and quoted expressions."
                   space+
                   "(")
          (pospcase-match-varlist
-          ;; Pre-match form
           (pospcase--preform
            (goto-char (1- (match-end 0)))
            ;; Search limit
            (ignore-errors (scan-sexps (point) 1)))
-          ;; Post-match form
-          nil
+          (pospcase--postform)
           ;; Faces
           (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
              nil t)
@@ -616,13 +598,11 @@ The keywords highlight variable bindings and quoted expressions."
                    space*
                    "("))
          (pospcase-match-varlist
-          ;; Pre-match form
           (pospcase--preform
            (goto-char (1- (match-end 0)))
            ;; Search limit
            (ignore-errors (scan-sexps (point) 1)))
-          ;; Post-match form
-          nil
+          (pospcase--postform)
           ;; Faces
           (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
              nil t)
@@ -634,7 +614,6 @@ The keywords highlight variable bindings and quoted expressions."
                    "\\(?:cl-\\)?defstruct"
                    space+)
           (pospcase-match-varlist-cars
-           ;; Pre-match form
            (pospcase--preform
             (goto-char (match-beginning 0))
             (save-excursion
@@ -651,8 +630,7 @@ The keywords highlight variable bindings and quoted expressions."
                     (up-list)
                     (point))
                 (error (end-of-defun)))))
-           ;; Post-match form
-           nil
+           (pospcase--postform)
            ;; Faces
            (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
               nil t)))
@@ -660,7 +638,6 @@ The keywords highlight variable bindings and quoted expressions."
          ;; For `&key'
          (,(funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
           (pospcase-match-key
-           ;; Pre-match form
            (pospcase--preform
             (setq pospcase--fence-start (match-end 0))
             (condition-case nil
@@ -668,8 +645,7 @@ The keywords highlight variable bindings and quoted expressions."
               (error (match-beginning 0)))
             ;; Search limit
             (ignore-errors (scan-sexps (point 1))))
-           ;; Post-match form
-           nil
+           (pospcase--postform)
            ;; Faces
            (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
               nil t)
@@ -687,13 +663,11 @@ The keywords highlight variable bindings and quoted expressions."
                    space+
                    "(")
           (pospcase-match-destructuring
-           ;; Pre-match form
            (pospcase--preform
             (goto-char (1- (match-end 0)))
             ;; Search limit
             (ignore-errors (scan-sexps (point) 1)))
-           ;; Post-match form
-           nil
+           (pospcase--postform)
            ;; Faces
            (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
               nil t)))
@@ -704,13 +678,11 @@ The keywords highlight variable bindings and quoted expressions."
                    space+
                    "(")
           (pospcase-match-macrolet
-           ;; Pre-match form
            (pospcase--preform
             (goto-char (1- (match-end 0)))
             ;; Search limit
             (ignore-errors (scan-sexps (point) 1)))
-           ;; Post-match form
-           nil
+           (pospcase--postform)
            ;; Faces
            (1 font-lock-function-name-face
               nil t)
