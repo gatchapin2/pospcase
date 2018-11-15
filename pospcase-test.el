@@ -130,7 +130,7 @@ foo
   body)
 
 (defun foo (bar baz &rest quux)
-  body
+  body)
 
 (pospcase-after-anchor pospcase--matches)
 (setq pospcase--matches '(((1 . 2)
@@ -273,96 +273,145 @@ foo
 (pospcase-match-macrolet nil)
 ((foo (bar (baz) &key (qux (quux)))))
 
+(pospcase-collect-all-symbols
+ (pospcase-read (point)))
+(funfun (setf ,name) ,varlist-cars . ,_)
+(funfun foo (bar baz &rest quux) body)
+
+(destructuring-bind (head . tail) '(foo bar . baz)
+  (list head tail))
+
+(cl-labels
+    ((collect (node)
+              (cl-loop with result
+                       for temp = node then (cdr temp)
+                       if (null temp) return result
+                       else if (atom temp) return (append result (list temp))
+                       else do (setq result
+                                     (append result
+                                             (collect (car temp)))))))
+  (collect '((foo (bar baz)) quux)))
+
+(cl-labels
+    ((pos-p (pair)
+                (numberp (car pair))
+                (numberp (cdr pair)))
+     (leaf-p (node)
+             (and (symbolp (car node))
+                  (pos-p (cdr node))))
+     (collect (node)
+              (cl-loop with result
+                       for temp = node then (cdr temp)
+                       if (or (null temp)
+                              (pos-p temp)) return result
+                       else if (leaf-p temp) return (append
+                                                     result
+                                                     (list (list (cdr temp))))
+                       else do (setq result (append result (collect (car temp)))))))
+  (collect ))
 
 ;;; DSL
+
+#'pospcase-font-lock
+#'pospcase-font-unlock
+
+;; scratch
+
+(keywordp :before)
+(keywordp '&optional)
+(pcase '(defmethod foo () :before body)
+  (`(defmethod ,name ,args ,(pred keywordp) . ,_)
+   (list name args)))
+
+(pospcase-at (point)
+  '((`(defmethod ,name ,args ,(pred keywordp) . ,_)
+     (list name args))))
+(defmethod foo () :before body)
 
 (pcase '((foo)) (`(,`(,bar)) bar))
 (pcase '((foo)) (`,(bar) bar))
 (let ((bar 123)) `,`(,bar))
 (pospcase-translate `,`(,bar))
 
+
+;; workables
+
 (pospcase-font-lock lisp-mode
-                    `(defun ,name `(varlist-cars ,arg) . ,_)
+                    (`(defun (setf ,name) `(varlist-cars ,arg) . ,_)
+                     `(defun ,name `(varlist-cars ,arg) . ,_))
                     (name . 'font-lock-function-name-face)
                     (arg . 'font-lock-variable-name-face))
 
-`(,(concat "(defun" space+)
-  (pospcase-match-varlist-ncars
-   (pospcase--preform
-    (multiple-value-bind
-        (name varlist-cars) (pospcase-at (match-beginning 0)
-                                         '((`(defun ,name ,varlist-cars . ,_)
-                                            (values name varlist-cars))))
-      (setq pospcase--match-data-1 name)
-      (goto-char (car varlist-cars))
-      (cdr varlist-cars)))
-   nil
-   (1 'font-lock-function-name-face nil t)
-   (2 'font-lock-variable-name-face nil t)))
+(font-lock-add-keywords
+ 'text-mode
+ `(,(concat "(defun" "[ \t\n]+")
+   (pospcase-match-varlist-cars
+    (pospcase--preform
+     (multiple-value-bind
+         (name varlist-cars) (pospcase-at (match-beginning 0)
+                                          '((`(defun (setf ,name) ,varlist-cars . ,_)
+                                             (values name varlist-cars))
+                                            (`(defun ,name ,varlist-cars . ,_)
+                                             (values name varlist-cars))))
+       (setq pospcase--prematches (list name))
+       (goto-char (car varlist-cars))
+       (cdr varlist-cars)))
+    (pospcase--postform)
+    (1 'font-lock-function-name-face nil t)
+    (2 'font-lock-variable-name-face nil t)))
+ 'append)
+
+(font-lock-add-keywords 'text-mode
+                        '("meow" (0 'font-lock-function-name-face nil t))
+                        'append)
 
 (pospcase-font-lock lisp-mode
-                    `(defun (setf ,name) `(varlist-cars ,arg) . ,_)
-                    (name . 'font-lock-function-name-face)
-                    (arg . 'font-lock-variable-name-face))
-
-(pospcase-font-lock lisp-mode
-                    `(defclass ,name `(varlist-cars ,arg) . ,_)
+                    (`(defclass ,name `(varlist ,arg) . ,_))
                     (name . 'font-lock-function-name-face)
                     (arg . 'font-lock-type-face))
 
 (pospcase-font-lock lisp-mode
-                    `(flet `(flet (,name `(varlist-cars ,arg) . _)) . ,_)
-                    (name . 'font-lock-function-name-face)
-                    (arg . 'font-lock-variable-name-face))
-
-(pospcase-font-lock lisp-mode
-                    `(symbol-macrolet `(valist ,arg ,const) . ,_)
+                    (`(symbol-macrolet `(valist ,name ,const) . ,_))
                     (name . 'font-lock-variable-name-face)
-                    (arg . 'font-lock-constant-face))
+                    (const . 'font-lock-constant-face))
 
 (pospcase-font-lock lisp-mode
-                    `(defmethod ,name `(varlist ,arg ,type) . ,_)
+                    (`(defmethod (setf ,name) `(varlist ,arg ,type) ,(pred keywordp) . ,_)
+                     `(defmethod (setf ,name) `(varlist ,arg ,type) . ,_)
+                     `(defmethod ,name `(varlist ,arg ,type) ,(pred keywordp) . ,_)
+                     `(defmethod ,name `(varlist ,arg ,type) . ,_))
                     (name . 'font-lock-function-name-face)
                     (arg . 'font-lock-variable-name-face)
                     (type . 'font-lock-type-face))
 
 (pospcase-font-lock lisp-mode
-                    `(defmethod ,name `(varlist ,arg ,type) ,qual . ,_)
-                    (name . 'font-lock-function-name-face)
-                    (arg . 'font-lock-variable-name-face)
-                    (type . 'font-lock-type-face)
-                    (qual . 'font-lock-keyword-face))
+                    (`(destructuring-bind `(destructuring ,arg) . ,_))
+                    (arg . 'font-lock-variable-name-face))
+
+
+;; experimentals
 
 (pospcase-font-lock lisp-mode
-                    `(defmethod (setf ,name) `(varlist ,arg ,type) . ,_)
-                    (name . 'font-lock-function-name-face)
-                    (arg . 'font-lock-variable-name-face)
-                    (type . 'font-lock-type-face))
-
-(pospcase-font-lock lisp-mode
-                    `(defmethod (setf ,name) `(varlist ,arg ,type) ,qual . ,_)
-                    (name . 'font-lock-function-name-face)
-                    (arg . 'font-lock-variable-name-face)
-                    (type . 'font-lock-type-face)
-                    (qual . 'font-lock-keyword-face))
-
-(pospcase-font-lock lisp-mode
-                    `(varlist-cars defstruct ,name fence-start ,arg) ; How do I write it?
+                    (`(flet `(flet (,name `(varlist-cars ,arg) . _)) . ,_))
                     (name . 'font-lock-function-name-face)
                     (arg . 'font-lock-variable-name-face))
 
 (pospcase-font-lock lisp-mode
-                    `(key (,name ,init ,sup))
+                    (`(macrolet `(macrolet (,name `(destructuring ,arg))) . ,_))
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face))
+
+
+;; no idea
+
+(pospcase-font-lock lisp-mode
+                    (`(varlist-cars defstruct ,name fence-start ,arg))
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face))
+
+(pospcase-font-lock lisp-mode
+                    (`(key (,name ,init ,sup)))
                     (name . 'font-lock-function-name-face)
                     (init . 'default)
                     (sup . 'default))
-
-(pospcase-font-lock lisp-mode
-                    `(destructuring-bind `(destructuring ,arg) . ,_)
-                    (arg . 'font-lock-variable-name-face))
-
-(pospcase-font-lock lisp-mode
-                    `(macrolet `(macrolet (,name `(destructuring ,arg))) . ,_)
-                    (name . 'font-lock-function-name-face)
-                    (arg . 'font-lock-variable-name-face))
 

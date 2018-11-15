@@ -1,8 +1,13 @@
 #+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
 * Bugs
-** TODO ~let~ [1/1]
+** DONE ~let~ [1/1]
+   - State "DONE"       from "TODO"       [2018-11-15 Thu 16:24]
    - State "TODO"       from              [2018-11-12 Mon 10:24]
    - [X] the last of varlist is entirely highlighted
-** TODO flet [1/1]
+** DONE flet [1/1]
+   - State "DONE"       from "TODO"       [2018-11-15 Thu 16:24]
    - State "TODO"       from              [2018-11-12 Mon 11:47]
    - [X] declaration with empty arglist isn’t supported
+** TODO pospcase-collect-all-symbols [1/1]
+   - State "TODO"       from              [2018-11-15 Thu 16:24]
+   - [X] support dot notation
