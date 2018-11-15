@@ -424,11 +424,13 @@ length lists"
 (defun pospcase-lisp-keywords ()
   "Font-lock keywords used by `pospcase-lisp-font-lock-mode'.
 The keywords highlight variable bindings and quoted expressions."
-  (let* ((symbol-regexp "\\(?:\\sw\\|\\s_\\)+")
-         (symbol-start "\\_<")
+  (let* ((symbol-start "\\_<")
          (symbol-end "\\_>")
-         (symbol (concat symbol-start symbol-regexp symbol-end))
-         (space-regexp "[ \t\n]+"))
+         (symbol (concat symbol-start
+                         "\\(?:\\sw\\|\\s_\\)+"
+                         symbol-end))
+         (space* "[ \t\n]*")
+         (space+ "[ \t\n]+"))
     (cl-flet ((regexp-or (&rest exps)
                          (concat "\\(?:"
                                  (mapconcat #'identity exps "\\|")
@@ -440,19 +442,19 @@ The keywords highlight variable bindings and quoted expressions."
         ;; For `dolist'
         (,(concat "("
                   (regexp-opt lisp-extra-font-lock-dolist-functions)
-                  space-regexp
+                  space+
                   "(\\("
-                  symbol-regexp
-                  "\\)\\_>")
+                  symbol
+                  "\\)")
          ;; Faces
          (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
         ;; For `condition-case'
         (,(concat "("
                   (regexp-opt lisp-extra-font-lock-bind-first-functions)
-                  space-regexp
-                  "\\_<\\("
-                  symbol-regexp
-                  "\\)\\_>")
+                  space+
+                  "\\("
+                  symbol
+                  "\\)")
          ;; Faces
          (1 (and (not (string= (match-string 1) "nil"))
                  ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
@@ -491,8 +493,8 @@ The keywords highlight variable bindings and quoted expressions."
           (2 lisp-extra-font-lock-backquote-face nil t)))
         ;; For function read syntax
         (,(concat "#'\\("
-                  symbol-regexp
-                  "\\)\\_>")
+                  symbol
+                  "\\)")
          1 lisp-extra-font-lock-quoted-function-face)
 
         ;;
@@ -505,26 +507,29 @@ The keywords highlight variable bindings and quoted expressions."
            (regexp-or
             (concat
              (regexp-opt lisp-extra-font-lock-defun-functions)
-             space-regexp
+             space+
              (regexp-or
               symbol
               (concat "(setf"
-                      space-regexp
+                      space+
                       symbol
                       ")")))
             (regexp-opt lisp-extra-font-lock-lambda-functions)
             (regexp-opt lisp-extra-font-lock-let-functions)
             (concat
              (regexp-opt lisp-extra-font-lock-defclass-functions)
-             space-regexp
+             space+
              symbol
-             space-regexp
+             space+
              "("
              "[^)]*"
              ")" ; Reason some people write comment here is `defclass' has no docstring.
-             "\\(?:[ \t\n]*;[^\n]*\n\\)*" ; Needs font-lock-fontify-block to work properly?
-             "[ \t\n]*"))
-           space-regexp
+             "\\(?:" ; Needs font-lock-fontify-block to work properly?
+             space*
+             ";[^\n]*\n"
+             "\\)*"
+             space*))
+           space+
            "(")
          (pospcase-match-varlist-cars
           ;; Pre-match form
@@ -541,9 +546,9 @@ The keywords highlight variable bindings and quoted expressions."
         ;; For `defclass'
         (,(concat "("
                   (regexp-opt lisp-extra-font-lock-defclass-functions)
-                  space-regexp
+                  space+
                   symbol
-                  space-regexp
+                  space+
                   "(")
          (pospcase-match-varlist-cars
           ;; Pre-match form
@@ -560,7 +565,7 @@ The keywords highlight variable bindings and quoted expressions."
         ;; For `flet'.
         (,(concat "("
                   (regexp-opt lisp-extra-font-lock-flet-functions)
-                  space-regexp
+                  space+
                   "(")
          (pospcase-match-flet
           ;; Pre-match form
@@ -579,7 +584,7 @@ The keywords highlight variable bindings and quoted expressions."
         ;; For `symbol-macrolet'
         (,(concat "("
                   (regexp-opt lisp-extra-font-lock-symbol-macrolet-functions)
-                  space-regexp
+                  space+
                   "(")
          (pospcase-match-varlist
           ;; Pre-match form
@@ -598,17 +603,17 @@ The keywords highlight variable bindings and quoted expressions."
         ;; For `defmethod'
         (,(concat "("
                   (regexp-opt lisp-extra-font-lock-defmethod-functions)
-                  space-regexp
+                  space+
                   (regexp-or
                    symbol
                    (concat "(setf"
-                           space-regexp
+                           space+
                            symbol
                            ")")
-                   space-regexp
+                   space+
                    (regexp-opt lisp-extra-font-lock-defmethod-keywords)
                    "?"
-                   "[ \t\n]*"
+                   space*
                    "("))
          (pospcase-match-varlist
           ;; Pre-match form
@@ -627,7 +632,7 @@ The keywords highlight variable bindings and quoted expressions."
          ;; For `defstruct'
          (,(concat "("
                    "\\(?:cl-\\)?defstruct"
-                   space-regexp)
+                   space+)
           (pospcase-match-varlist-cars
            ;; Pre-match form
            (pospcase--preform
@@ -677,9 +682,9 @@ The keywords highlight variable bindings and quoted expressions."
          (,(concat (regexp-or
                     "\\(?:cl-\\)?destructuring-bind"
                     (concat "\\(?:cl-\\|sb!xc:\\)?defmacro"
-                            space-regexp
-                            symbol-regexp))
-                   space-regexp
+                            space+
+                            symbol))
+                   space+
                    "(")
           (pospcase-match-destructuring
            ;; Pre-match form
@@ -696,7 +701,7 @@ The keywords highlight variable bindings and quoted expressions."
          ;; For `macrolet'
          (,(concat "("
                    (regexp-opt lisp-extra-font-lock-macrolet-functions)
-                   space-regexp
+                   space+
                    "(")
           (pospcase-match-macrolet
            ;; Pre-match form
