@@ -276,14 +276,80 @@ foo
 
 ;;; DSL
 
-(pospcase-register `(defun ,name ,(varlist arg) . ,_)
-                   (name . 'font-lock-function-name-face)
-                   (arg . 'font-lock-variable-name-face))
+(pcase '((foo)) (`(,`(,bar)) bar))
+(pcase '((foo)) (`,(bar) bar))
+(let ((bar 123)) `,`(,bar))
+(pospcase-translate `,`(,bar))
 
-(pospcase-register `(defmacro ,name ,(destruct arg) . ,_)
-                   (name . 'font-lock-function-name-face)
-                   (arg . 'font-lock-variable-name-face))
+(pospcase-font-lock lisp-mode
+                    `(defun ,name `(varlist-cars ,arg) . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face))
 
-(pospcase-register `(flet ,name ,(destruct arg) . ,_)
-                   (name . 'font-lock-function-name-face)
-                   (arg . 'font-lock-variable-name-face))
+
+(pospcase-font-lock lisp-mode
+                    `(defun (setf ,name) `(varlist-cars ,arg) . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face))
+
+(pospcase-font-lock lisp-mode
+                    `(defclass ,name `(varlist-cars ,arg) . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-type-face))
+
+(pospcase-font-lock lisp-mode
+                    `(flet `(flet (,name `(varlist-cars ,arg) . _)) . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face))
+
+(pospcase-font-lock lisp-mode
+                    `(symbol-macrolet `(valist ,arg ,const) . ,_)
+                    (name . 'font-lock-variable-name-face)
+                    (arg . 'font-lock-constant-face))
+
+(pospcase-font-lock lisp-mode
+                    `(defmethod ,name `(varlist ,arg ,type) . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face)
+                    (type . 'font-lock-type-face))
+
+(pospcase-font-lock lisp-mode
+                    `(defmethod ,name `(varlist ,arg ,type) ,qual . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face)
+                    (type . 'font-lock-type-face)
+                    (qual . 'font-lock-keyword-face))
+
+(pospcase-font-lock lisp-mode
+                    `(defmethod (setf ,name) `(varlist ,arg ,type) . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face)
+                    (type . 'font-lock-type-face))
+
+(pospcase-font-lock lisp-mode
+                    `(defmethod (setf ,name) `(varlist ,arg ,type) ,qual . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face)
+                    (type . 'font-lock-type-face)
+                    (qual . 'font-lock-keyword-face))
+
+(pospcase-font-lock lisp-mode
+                    `(varlist-cars defstruct ,name fence-start ,arg) ; How do I write it?
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face))
+
+(pospcase-font-lock lisp-mode
+                    `(key (,name ,init ,sup))
+                    (name . 'font-lock-function-name-face)
+                    (init . 'default)
+                    (sup . 'default))
+
+(pospcase-font-lock lisp-mode
+                    `(destructuring-bind `(destructuring ,arg) . ,_)
+                    (arg . 'font-lock-variable-name-face))
+
+(pospcase-font-lock lisp-mode
+                    `(macrolet `(macrolet (,name `(destructuring ,arg))) . ,_)
+                    (name . 'font-lock-function-name-face)
+                    (arg . 'font-lock-variable-name-face))
+
