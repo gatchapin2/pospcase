@@ -142,9 +142,10 @@ which returns:
       (goto-char pos)
       (walk (scan-sexps (point) 1)))))
 
-(defmacro pospcase-translate (exp)
-  "Translate `pcase' pattern to accommodate s-expression generated
-by `pospcase-read'. Nested backquote is not supported."
+(defmacro pospcase-translate (matcher)
+  "Translate `pcase' matcher pattern (usually backquoted) to
+matcher pattern consumable by `pospcase'. Beware nested
+backquotes are not supported."
   (cl-labels
       ((meta-pos-symbol (sym)
                         (list '\,
@@ -192,11 +193,11 @@ by `pospcase-read'. Nested backquote is not supported."
                              (t (cl-return result))))
                         ',_)))
                  (cons node ',_))))
-    (if (consp exp)
-        (case (car exp)
-          ('quote (list 'quote (list '\` (cons exp ',_))))
-          ('\` (list 'quote (list '\` (walk (cadr exp)))))
-          (otherwise (list 'quote (walk exp)))))))
+    (if (consp matcher)
+        (case (car matcher)
+          ('quote (list 'quote (list '\` (cons matcher ',_))))
+          ('\` (list 'quote (list '\` (walk (cadr matcher)))))
+          (otherwise (list 'quote (walk matcher)))))))
 
 (defun pospcase (exp cases)
   "`pcase'-variant for getting positional metadata."
