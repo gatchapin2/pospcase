@@ -144,7 +144,7 @@ which returns:
 
 (defmacro pospcase-translate (matcher)
   "Translate `pcase' matcher pattern (usually backquoted) to
-matcher pattern consumable by `pospcase'. Beware nested
+matcher pattern consumable for `pospcase'. Beware nested
 backquotes are not supported."
   (cl-labels
       ((meta-pos-symbol (sym)
