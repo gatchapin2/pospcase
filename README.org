@@ -1,0 +1,57 @@
+#+TITLE: ~pospcase~: A ~pcase~ variant for getting positional metadata
+
+* About ~pospcase~
+  ~pospcase~ is a package for extracting S-expression positions using
+  ~pcase~ pattern matching ability.
+
+  At this moment the package contains a pattern matcher ~pospcase~ and a
+  minor-mode ~pospcase-lisp-font-lock-mode~, robust code highlighter for
+  both ~lisp-mode~ and ~emacs-lisp-mode~.
+
+* Rational
+  Emacs’s font-locking heavily relies on regular expression
+  (regexp). There’s already an attempt to do extra highlighting for
+  Lisp and Emacs Lisp written by Anders Lindgren[fn:1]. Which is
+  completely regexp based too. When you look into his
+  anchored-matcher[fn:2], such as ~lisp-extra-font-lock-match-let,~
+  you’ll notice parsing S-expression with regexp is inherently awkward
+  and error-prone (you also notice in-between comments break the
+  pattern matching too, which is terrible). To overcome the problem,
+  you basically have to implement a state-machine to track every
+  opening and closing parenthesis, skip comments spaces tabs and
+  newlines everywhere, etc. In other word reimplementation of subset
+  of Lisp interpreter using regexp. Which is ridiculous when you
+  already have it and using it all the time implemented in Emacs
+  itself.
+
+  Even more Emacs have this nice pattern matching macro called ~pcase~
+  and you can basically match and destructure any kind of
+  S-expression nowadays.
+
+  I suppose the above reasons are good enough to write a ~pcase~-based
+  font-locker.
+
+[fn:1] https://github.com/Lindydancer/lisp-extra-font-lock
+
+[fn:2] https://www.gnu.org/software/emacs/manual/html_node/elisp/Search_002dbased-Fontification.html
+
+* Usage
+  To turn of the font-lock, run:
+
+  #+BEGIN_SRC emacs-lisp
+    (require 'pospcase)
+    (pospcase-global-lisp-font-lock-mode 1)
+  #+END_SRC
+
+  If you have another reason to get positions of S-expression is a
+  buffer, you can use ~pospcase-at~ like:
+
+  #+BEGIN_SRC emacs-lisp
+    (pospcase-at (point-min) '((`,exp exp)))
+  #+END_SRC
+
+  #+RESULTS:
+  : (1 . 41)
+
+  More detailed technical explanation can be found in ~pospcase-read~
+  docstring.

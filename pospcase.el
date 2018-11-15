@@ -200,7 +200,7 @@ backquotes are not supported."
           (otherwise (list 'quote (walk matcher)))))))
 
 (defun pospcase (exp cases)
-  "`pcase'-variant for getting positional metadata."
+  "`pcase' variant for getting positional metadata."
   (eval
    `(pcase
         ,(list 'quote exp)
