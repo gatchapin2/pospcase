@@ -671,7 +671,7 @@ The keywords highlight variable bindings and quoted expressions."
                   (progn
                     (backward-up-list)
                     (when (> (- (match-beginning 0) (point)) 500)  ; arbitrary limit to prevent inf-loop
-                      (goto-char (match-end 0))))
+                      (goto-char (match-beginning 0))))
                 (error (match-end 0)))
               ;; Search limit
               (ignore-errors (scan-sexps (point 1)))))
