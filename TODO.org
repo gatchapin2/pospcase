@@ -1,9 +1,9 @@
 #+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
 * Bugs
 * Features
-** TODO pospcase-font-lock [1/2]
+** TODO pospcase-font-lock [2/3]
    - State "TODO"       from              [2018-11-15 Thu 19:42]
-   - [X] defun
-   - [ ] symbol-macrolet
-   - [ ] defclass
+   - [X] varlist-cars
+   - [X] varlist
+   - [ ] destructuring
 
