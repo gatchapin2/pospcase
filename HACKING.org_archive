@@ -1,0 +1,40 @@
+#+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
+
+Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
+
+
+* DONE ~let~ [1/1]
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-16 Fri 06:37
+  :ARCHIVE_FILE: ~/src/pospcase/HACKING.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: HACKING
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-11-15 Thu 16:24]
+  - State "TODO"       from              [2018-11-12 Mon 10:24]
+  - [X] the last of varlist is entirely highlighted
+
+* DONE flet [1/1]
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-16 Fri 06:38
+  :ARCHIVE_FILE: ~/src/pospcase/HACKING.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: HACKING
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-11-15 Thu 16:24]
+  - State "TODO"       from              [2018-11-12 Mon 11:47]
+  - [X] declaration with empty arglist isn’t supported
+
+* DONE pospcase-collect-all-symbols [1/1]
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-16 Fri 06:38
+  :ARCHIVE_FILE: ~/src/pospcase/HACKING.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: HACKING
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-11-16 Fri 06:37]
+  - State "TODO"       from              [2018-11-15 Thu 16:24]
+  - [X] support dot notation

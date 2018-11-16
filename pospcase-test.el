@@ -160,7 +160,7 @@ foo
 
 ((foo bar) baz (quux meow))
 
-  
+
 ;;; pospcase-match-varlist-cars
 
 (progn
@@ -333,33 +333,94 @@ foo
 (let ((bar 123)) `,`(,bar))
 (pospcase-translate `,`(,bar))
 
+(pospcase-at (point)
+             '((`(defun (setf ,name) ,varlist-cars . ,_)
+                (values name varlist-cars))
+               (`(defun ,name ,varlist-cars . ,_)
+                (values name varlist-cars))))
+(defun (setf ,name) ,varlist-cars  . ,_)
 
 ;; workables
 
-(pospcase-font-lock lisp-mode
-                    (`(defun (setf ,name) `(varlist-cars ,arg) . ,_)
-                     `(defun ,name `(varlist-cars ,arg) . ,_))
-                    (name . 'font-lock-function-name-face)
-                    (arg . 'font-lock-variable-name-face))
-
 (font-lock-add-keywords
- 'text-mode
- `(,(concat "(defun" "[ \t\n]+")
+ nil
+ `((,(concat "(funfun" "[ \t\n]+")
    (pospcase-match-varlist-cars
     (pospcase--preform
-     (multiple-value-bind
-         (name varlist-cars) (pospcase-at (match-beginning 0)
-                                          '((`(defun (setf ,name) ,varlist-cars . ,_)
-                                             (values name varlist-cars))
-                                            (`(defun ,name ,varlist-cars . ,_)
-                                             (values name varlist-cars))))
-       (setq pospcase--prematches (list name))
-       (goto-char (car varlist-cars))
-       (cdr varlist-cars)))
+     (goto-char (match-beginning 0))
+     (let ((match-end (save-excursion
+                        (or
+                         (ignore-errors (scan-sexps (point) 1))
+                         (progn
+                           (end-of-defun)
+                           (point))))))
+       (multiple-value-bind
+           (name varlist-cars) (pospcase-at (point)
+                                            '((`(funfun (setf ,name) ,varlist-cars . ,_)
+                                               (values name varlist-cars))
+                                              (`(funfun ,name ,varlist-cars . ,_)
+                                               (values name varlist-cars))))
+         (if (null name)
+             (goto-char match-end)
+           (setq pospcase--prematches (list name))
+           (goto-char (car varlist-cars))))
+       match-end))
     (pospcase--postform)
     (1 'font-lock-function-name-face nil t)
-    (2 'font-lock-variable-name-face nil t)))
+    (2 'font-lock-variable-name-face nil t))))
  'append)
+
+(defun pospcase-font-lock (mode patterns &rest specs)
+  (let ((matcher (let ((str (prin1-to-string
+                             (if (and (consp (car patterns))
+                                      (memq (caar patterns) '(\` \, quote)))
+                                 (cdar patterns)
+                               (car patterns)))))
+                   (string-match "^[^ \t\n]+" str)
+                   (concat (match-string 0 str) "[ \t\n]+")))
+        (submatcher (let ((temp specs) result)
+                      (while (and temp (null result))
+                        (setq result (and (consp (caar temp)) (cdaar temp))
+                              temp (cdr temp)))
+                      result))
+        (cases (let ((vars (cl-loop for spec in specs
+                                    collect (or (and (consp (car spec)) (caar spec))
+                                                (car spec)))))
+                 (mapcar (lambda (pat) (list pat (cons 'values vars)))
+                         patterns)))
+        (fontspecs (cl-loop with i = 0
+                            for spec in specs
+                            collect (list (incf i) (cdr spec) nil t))))
+    `(font-lock-add-keywords
+      ,mode
+      ,(case submatcher
+         ('varlist-cars
+          `(,matcher
+            (,submatcher
+             (pospcase--preform
+              (goto-char (match-beginning 0))
+              (let ((match-end (save-excursion
+                                 (or
+                                  (ignore-errors (scan-sexps (point) 1))
+                                  (progn
+                                    (end-of-defun)
+                                    (point))))))
+                (multiple-value-bind
+                    (name varlist-cars) (pospcase-at (point) ,cases)
+                  (if (null name)
+                      (goto-char match-end)
+                    (setq pospcase--prematches (list name))
+                    (goto-char (car varlist-cars))))
+                match-end))
+             (pospcase--postform)
+             ,@fontspecs))))
+      'append)))
+
+(pp(pospcase-font-lock 'lisp-mode
+                    '(`(defun (setf ,name) ,args . ,_)
+                     `(defun ,name ,args . ,_))
+                    '(name . font-lock-function-name-face)
+                    '((args . varlist-cars) . font-lock-variable-name-face)))
 
 (font-lock-add-keywords 'text-mode
                         '("meow" (0 'font-lock-function-name-face nil t))
@@ -414,4 +475,3 @@ foo
                     (name . 'font-lock-function-name-face)
                     (init . 'default)
                     (sup . 'default))
-

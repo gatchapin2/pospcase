@@ -664,12 +664,14 @@ The keywords highlight variable bindings and quoted expressions."
          (,(funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
           (pospcase-match-key
            (pospcase--preform
-            (setq pospcase--fence-start (match-end 0))
-            (condition-case nil
-                (backward-up-list)
-              (error (match-beginning 0)))
-            ;; Search limit
-            (ignore-errors (scan-sexps (point 1))))
+            (if (eq (face-at-point) 'font-lock-comment-face)
+                (goto-char (match-end 0))
+              (setq pospcase--fence-start (match-end 0))
+              (condition-case nil
+                  (backward-up-list)
+                (error (match-beginning 0)))
+              ;; Search limit
+              (ignore-errors (scan-sexps (point 1)))))
            (pospcase--postform)
            ;; Faces
            (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
