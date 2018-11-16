@@ -213,7 +213,8 @@ backquotes are not supported."
                   ((collect (node)
                             (cond
                              ((and (listp node)
-                                   (eq (car node) '\,))
+                                   (eq (car node) '\,)
+                                   (not (eq (cadr node) '_)))
                               (setq symbols (cons (cadr node) symbols)))
                              ((consp node)
                               (collect (car node))

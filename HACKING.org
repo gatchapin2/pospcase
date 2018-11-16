@@ -1,7 +1,9 @@
 #+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
 * Bugs
 * Features
-** TODO pospcase-font-lock [0/1]
+** TODO pospcase-font-lock [1/2]
    - State "TODO"       from              [2018-11-15 Thu 19:42]
-   - [ ] font-lock-add-keywords ready expression builder
+   - [X] defun
+   - [ ] symbol-macrolet
+   - [ ] defclass
 
