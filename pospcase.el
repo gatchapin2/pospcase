@@ -623,12 +623,12 @@ The keywords highlight variable bindings and quoted expressions."
                    (concat "(setf"
                            space+
                            symbol
-                           ")")
-                   space+
-                   (regexp-opt lisp-extra-font-lock-defmethod-keywords)
-                   "?"
-                   space*
-                   "("))
+                           ")"))
+                  space+
+                  (regexp-opt lisp-extra-font-lock-defmethod-keywords)
+                  "?"
+                  space*
+                  "(")
          (pospcase-match-varlist
           (pospcase--preform
            (goto-char (1- (match-end 0)))

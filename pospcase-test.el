@@ -394,7 +394,7 @@ foo
                          patterns)))
         (fontspecs (cl-loop with i = 0
                             for spec in specs
-                            collect (list (incf i) (list 'quote (cdr spec)) nil t))))
+                            collect (list (incf i) (cdr spec) nil t))))
     `(font-lock-add-keywords
       ,mode
       ,(case submatcher
@@ -424,24 +424,24 @@ foo
 (pp(pospcase-font-lock nil
                     '(`(mydefun (setf ,name) ,args . ,_)
                       `(mydefun ,name ,args . ,_))
-                    '(name . font-lock-function-name-face)
-                    '((args . varlist-cars) . font-lock-variable-name-face)))
+                    '(name . 'font-lock-function-name-face)
+                    '((args . varlist-cars) . 'font-lock-variable-name-face)))
 
 (pospcase-font-lock nil
                     (`(mydefun (setf ,name) ,args . ,_)
                      `(mydefun ,name ,args . ,_))
-                    (name . font-lock-function-name-face)
-                    ((args . varlist-cars) . font-lock-variable-name-face))
+                    (name . 'font-lock-function-name-face)
+                    ((args . varlist-cars) . 'font-lock-variable-name-face))
 
 (mydefun foo (bar) bar)
 
 (pospcase-font-lock lisp-mode
-                    (`(defclass ,name `(varlist ,arg) . ,_))
+                    (`(defclass ,name ,args . ,_))
                     (name . 'font-lock-function-name-face)
-                    (arg . 'font-lock-type-face))
+                    ((args . varlist-cars) . 'font-lock-type-face))
 
 (pospcase-font-lock lisp-mode
-                    (`(symbol-macrolet `(valist ,name ,const) . ,_))
+                    (`(symbol-macrolet ,varlist . ,_))
                     (name . 'font-lock-variable-name-face)
                     (const . 'font-lock-constant-face))
 
