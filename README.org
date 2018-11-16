@@ -18,9 +18,35 @@
   in-between comments break the regexp matching too, which is
   terrible). To overcome the problem, you basically have to call
   ~syntax-ppss~ and ~forward-comment~ everywhere. The product is
-  unreadable hybrid of regexp and constant syntax-table checking.
+  unreadable hybrid of regexp matchings, constant syntax-table
+  checkings, and corner-case coverings like:
 
-  And recently Emacs got this nice pattern matching macro called
+  #+BEGIN_SRC emacs-lisp
+    ;; match and collect all symbol positions in the same nest level
+    (cl-loop
+     with result
+     with current-level = (car (syntax-ppss))
+
+     ;; return if the task ended or the `point' in a shallower level
+     when (or (eobp) (< (car (syntax-ppss)) current-level)) return result
+
+     ;; actual matching
+     do (progn
+          (skip-chars-forward "\\(?:\\sw\\|\\s_\\|\\s \\)") ; in case the first char is non-symbol
+          (forward-comment 1) ; without this, in-comment symbols also matches
+          (looking-at "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"))
+
+     ;; collect matched symbol's range in a cons pair
+     if (= (car (syntax-ppss)) current-level)
+     do (setq result (cons (cons (match-beginning 0) (match-end 0)) result))
+
+     ;; skip non-interesting characters
+     do (progn
+          (goto-char (match-end 0))
+          (skip-chars-forward "\\(?:\\sw\\|\\s_\\|\\s \\)")))
+  #+END_SRC
+
+  Moreover, recently Emacs got this nice pattern matching macro called
   ~pcase~. Nowadays You can easily match and destructure any kind of
   S-expression whenever you want.
 
