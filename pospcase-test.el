@@ -340,11 +340,15 @@ foo
                 (values name varlist-cars))))
 (defun (setf ,name) ,varlist-cars  . ,_)
 
+(font-lock-add-keywords 'text-mode
+                        '("meow" (0 'font-lock-function-name-face nil t))
+                        'append)
+
 ;; workables
 
 (font-lock-add-keywords
  nil
- `((,(concat "(funfun" "[ \t\n]+")
+ `((,(concat "(mydefun" "[ \t\n]+")
    (pospcase-match-varlist-cars
     (pospcase--preform
      (goto-char (match-beginning 0))
@@ -356,9 +360,9 @@ foo
                            (point))))))
        (multiple-value-bind
            (name varlist-cars) (pospcase-at (point)
-                                            '((`(funfun (setf ,name) ,varlist-cars . ,_)
+                                            '((`(mydefun (setf ,name) ,varlist-cars . ,_)
                                                (values name varlist-cars))
-                                              (`(funfun ,name ,varlist-cars . ,_)
+                                              (`(mydefun ,name ,varlist-cars . ,_)
                                                (values name varlist-cars))))
          (if (null name)
              (goto-char match-end)
@@ -370,11 +374,11 @@ foo
     (2 'font-lock-variable-name-face nil t))))
  'append)
 
-(defun pospcase-font-lock (mode patterns &rest specs)
+(defmacro pospcase-font-lock (mode patterns &rest specs)
   (let ((matcher (let ((str (prin1-to-string
                              (if (and (consp (car patterns))
                                       (memq (caar patterns) '(\` \, quote)))
-                                 (cdar patterns)
+                                 (cadar patterns)
                                (car patterns)))))
                    (string-match "^[^ \t\n]+" str)
                    (concat (match-string 0 str) "[ \t\n]+")))
@@ -390,41 +394,46 @@ foo
                          patterns)))
         (fontspecs (cl-loop with i = 0
                             for spec in specs
-                            collect (list (incf i) (cdr spec) nil t))))
+                            collect (list (incf i) (list 'quote (cdr spec)) nil t))))
     `(font-lock-add-keywords
       ,mode
       ,(case submatcher
          ('varlist-cars
-          `(,matcher
-            (,submatcher
-             (pospcase--preform
-              (goto-char (match-beginning 0))
-              (let ((match-end (save-excursion
-                                 (or
-                                  (ignore-errors (scan-sexps (point) 1))
-                                  (progn
-                                    (end-of-defun)
-                                    (point))))))
-                (multiple-value-bind
-                    (name varlist-cars) (pospcase-at (point) ,cases)
-                  (if (null name)
-                      (goto-char match-end)
-                    (setq pospcase--prematches (list name))
-                    (goto-char (car varlist-cars))))
-                match-end))
-             (pospcase--postform)
-             ,@fontspecs))))
+          `'((,matcher
+              (pospcase-match-varlist-cars
+               (pospcase--preform
+                (goto-char (match-beginning 0))
+                (let ((match-end (save-excursion
+                                   (or
+                                    (ignore-errors (scan-sexps (point) 1))
+                                    (progn
+                                      (end-of-defun)
+                                      (point))))))
+                  (multiple-value-bind
+                      (name varlist-cars) (pospcase-at (point) ',cases)
+                    (if (null name)     ; no match
+                        (goto-char match-end)
+                      (setq pospcase--prematches (list name))
+                      (goto-char (car varlist-cars))))
+                  match-end))
+               (pospcase--postform)
+               ,@fontspecs))))
+         (t (error "Not supported submatcher.")))
       'append)))
 
-(pp(pospcase-font-lock 'lisp-mode
-                    '(`(defun (setf ,name) ,args . ,_)
-                     `(defun ,name ,args . ,_))
+(pp(pospcase-font-lock nil
+                    '(`(mydefun (setf ,name) ,args . ,_)
+                      `(mydefun ,name ,args . ,_))
                     '(name . font-lock-function-name-face)
                     '((args . varlist-cars) . font-lock-variable-name-face)))
 
-(font-lock-add-keywords 'text-mode
-                        '("meow" (0 'font-lock-function-name-face nil t))
-                        'append)
+(pospcase-font-lock nil
+                    (`(mydefun (setf ,name) ,args . ,_)
+                     `(mydefun ,name ,args . ,_))
+                    (name . font-lock-function-name-face)
+                    ((args . varlist-cars) . font-lock-variable-name-face))
+
+(mydefun foo (bar) bar)
 
 (pospcase-font-lock lisp-mode
                     (`(defclass ,name `(varlist ,arg) . ,_))

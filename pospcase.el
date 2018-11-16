@@ -297,7 +297,14 @@ backquotes are not supported."
   `(condition-case nil
        (when (or (< (point) limit) pospcase--matches)
          (unless pospcase--matches ; initialize
-           (setq pospcase--matches ,clause)
+           (setq pospcase--matches (if (equal
+                                        (ignore-errors
+                                          (read-from-string
+                                           (buffer-substring-no-properties (point) (+ (point) 2))))
+                                        '(nil . 2))
+                                       (let ((mlist (pospcase--list nil)))
+                                         (when mlist (list mlist)))
+                                     ,clause))
            (when (or pospcase--fence-start pospcase--fence-end)
              (setq pospcase--matches (pospcase-fence pospcase--matches)
                    pospcase--fence-start nil)))

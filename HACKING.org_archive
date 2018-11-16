@@ -38,3 +38,15 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   - State "DONE"       from "TODO"       [2018-11-16 Fri 06:37]
   - State "TODO"       from              [2018-11-15 Thu 16:24]
   - [X] support dot notation
+
+* TODO inf-loop [1/1]
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-16 Fri 08:46
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/HACKING.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: HACKING
+  :ARCHIVE_TODO: TODO
+  :END:
+  - State "TODO"       from              [2018-11-16 Fri 06:37]
+  - [X] inf-loop with ~&key~ in comment
+
