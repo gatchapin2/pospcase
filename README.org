@@ -22,28 +22,31 @@
   checkings, and corner-case coverings like:
 
   #+BEGIN_SRC emacs-lisp
-    ;; match and collect all symbol positions in the same nest level
-    (cl-loop
-     with result
-     with current-level = (car (syntax-ppss))
+    ;;; match and collect all symbol positions with the same nest level
+    (let ((current-level (car (syntax-ppss))))
 
-     ;; return if the task ended or the `point' in a shallower level
-     when (or (eobp) (< (car (syntax-ppss)) current-level)) return result
+      ;; skip the starting non-symbol chars
+      (skip-chars-forward "\\(?:\\sw\\|\\s_\\|\\s \\)")
 
-     ;; actual matching
-     do (progn
-          (skip-chars-forward "\\(?:\\sw\\|\\s_\\|\\s \\)") ; in case the first char is non-symbol
-          (forward-comment 1) ; without this, in-comment symbols also matches
-          (looking-at "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"))
+      (cl-loop
+       with result
 
-     ;; collect matched symbol's range in a cons pair
-     if (= (car (syntax-ppss)) current-level)
-     do (setq result (cons (cons (match-beginning 0) (match-end 0)) result))
+       ;; return if the task ended or the `point' is out of scope
+       when (or (eobp) (< (car (syntax-ppss)) current-level)) return result
 
-     ;; skip non-interesting characters
-     do (progn
-          (goto-char (match-end 0))
-          (skip-chars-forward "\\(?:\\sw\\|\\s_\\|\\s \\)")))
+       ;; actual matching
+       do (progn
+            (forward-comment 1)
+            (looking-at "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"))
+
+       ;; collect matched symbol's range in a cons pair
+       if (= (car (syntax-ppss)) current-level)
+       do (setq result (cons (cons (match-beginning 0) (match-end 0)) result))
+
+       ;; skip non-interesting characters
+       do (progn
+            (goto-char (match-end 0))
+            (skip-chars-forward "\\(?:\\sw\\|\\s_\\|\\s \\)"))))
   #+END_SRC
 
   Moreover, recently Emacs got this nice pattern matching macro called

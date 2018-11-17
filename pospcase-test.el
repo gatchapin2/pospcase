@@ -377,15 +377,22 @@ foo
 (define-key emacs-lisp-mode-map [?\H-y]
   (lambda ()
     (interactive)
-    (progn
-      (and (search-backward "'append")
-           (replace-match ""))
-      (and (search-backward "font-lock-add-keywords")
-           (replace-match "font-lock-remove-keywords"))
-      (and (search-backward "defmacro pospcase-font-lock")
-           (replace-match "defun pospcase-font-lock")))))
+    (if (search-backward (concat "defmacro" " pospcase-font-lock") nil t)
+        (progn
+          (replace-match (concat "defun" " pospcase-font-lock"))
+          (search-forward "font-lock-add-keywords")
+          (replace-match "font-lock-remove-keywords")
+          (search-forward "'append")
+          (replace-match ""))
+      (search-backward (concat "defun" " pospcase-font-lock"))
+      (replace-match (concat "defmacro" " pospcase-font-lock"))
+      (up-list)
+      (backward-char 3)
+      (insert "'append")
+      (search-backward "font-lock-remove-keywords")
+      (replace-match "font-lock-add-keywords"))))
 
-(defun pospcase-font-lock (mode patterns &rest specs)
+(defmacro pospcase-font-lock (mode patterns &rest specs)
   (let* ((matcher (let ((str (prin1-to-string
                               (if (and (consp (car patterns))
                                        (memq (caar patterns) '(\` \, quote)))
@@ -408,13 +415,18 @@ foo
          (non-subvars (remove subvar vars))
          (fontspecs (cl-loop with i = 0
                              for spec in specs
-                             append (mapcar (lambda (font) (list (incf i) font nil t))
+                             append (mapcar (lambda (font)
+                                              (list (incf i)
+                                                    (if (symbolp font)
+                                                        (list 'quote font)
+                                                      (apply (car font) (cdr font)))
+                                                    nil t))
                                             (cdr spec))))
          (cases (mapcar (lambda (pat) (list pat (cons 'values vars))) patterns)))
-    `(font-lock-remove-keywords
+    `(font-lock-add-keywords
       ,mode
       ,(cond
-        ((memq submatcher '(varlist varlist-cars))
+        ((memq submatcher '(varlist varlist-cars destructuring flet macrolet))
          `'((,matcher
              (,(intern (concat "pospcase-match-" (symbol-name submatcher)))
               (pospcase--preform
@@ -435,38 +447,38 @@ foo
               (pospcase--postform)
               ,@fontspecs))))
         (t (error "Not supported submatcher.")))
-      )))
+      'append)))
 
 (ppr(pospcase-font-lock nil
                     '(`(mydefun (setf ,name ,name2) ,args . ,_)
                       `(mydefun ,name ,name2 ,args . ,_))
-                    '(name . ('font-lock-function-name-face))
-                    '(name2 . ('font-lock-function-name-face2))
-                    '((args . varlist-cars) . ('font-lock-variable-name-face))))
+                    '(name . (font-lock-function-name-face))
+                    '(name2 . (font-lock-function-name-face2))
+                    '((args . varlist-cars) . (font-lock-variable-name-face))))
 
 (pospcase-font-lock nil
                     (`(mydefun (setf ,name) ,args . ,_)
                      `(mydefun ,name ,args . ,_))
-                    (name . ('font-lock-function-name-face))
-                    ((args . varlist-cars) . ('font-lock-variable-name-face)))
+                    (name . (font-lock-function-name-face))
+                    ((args . varlist-cars) . (font-lock-variable-name-face)))
 
 (mydefun foo (bar) bar)
 
 (pospcase-font-lock nil
                     (`(defclass ,name ,args . ,_))
-                    (name . ('font-lock-function-name-face))
-                    ((args . varlist-cars) . ('font-lock-type-face)))
+                    (name . (font-lock-function-name-face))
+                    ((args . varlist-cars) . (font-lock-type-face)))
 
 (ppr(pospcase-font-lock  nil
                         '(`(mysymbol-macrolet ,binds . ,_))
-                        '((binds . varlist) . ('font-lock-variable-name-face
-                                               'font-lock-constant-face))))
+                        '((binds . varlist) . (font-lock-variable-name-face
+                                               font-lock-constant-face))))
 
 
 (pospcase-font-lock  nil
                      (`(mysymbol-macrolet ,binds . ,_))
-                     ((binds . varlist) . ('font-lock-variable-name-face
-                                           'font-lock-constant-face)))
+                     ((binds . varlist) . (font-lock-variable-name-face
+                                           font-lock-constant-face)))
 
 (mysymbol-macrolet ((foo bar)) baz)
 
@@ -475,41 +487,71 @@ foo
                      `(defmethod (setf ,name) ,args . ,_)
                      `(defmethod ,name ,args ,(pred keywordp) . ,_)
                      `(defmethod ,name `,args . ,_))
-                    (name . ('font-lock-function-name-face))
-                    ((args . varlist) . ('font-lock-variable-name-face
-                                         'font-lock-type-face)))
+                    (name . (font-lock-function-name-face))
+                    ((args . varlist) . (font-lock-variable-name-face
+                                         font-lock-type-face)))
 
 (ppr(pospcase-font-lock nil
                     '(`(destructuring-bind ,binds . ,_))
-                    '((binds . destructuring) . ('font-lock-variable-name-face))))
+                    '((binds . destructuring) . (font-lock-variable-name-face))))
 
 (pospcase-font-lock nil
-                    (`(destructuring-bind ,binds . ,_))
-                    ((binds . destructuring) . ('font-lock-variable-name-face)))
+                    (`(mydestructuring-bind ,binds . ,_))
+                    ((binds . destructuring) . (font-lock-variable-name-face)))
+
+(mydestructuring-bind (foo ((bar) baz)) quux)
 
 
 ;; experimentals
 
-(pospcase-font-lock nil
-                    (`(flet `(flet (,name `(varlist-cars ,arg) . _)) . ,_))
-                    (name . ('font-lock-function-name-face))
-                    (arg . ('font-lock-variable-name-face)))
+(ppr(pospcase-font-lock nil
+                    '(`(flet ,funs . ,_))
+                    '((funs . flet) . (font-lock-function-name-face
+                                      font-lock-variable-name-face))))
 
 (pospcase-font-lock nil
-                    (`(macrolet `(macrolet (,name `(destructuring ,arg))) . ,_))
-                    (name . ('font-lock-function-name-face))
-                    (arg . ('font-lock-variable-name-face)))
+                    (`(myflet ,funs . ,_))
+                    ((funs . flet) . (font-lock-function-name-face
+                                      font-lock-variable-name-face)))
 
+(myflet ((foo () bar)
+         (baz (quux) meow)))
+
+(ppr(pospcase-font-lock nil
+                    '(`(macrolet ,macros . ,_))
+                    '((macros . macrolet) . (font-lock-function-name-face
+                                            (lisp-extra-font-lock-variable-face-form '(match-string 2))))))
+
+(pospcase-font-lock nil
+                    (`(mymacrolet ,macros . ,_))
+                    ((macros . macrolet) . (font-lock-function-name-face
+                                            (lisp-extra-font-lock-variable-face-form (match-string 2)))))
+
+(ppr(lisp-extra-font-lock-variable-face-form '(match-string 2)))
+
+(mymacrolet ((foo (bar (baz)) quux)
+             (meow (major-mode) woof)))
+
+(macrolet ((foo (bar (baz)) quux)
+             (meow (major-mode) woof)))
 
 ;; no idea
 
-(pospcase-font-lock nil
-                    (`(varlist-cars defstruct ,name fence-start ,arg))
-                    (name . ('font-lock-function-name-face))
-                    (arg . ('font-lock-variable-name-face)))
+(let* ((exp '(foo baz 1 quux meow woof))
+       (pat `(,@(reverse (memq 1 (reverse exp))) . ,(list '\, 'rest))))
+  (eval `(pcase ,(list 'quote exp) ,(list (list '\` pat) 'rest))))
 
 (pospcase-font-lock nil
-                    (`(key (,name ,init ,sup)))
-                    (name . ('font-lock-function-name-face))
+                    (`(defstruct ,name ,(pred stringp) . ,slots)
+                     `(defstruct ,name . ,slots))
+                    (name . (font-lock-function-name-face))
+                    ((slots . dot-varlist-cars) . (font-lock-variable-name-face)))
+
+
+(pcase '(foo &para bar baz) (`(foo &para . ,rest) rest))
+
+(pospcase-font-lock nil
+                    (`(pareameter (,name ,init ,sup)))
+                    (name . (font-lock-function-name-face))
                     (init . ('default))
                     (sup . ('default)))

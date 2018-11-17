@@ -86,7 +86,7 @@ of `pospcase':
 
 which returns:
 
-(20 . 49)"
+  (20 . 49)"
   (cl-labels
       ((walk (limit)
              (destructuring-bind (start sexp . lim)
@@ -671,20 +671,28 @@ The keywords highlight variable bindings and quoted expressions."
               nil t)))
 
          ;; For `&key'
-         (,(funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
+         (,(concat
+            (funcall #'regexp-opt lisp-extra-argument-list-key-keywards)
+            space+)
           (pospcase-match-key
            (pospcase--preform
-            (if (nth 4 (syntax-ppss (point)))
-                (goto-char (match-end 0))
-              (setq pospcase--fence-start (match-end 0))
-              (condition-case nil
-                  (progn
-                    (backward-up-list)
-                    (when (> (- (match-beginning 0) (point)) 500)  ; arbitrary limit to prevent inf-loop
-                      (goto-char (match-beginning 0))))
-                (error (match-end 0)))
-              ;; Search limit
-              (ignore-errors (scan-sexps (point 1)))))
+            (let ((end (1- (match-end 0))))
+              (if (let ((table (syntax-ppss (point))))
+                    (or (nth 4 table)   ; in string
+                        (nth 4 table))) ; in comment
+                  (goto-char end)
+                (setq pospcase--fence-start end)
+                (if (condition-case nil
+                        (progn
+                          (backward-up-list)
+                          (when (> (- (match-beginning 0) (point))
+                                   500) ; arbitrary limit to prevent inf-loop
+                            (goto-char end)
+                            nil))
+                      (error (goto-char end) nil))
+                    ;; Search limit
+                    (ignore-errors (scan-sexps (point 1)))
+                  end))))
            (pospcase--postform)
            ;; Faces
            (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
