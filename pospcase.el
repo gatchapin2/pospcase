@@ -97,7 +97,7 @@ which returns:
                (forward-comment lim)
                (cons
                 (if (or (atom sexp)
-                        (memq (car sexp) '(\` \, quote)))
+                        (memq (car sexp) '(\` \, quote function)))
                     sexp
                   (down-list)
                   (cl-loop
@@ -122,7 +122,7 @@ which returns:
                                  (read-from-string str))))
                             rlim (+ (point) (cdr rpair))
                             temp (if (or (atom (car rpair))
-                                         (memq (car rpair) '(\` \, quote)))
+                                         (memq (car rpair) '(\` \, quote function)))
                                      (cons (car rpair) (cons (point) rlim))
                                    (save-excursion
                                      (walk rlim))))
@@ -177,7 +177,7 @@ backquotes are not supported."
                                (cons
                                 (append result (list (walk (car node))))
                                 (walk (cdr node)))))
-                             ((memq (car node) '(\` \, quote))
+                             ((memq (car node) '(\` \, quote function))
                               (setq result (append
                                             result
                                             (if ; cdr cell ,foo matches the rest of a list
@@ -298,14 +298,16 @@ backquotes are not supported."
   `(condition-case nil
        (when (or (< (point) limit) pospcase--matches)
          (unless pospcase--matches ; initialize
-           (setq pospcase--matches (if (equal
-                                        (ignore-errors
-                                          (read-from-string
-                                           (buffer-substring-no-properties (point) (+ (point) 2))))
-                                        '(nil . 2))
-                                       (let ((mlist (pospcase--list nil)))
-                                         (when mlist (list mlist)))
-                                     ,clause))
+           (setq pospcase--matches
+                 (if (let* ((lim (ignore-errors (scan-sexps (point) 1)))
+                            (temp (when lim
+                                    (ignore-errors
+                                      (read-from-string
+                                       (buffer-substring-no-properties (point) lim))))))
+                       (and (consp temp) (null (car temp)))) ; empty list at `point'
+                     (let ((mlist (pospcase--list nil)))
+                       (when mlist (list mlist)))
+                     ,clause))
            (when (or pospcase--fence-start pospcase--fence-end)
              (setq pospcase--matches (pospcase-fence pospcase--matches)
                    pospcase--fence-start nil)))
@@ -387,7 +389,7 @@ length lists"
                     (pos-p (cdr node))))
        (ignore-p (node)
                  (and (consp (car node))
-                      (member (caar node) '(\` \, quote)))))
+                      (member (caar node) '(\` \, quote function)))))
     (cl-loop with result
              for temp = node then (cdr temp)
              if (or (null temp)
