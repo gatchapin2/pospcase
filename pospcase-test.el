@@ -326,7 +326,8 @@ foo
 (pospcase-at (point)
   '((`(defmethod ,name ,args ,(pred keywordp) . ,_)
      (list name args))))
-(defmethod foo () :before body)
+(defmethod foo (bar) :before body)
+(defun foo (bar) body)
 
 (pcase '((foo)) (`(,`(,bar)) bar))
 (pcase '((foo)) (`,(bar) bar))

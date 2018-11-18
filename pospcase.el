@@ -455,27 +455,103 @@ length lists"
 
 ;;; easy font-lock
 
-(defvar pospcase-font-lock-lisp-mode-keywords--installed nil
-  "BUffer local list for `pospcase-font-lock-lisp-mode-mode'.")
+(defvar pospcase-font-lock-lisp-keywords
+  ;;
+  ;; non-`pcase' powered
+  ;;
+  (let* ((symbol-start "\\_<")
+         (symbol-end "\\_>")
+         (symbol (concat symbol-start
+                         "\\(?:\\sw\\|\\s_\\)+"
+                         symbol-end))
+         (space* "[ \t\n]*")
+         (space+ "[ \t\n]+"))
+    (cl-flet ((regexp-or (&rest exps)
+                         (concat "\\(?:"
+                                 (mapconcat #'identity exps "\\|")
+                                 "\\)")))
+      `(;; For `dolist'
+        (,(concat "("
+                  (regexp-opt lisp-extra-font-lock-dolist-functions)
+                  space+
+                  "(\\("
+                  symbol
+                  "\\)")
+         ;; Faces
+         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
+        ;; For `condition-case'
+        (,(concat "("
+                  (regexp-opt lisp-extra-font-lock-bind-first-functions)
+                  space+
+                  "\\("
+                  symbol
+                  "\\)")
+         ;; Faces
+         (1 (and (not (string= (match-string 1) "nil"))
+                 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
+        ;; For `cl-loop'
+        (,(concat "("
+                  (regexp-opt lisp-extra-font-lock-loop-functions)
+                  "\\_>")
+         (lisp-extra-font-lock-match-loop-keywords
+          ;; Pre-match form
+          (progn
+            (goto-char (match-end 0))
+            (save-excursion
+              (goto-char (match-beginning 0))
+              (ignore-errors (scan-lisp-extras (point) 1))))
+          ;; Post-match form.
+          (goto-char (match-end 0))
+          ;; Faces
+          (1 font-lock-builtin-face)
+          (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2)) nil t)))
+        (;; For quote and backquote
+         ;;
+         ;; Matcher: Set match-data 1 if backquote.
+         lisp-extra-font-lock-match-quote-and-backquote
+         (1 lisp-extra-font-lock-backquote-face nil t)
+         (;; Submatcher, match part of quoted expression or comma.
+          lisp-extra-font-lock-match-quoted-content
+          ;; Pre-match form. Value of expression is limit for submatcher.
+          (progn
+            (goto-char (match-end 0))
+            ;; Search limit
+            (ignore-errors (scan-lisp-extras (point) 1)))
+          ;; Post-match form
+          (goto-char (match-end 0))
+          ;; Faces
+          (1 lisp-extra-font-lock-quoted-face append)
+          (2 lisp-extra-font-lock-backquote-face nil t)))
+        ;; For function read syntax
+        (,(concat "#'\\("
+                  symbol
+                  "\\)")
+         1 lisp-extra-font-lock-quoted-function-face)))))
 
-(defun pospcase-font-lock-lisp-mode-keywords-add ()
+(defvar-local pospcase-font-lock-lisp-keywords--installed nil
+  "BUffer local list for `pospcase-font-lock-lisp-mode'.")
+
+(defun pospcase-font-lock-lisp-keywords-add ()
+  "Activate `pcase' based font lock for Lisp modes."
   (set (make-local-variable 'font-lock-multiline) t)
-  (when (local-variable-p 'pospcase-font-lock-lisp-mode-keywords--installed)
-    (font-lock-remove-keywords nil pospcase-font-lock-lisp-mode-keywords--installed))
-  (set (make-local-variable 'pospcase-font-lock-lisp-mode-keywords--installed)
-       pospcase-font-lock-lisp-mode-keywords)
+  (when (local-variable-p 'pospcase-font-lock-lisp-keywords--installed)
+    (font-lock-remove-keywords nil pospcase-font-lock-lisp-keywords--installed))
+  (set (make-local-variable 'pospcase-font-lock-lisp-keywords--installed)
+       pospcase-font-lock-lisp-keywords)
   (font-lock-add-keywords nil
-                          pospcase-font-lock-lisp-mode-keywords--installed
+                          pospcase-font-lock-lisp-keywords--installed
                           'append))
 
-(defun pospcase-font-lock-lisp-mode-keywords-remove ()
-  "Remove font-lock keywords for `pcase' powered extra lisp highlithing."
-  (font-lock-remove-keywords nil pospcase-font-lock-lisp-mode-keywords--installed))
+(defun pospcase-font-lock-lisp-keywords-remove ()
+  "Deactivate `pcase' based font lock for Lisp modes."
+  (font-lock-remove-keywords nil pospcase-font-lock-lisp-keywords--installed))
 
 (defvar pospcase--dummy nil
   "Used in a hack for empty `multiple-value-bind'.")
 
 (defun pospcase-font-lock-build (patterns specs)
+  "Actual font lock code generator. More simplifications are
+planed."
   (let* ((matcher (let ((str (prin1-to-string
                               (if (consp (car patterns))
                                   (if (memq (caar patterns) '(\` \, quote))
@@ -587,90 +663,40 @@ length lists"
         ,@fontspecs)))))
 
 (defun pospcase-font-lock (mode patterns specs)
-  (let ((container (intern (format "pospcase-font-lock-%s-keywords" mode)))
-        (keywords (pospcase-font-lock-build patterns specs)))
+  "Font lock keywords generator with `pcase' powered pattern
+matching. Currently you can use sub-matchers:
+
+Group one: varlist, varlist-cars, destructuring, flet, macrolet
+
+Group two:  defstruct
+
+Group three: key
+
+So far sufficiently Common Lisp and Emacs Lisp highlighting is
+achieved with either of them. 
+
+Argument PATTERNS is a list of `pcase' patterns.
+
+And SPECS is a list of slightly extended fontspec for
+`font-lock-add-keywords' formed like:
+
+  (match-name . (list of font-face-name)) or
+  ((match-name . sub-matcher) . (list of font-face-name))
+
+See the code of `pospcase-font-lock-lisp-setup' for working
+examples."
+  (let* ((id (car (split-string (symbol-name mode) "-mode")))
+         (container (intern (format "pospcase-font-lock-%s-keywords" id)))
+         (keywords (pospcase-font-lock-build patterns specs)))
     (unless (boundp container)
       (eval `(defvar ,container nil
-               ,(format "List of font lock keywords for %s." mode))))
+               ,(format "List of font lock keywords for %s." id))))
     (mapc (lambda (keyword)
-              (unless (member keyword (symbol-value container))
-                (set container (cons keyword (symbol-value container)))))
-            keywords)))
+            (unless (member keyword (symbol-value container))
+              (set container (cons keyword (symbol-value container)))))
+          keywords)))
 
-(defvar pospcase-font-lock-lisp-mode-keywords
-  ;;
-  ;; non-`pcase' powered
-  ;;
-  (let* ((symbol-start "\\_<")
-         (symbol-end "\\_>")
-         (symbol (concat symbol-start
-                         "\\(?:\\sw\\|\\s_\\)+"
-                         symbol-end))
-         (space* "[ \t\n]*")
-         (space+ "[ \t\n]+"))
-    (cl-flet ((regexp-or (&rest exps)
-                         (concat "\\(?:"
-                                 (mapconcat #'identity exps "\\|")
-                                 "\\)")))
-      `(;; For `dolist'
-        (,(concat "("
-                  (regexp-opt lisp-extra-font-lock-dolist-functions)
-                  space+
-                  "(\\("
-                  symbol
-                  "\\)")
-         ;; Faces
-         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
-        ;; For `condition-case'
-        (,(concat "("
-                  (regexp-opt lisp-extra-font-lock-bind-first-functions)
-                  space+
-                  "\\("
-                  symbol
-                  "\\)")
-         ;; Faces
-         (1 (and (not (string= (match-string 1) "nil"))
-                 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
-        ;; For `cl-loop'
-        (,(concat "("
-                  (regexp-opt lisp-extra-font-lock-loop-functions)
-                  "\\_>")
-         (lisp-extra-font-lock-match-loop-keywords
-          ;; Pre-match form
-          (progn
-            (goto-char (match-end 0))
-            (save-excursion
-              (goto-char (match-beginning 0))
-              (ignore-errors (scan-lisp-extras (point) 1))))
-          ;; Post-match form.
-          (goto-char (match-end 0))
-          ;; Faces
-          (1 font-lock-builtin-face)
-          (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2)) nil t)))
-        (;; For quote and backquote
-         ;;
-         ;; Matcher: Set match-data 1 if backquote.
-         lisp-extra-font-lock-match-quote-and-backquote
-         (1 lisp-extra-font-lock-backquote-face nil t)
-         (;; Submatcher, match part of quoted expression or comma.
-          lisp-extra-font-lock-match-quoted-content
-          ;; Pre-match form. Value of expression is limit for submatcher.
-          (progn
-            (goto-char (match-end 0))
-            ;; Search limit
-            (ignore-errors (scan-lisp-extras (point) 1)))
-          ;; Post-match form
-          (goto-char (match-end 0))
-          ;; Faces
-          (1 lisp-extra-font-lock-quoted-face append)
-          (2 lisp-extra-font-lock-backquote-face nil t)))
-        ;; For function read syntax
-        (,(concat "#'\\("
-                  symbol
-                  "\\)")
-         1 lisp-extra-font-lock-quoted-function-face)))))
-
-(defun pospcase-font-lock-lisp-mode-setup ()
+(defun pospcase-font-lock-lisp-setup ()
   "Setup various font lock keywords for convenience."
   (pospcase-font-lock 'lisp-mode
                       '(`(defun (setf ,name) ,args . ,_)
@@ -736,36 +762,8 @@ length lists"
                           default
                           default)))))
 
-
-;;;###autoload
-
-(define-minor-mode pospcase-font-lock-lisp-mode-mode
-  "Minor mode that highlights `pcase' powered patterns in lisp."
-  :group 'pospcase
-  (if pospcase-font-lock-lisp-mode-mode
-      (progn
-        (unless pospcase-font-lock-lisp-mode-keywords
-          (pospcase-font-lock-lisp-mode-setup))
-        (pospcase-font-lock-lisp-mode-keywords-add))
-    (pospcase-font-lock-lisp-mode-keywords-remove))
-  ;; As of Emacs 24.4, `font-lock-fontify-buffer' is not legal to
-  ;; call, instead `font-lock-flush' should be used.
-  (if (fboundp 'font-lock-flush)
-      (font-lock-flush)
-    (when font-lock-mode
-      (with-no-warnings
-        (font-lock-fontify-buffer)))))
-
-(defcustom pospcase-font-lock-lisp-modes '(emacs-lisp-mode lisp-mode)
-  "List of modes where `pospcase-global-lisp-font-lock-mode' should be enabled."
-  :type '(repeat symbol)
-  :group 'pospcase)
-
-(define-global-minor-mode pospcase-font-lock-lisp-mode-global-mode
-  pospcase-font-lock-lisp-mode-mode
-  (lambda ()
-    (when (apply 'derived-mode-p pospcase-font-lock-lisp-modes)
-      (pospcase-font-lock-lisp-mode-mode 1)))
-  :group 'pospcase)
+(pospcase-font-lock-lisp-setup)
+(add-hook 'lisp-mode-hook #'pospcase-font-lock-lisp-keywords-add)
+(add-hook 'emacs-lisp-mode-hook #'pospcase-font-lock-lisp-keywords-add)
 
 (provide 'pospcase)
