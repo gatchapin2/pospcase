@@ -597,6 +597,79 @@ length lists"
                 (set container (cons keyword (symbol-value container)))))
             keywords)))
 
+(defvar pospcase-font-lock-lisp-mode-keywords
+  ;;
+  ;; non-`pcase' powered
+  ;;
+  (let* ((symbol-start "\\_<")
+         (symbol-end "\\_>")
+         (symbol (concat symbol-start
+                         "\\(?:\\sw\\|\\s_\\)+"
+                         symbol-end))
+         (space* "[ \t\n]*")
+         (space+ "[ \t\n]+"))
+    (cl-flet ((regexp-or (&rest exps)
+                         (concat "\\(?:"
+                                 (mapconcat #'identity exps "\\|")
+                                 "\\)")))
+      `(;; For `dolist'
+        (,(concat "("
+                  (regexp-opt lisp-extra-font-lock-dolist-functions)
+                  space+
+                  "(\\("
+                  symbol
+                  "\\)")
+         ;; Faces
+         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
+        ;; For `condition-case'
+        (,(concat "("
+                  (regexp-opt lisp-extra-font-lock-bind-first-functions)
+                  space+
+                  "\\("
+                  symbol
+                  "\\)")
+         ;; Faces
+         (1 (and (not (string= (match-string 1) "nil"))
+                 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
+        ;; For `cl-loop'
+        (,(concat "("
+                  (regexp-opt lisp-extra-font-lock-loop-functions)
+                  "\\_>")
+         (lisp-extra-font-lock-match-loop-keywords
+          ;; Pre-match form
+          (progn
+            (goto-char (match-end 0))
+            (save-excursion
+              (goto-char (match-beginning 0))
+              (ignore-errors (scan-lisp-extras (point) 1))))
+          ;; Post-match form.
+          (goto-char (match-end 0))
+          ;; Faces
+          (1 font-lock-builtin-face)
+          (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2)) nil t)))
+        (;; For quote and backquote
+         ;;
+         ;; Matcher: Set match-data 1 if backquote.
+         lisp-extra-font-lock-match-quote-and-backquote
+         (1 lisp-extra-font-lock-backquote-face nil t)
+         (;; Submatcher, match part of quoted expression or comma.
+          lisp-extra-font-lock-match-quoted-content
+          ;; Pre-match form. Value of expression is limit for submatcher.
+          (progn
+            (goto-char (match-end 0))
+            ;; Search limit
+            (ignore-errors (scan-lisp-extras (point) 1)))
+          ;; Post-match form
+          (goto-char (match-end 0))
+          ;; Faces
+          (1 lisp-extra-font-lock-quoted-face append)
+          (2 lisp-extra-font-lock-backquote-face nil t)))
+        ;; For function read syntax
+        (,(concat "#'\\("
+                  symbol
+                  "\\)")
+         1 lisp-extra-font-lock-quoted-function-face)))))
+
 (defun pospcase-font-lock-lisp-mode-setup ()
   "Setup various font lock keywords for convenience."
   (pospcase-font-lock 'lisp-mode
