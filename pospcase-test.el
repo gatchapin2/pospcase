@@ -395,7 +395,7 @@ foo
 (defvar pospcase--dummy nil
   "Used in a hack for empty `multiple-value-bind'.")
 
-(defun pospcase-font-lock (mode patterns &rest specs)
+(defmacro pospcase-font-lock (mode patterns &rest specs)
   (let* ((matcher (let ((str (prin1-to-string
                               (if (consp (car patterns))
                                   (if (memq (caar patterns) '(\` \, quote))
@@ -430,7 +430,7 @@ foo
          (group1 '(varlist varlist-cars destructuring flet macrolet))
          (group2 '(defstruct))
          (group3 '(key)))
-    `(font-lock-remove-keywords
+    `(font-lock-add-keywords
       ,mode
       '((,matcher
          (,(intern (concat "pospcase-match-" (symbol-name submatcher)))
@@ -454,12 +454,13 @@ foo
                             (progn
                               (forward-char)
                               (forward-sexp 2) ; skip keyword and name
-                              (forward-comment (buffer-size))
+                              (forward-comment most-positive-fixnum)
                               (when (equal
                                      (syntax-after (point))
                                      '(7)) ; skip docstring
                                 (forward-sexp))
-                              (setq pospcase--fence-start (1- (point)))
+                              (pp(setq pospcase--fence-start
+                                    (ignore-errors (pospcase-read (point)))))
                               ;; Search limit
                               (up-list)
                               (point))
@@ -472,7 +473,8 @@ foo
                               (or (nth 3 table) ; in string
                                   (nth 4 table))) ; in comment
                             (goto-char end)
-                          (setq pospcase--fence-start end)
+                          (setq pospcase--fence-start
+                                (ignore-errors (pospcase-read (1+ end))))
                           (if (condition-case nil
                                   (progn
                                     (backward-up-list)
@@ -499,7 +501,7 @@ foo
              match-end))
           (pospcase--postform)
           ,@fontspecs)))
-      )))
+      'append)))
 
 (ppr(pospcase-font-lock nil
                     '(`(mydefun (setf ,name ,name2) ,args . ,_)
@@ -606,6 +608,7 @@ foo
                     ((first . defstruct) . (font-lock-variable-name-face)))
 
 (mydefstruct foo "str" bar baz)
+
 (pcase '(mydefstruct foo "foo" bar baz)
   (`(mydefstruct ,name ,(pred stringp) ,first \, _) (list name first)))
 

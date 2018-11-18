@@ -334,9 +334,7 @@ length lists"
                    '((`(,name . ,_) (pospcase--list name))
                      (`,name (pospcase--list name)))))
     (if pospcase--fence-start
-        (let* ((temp (car (pospcase-read (point))))
-               (temp2 (member pospcase--fence-start temp))) ; emacs bug?
-          (or temp2 temp))
+        (member pospcase--fence-start (car (pospcase-read (point))))
       (car (pospcase-read (point)))))
    limit))
 
