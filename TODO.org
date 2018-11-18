@@ -1,24 +1,8 @@
 #+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
 * Bugs
+** TODO common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
+   - State "TODO"       from              [2018-11-18 Sun 18:56]
 * Features
-** TODO pospcase-font-lock [8/9]
-   - State "TODO"       from              [2018-11-15 Thu 19:42]
-   - [X] varlist-cars
-   - [X] varlist
-   - [X] destructuring
-   - [X] flet
-   - [X] macrolet
-   - [X] defstruct [2/2]
-     - [X] use syntax-ppss
-     - [X] docstring
-   - [X] &key [2/2]
-     - [X] no heading "(" needed
-     - [X] listp &mykey
-
-   - [X] heading keyword
-
-   - [ ] defmethod
-
 ** TODO Choose between dot-notation, pospcase-read-from-string, pospcase-read-from-temp-buffer
 
    - State "TODO"       from              [2018-11-17 Sat 08:14]

@@ -526,7 +526,8 @@ length lists"
         (,(concat "#'\\("
                   symbol
                   "\\)")
-         1 lisp-extra-font-lock-quoted-function-face)))))
+         1 lisp-extra-font-lock-quoted-function-face))))
+  "List of font lock keywords for lisp.")
 
 (defvar-local pospcase-font-lock-lisp-keywords--installed nil
   "BUffer local list for `pospcase-font-lock-lisp-mode'.")
@@ -559,7 +560,7 @@ planed."
                                     (caar patterns))
                                 (car patterns)))))
                     (string-match "^[^ \t\n]+" str)
-                    (match-string 0 str)))
+                    (regexp-quote (match-string 0 str))))
          (keyword (concat "\\<"
                           (substring matcher (string-match "[^(]" matcher))
                           "\\>"))
@@ -696,13 +697,18 @@ examples."
               (set container (cons keyword (symbol-value container)))))
           keywords)))
 
-(defun pospcase-font-lock-lisp-setup ()
-  "Setup various font lock keywords for convenience."
+(defun pospcase-font-lock-lisp-init ()
+  "Setup various eye candy font lock keywords for Common Lisp."
   (pospcase-font-lock 'lisp-mode
                       '(`(defun (setf ,name) ,args . ,_)
                         `(defun ,name ,args . ,_))
                       '((name . (font-lock-function-name-face))
                         ((args . varlist-cars) .
+                         ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(let* ,binds . ,_)
+                        `(let ,binds . ,_))
+                      '(((binds . varlist-cars) .
                          ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock  'lisp-mode
                        '(`(symbol-macrolet ,binds . ,_))
@@ -762,8 +768,10 @@ examples."
                           default
                           default)))))
 
-(pospcase-font-lock-lisp-setup)
-(add-hook 'lisp-mode-hook #'pospcase-font-lock-lisp-keywords-add)
-(add-hook 'emacs-lisp-mode-hook #'pospcase-font-lock-lisp-keywords-add)
+(defun pospcase-font-lock-lisp-setup ()
+  (interactive)
+  (pospcase-font-lock-lisp-init)
+  (add-hook 'lisp-mode-hook #'pospcase-font-lock-lisp-keywords-add)
+  (add-hook 'emacs-lisp-mode-hook #'pospcase-font-lock-lisp-keywords-add))
 
 (provide 'pospcase)
