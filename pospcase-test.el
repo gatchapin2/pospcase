@@ -505,6 +505,13 @@ foo
       'append)))
 
 (ppr(pospcase-font-lock nil
+                    '(&key &aux &optional)
+                    '((pospcase--dummy . key) . (font-lock-function-name-face
+                                                default
+                                                default))))
+
+
+(ppr(pospcase-font-lock nil
                     '(`(mydefun (setf ,name ,name2) ,args . ,_)
                       `(mydefun ,name ,name2 ,args . ,_))
                     '(name . (font-lock-function-name-face))
@@ -627,7 +634,7 @@ foo
 (pospcase-font-lock nil
                     (&mykey &aux &optional)
                     ((pospcase--dummy . key) . (font-lock-variable-name-face
-                                                font-lock-constant-face
-                                                font-lock-type-face)))
+                                                default
+                                                default)))
 
-(&mykey foo bar)
+(&mykey (foo bar baz))

@@ -198,7 +198,7 @@ backquotes are not supported."
           ('quote (list 'quote (list '\` (cons matcher ',_))))
           ('\` (list 'quote (list '\` (walk (cadr matcher)))))
           (otherwise (list 'quote (walk matcher))))
-      `,(list 'quote (cons matcher ',_)))))
+      `,(list 'quote (list '\` (cons matcher ',_))))))
 
 (defun pospcase (exp cases)
   "`pcase' variant for getting positional metadata."
@@ -228,7 +228,7 @@ backquotes are not supported."
                                               (translate (car node))
                                               (translate (cdr node))))
                                (t node))))
-                (collect (cadar case))
+                (when (consp (car case))(collect (cadar case)))
                 (translate (cadr case))))))
          cases))))
 
@@ -236,22 +236,24 @@ backquotes are not supported."
   "`pospcase' at position POS of buffer."
   (pospcase (pospcase-read pos) cases))
 
-
 (defun pospcase-pos (match)
+  "Extract positional data from a tree returned by
+`pospcase-read' or dot notation pattern within `pospcase' or
+`pospcase-at'."
   (when match
     (cond
-     ((numberp (cdr match))                        ; (BEG . END)
+     ((numberp (cdr match))                        ; (START . END)
       match)
      ((and (consp (cdr (car match)))
-           (numberp (cddr (car match))))           ; ((SEXP BEG . END)
-                                                   ;  ... (SEXP BEG . END))
+           (numberp (cddr (car match))))           ; ((SEXP START . END)
+                                                   ;  ... (SEXP START . END))
       (cons (cadr (car match))
             (cddr (car (last match)))))
      (t
-      (cons (if (numberp (car (car match)))        ; ((BEG . END) ...)
+      (cons (if (numberp (car (car match)))        ; ((START . END) ...)
                 (car (car match))
-              (cadar (car match)))                 ; (((SEXP BEG . END) ...) ...)
-            (if (numberp (cdr (car (last match)))) ; (... (BEG . END))
+              (cadar (car match)))                 ; (((SEXP START . END) ...) ...)
+            (if (numberp (cdr (car (last match)))) ; (... (START . END))
                 (cdr (car (last match)))
               (cddr (car (last (car (last match)))))))))))
 
