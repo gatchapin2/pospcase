@@ -340,9 +340,16 @@ foo
                 (values name varlist-cars))))
 (defun (setf ,name) ,varlist-cars  . ,_)
 
-(font-lock-add-keywords 'text-mode
-                        '("meow" (0 'font-lock-function-name-face nil t))
+(font-lock-add-keywords nil
+                        '(("meow" . font-lock-function-name-face))
                         'append)
+
+(font-lock-add-keywords nil
+                        '(("\\<woof\\>" . font-lock-function-name-face))
+                        'append)
+
+meow
+woof woof
 
 ;; workables
 
@@ -392,123 +399,25 @@ foo
       (search-backward "font-lock-remove-keywords")
       (replace-match "font-lock-add-keywords"))))
 
-(defvar pospcase--dummy nil
-  "Used in a hack for empty `multiple-value-bind'.")
+(pospcase-font-lock 'lisp-mode
+                    '(`(mydefun (setf ,name) ,args . ,_)
+                      `(mydefun ,name ,args . ,_))
+                    '((name . (font-lock-function-name-face))
+                      ((args . varlist-cars) . (font-lock-variable-name-face))))
 
-(defmacro pospcase-font-lock (mode patterns &rest specs)
-  (let* ((matcher (let ((str (prin1-to-string
-                              (if (consp (car patterns))
-                                  (if (memq (caar patterns) '(\` \, quote))
-                                      (cadar patterns)
-                                    (caar patterns))
-                                (car patterns)))))
-                    (string-match "^[^ \t\n]+" str)
-                    (concat (match-string 0 str) "[ \t\n]+")))
-         (submatcher (let ((temp specs) result)
-                       (while (and temp (null result))
-                         (setq result (and (consp (caar temp)) (cdaar temp))
-                               temp (cdr temp)))
-                       result))
-         (subvar (let ((temp specs) result)
-                   (while (and temp (null result))
-                     (setq result (and (consp (caar temp)) (caaar temp))
-                           temp (cdr temp)))
-                   result))
-         (vars (mapcar (lambda (spec) (if (consp (car spec)) (caar spec) (car spec)))
-                       specs))
-         (non-subvars (remove subvar vars))
-         (fontspecs (cl-loop with i = 0
-                             for spec in specs
-                             append (mapcar (lambda (font)
-                                              (list (incf i)
-                                                    (if (symbolp font)
-                                                        (list 'quote font)
-                                                      (apply (car font) (cdr font)))
-                                                    nil t))
-                                            (cdr spec))))
-         (cases (mapcar (lambda (pat) (list pat (cons 'values vars))) patterns))
-         (group1 '(varlist varlist-cars destructuring flet macrolet))
-         (group2 '(defstruct))
-         (group3 '(key)))
-    `(font-lock-add-keywords
-      ,mode
-      '((,matcher
-         (,(intern (concat "pospcase-match-" (symbol-name submatcher)))
-          (pospcase--preform
-           (goto-char (match-beginning 0))
-           (let ((match-end
+(let ((foo 'bar)
+      (bar 1))
+  (set foo (+ 1 (symbol-value foo)))
+  bar)
 
-                  ,(cond
+(length pospcase-font-lock-lisp-mode-keywords)
+(setq pospcase-font-lock-lisp-mode-keywords nil)
 
-                    ((memq submatcher group1)
-                     '(save-excursion
-                        (or
-                         (ignore-errors (scan-sexps (point) 1))
-                         (progn
-                           (end-of-defun)
-                           (point)))))
-
-                    ((memq submatcher group2)
-                     '(save-excursion
-                        (condition-case nil
-                            (progn
-                              (forward-char)
-                              (forward-sexp 2) ; skip keyword and name
-                              (forward-comment most-positive-fixnum)
-                              (when (equal
-                                     (syntax-after (point))
-                                     '(7)) ; skip docstring
-                                (forward-sexp)
-                                (forward-comment most-positive-fixnum))
-                              (pp(setq pospcase--fence-start
-                                    (ignore-errors (pospcase-read (point)))))
-                              ;; Search limit
-                              (up-list)
-                              (point))
-                          (error (end-of-defun)
-                                 (point)))))
-
-                    ((memq submatcher group3)
-                     '(let ((end (1- (match-end 0))))
-                        (if (let ((table (syntax-ppss (point))))
-                              (or (nth 3 table) ; in string
-                                  (nth 4 table))) ; in comment
-                            (goto-char end)
-                          (setq pospcase--fence-start
-                                (ignore-errors (pospcase-read (1+ end))))
-                          (if (condition-case nil
-                                  (progn
-                                    (backward-up-list)
-                                    (when (> (- (match-beginning 0) (point))
-                                             500) ; arbitrary limit to prevent inf-loop
-                                      (goto-char end)
-                                      nil))
-                                (error (goto-char end) nil))
-                              ;; Search limit
-                              (ignore-errors (scan-sexps (point 1)))
-                            end))))
-
-                    (t (error "Not supported submatcher.")))))
-             (multiple-value-bind ,vars (pospcase-at (point) ',cases)
-               (if (and ,(not (memq submatcher group3))
-                        (memq nil ,(cons 'list vars))) ; not exact match
-                   (goto-char match-end)
-                 ,(unless (null non-subvars)
-                    `(setq pospcase--prematches ,(cons 'list non-subvars)))
-
-                 ,(cond
-                   ((memq submatcher group1)
-                    `(goto-char (car ,subvar))))))
-             match-end))
-          (pospcase--postform)
-          ,@fontspecs)))
-      'append)))
-
-(ppr(pospcase-font-lock nil
-                    '(&key &aux &optional)
-                    '((pospcase--dummy . key) . (font-lock-function-name-face
-                                                default
-                                                default))))
+(ppr(pospcase-font-lock-build
+                    '(`(mydefun (setf ,name) ,args . ,_)
+                      `(mydefun ,name ,args . ,_))
+                    '((name . (font-lock-function-name-face))
+                      ((args . varlist-cars) . (font-lock-variable-name-face)))))
 
 
 (ppr(pospcase-font-lock nil
@@ -553,6 +462,7 @@ foo
                     ((args . varlist) . (font-lock-variable-name-face
                                          font-lock-type-face)))
 
+(mydefmethod foo (bar) baz quux)
 (ppr(pospcase-font-lock nil
                     '(`(destructuring-bind ,binds . ,_))
                     '((binds . destructuring) . (font-lock-variable-name-face))))
@@ -636,5 +546,11 @@ foo
                     ((pospcase--dummy . key) . (font-lock-variable-name-face
                                                 default
                                                 default)))
+
+(ppr(pospcase-font-lock nil
+                    '(&key &aux &optional)
+                    '((pospcase--dummy . key) . (font-lock-function-name-face
+                                                default
+                                                default))))
 
 (&mykey (foo bar baz))
