@@ -1,15 +1,16 @@
 #+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
 * Bugs
 * Features
-** TODO pospcase-font-lock [5/6]
+** TODO pospcase-font-lock [6/7]
    - State "TODO"       from              [2018-11-15 Thu 19:42]
    - [X] varlist-cars
    - [X] varlist
    - [X] destructuring
    - [X] flet
    - [X] macrolet
-   - [ ] defstruct
-   - [ ] &key
+   - [X] defstruct
+   - [ ] &key [0/1]
+     - [ ] no heading "(" needed
 ** TODO Choose between dot-notation, pospcase-read-from-string, pospcase-read-from-temp-buffer
 
    - State "TODO"       from              [2018-11-17 Sat 08:14]

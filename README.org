@@ -36,7 +36,7 @@
 
        ;; actual matching
        do (progn
-            (forward-comment 1)
+            (forward-comment most-positive-fixnum)
             (looking-at "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"))
 
        ;; collect matched symbol's range in a cons pair

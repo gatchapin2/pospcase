@@ -197,7 +197,8 @@ backquotes are not supported."
         (case (car matcher)
           ('quote (list 'quote (list '\` (cons matcher ',_))))
           ('\` (list 'quote (list '\` (walk (cadr matcher)))))
-          (otherwise (list 'quote (walk matcher)))))))
+          (otherwise (list 'quote (walk matcher))))
+      `,(list 'quote (cons matcher ',_)))))
 
 (defun pospcase (exp cases)
   "`pcase' variant for getting positional metadata."
@@ -247,37 +248,15 @@ backquotes are not supported."
    ((start . end)   ; (match-string 1) of second (match-data)
     (start . end))) ; (match-string 2) of second (match-data)")
 
-(defvar pospcase--prematches nil
-  "List of point pairs attached by matcher iterators at the head
-  of each list of point pairs.")
-(defun pospcase--list (&rest matches)
-  (append pospcase--prematches matches))
-
 (defvar pospcase--match-beginning nil
   "Start point of submatch 0 used by multiline font lock.")
 
-(defvar pospcase--fence-start nil
-  "Boundary point for discarding unnecessary positional data before it.")
-(defvar pospcase--fence-end nil
-  "Boundary point for discarding unnecessary positional data after it.")
+(defvar pospcase--prematches nil
+  "List of point pairs attached by matcher iterators at the head
+  of each list of point pairs.")
 
-(defun pospcase-fence (mlist)
-  "Discard everything before `pospcase--fence-start' and after
- `pospcase--fence-end' in MLIST. Made to overcome docstring
- occurrence uncertainty in `defstruct'"
-  (cl-loop for list in mlist
-           with temp
-           do (setq temp
-                    (cl-loop for pair in list
-                             when (and
-                                   (if pospcase--fence-start
-                                       (<= pospcase--fence-start (car pair))
-                                     t)
-                                   (if pospcase--fence-end
-                                       (>= pospcase--fence-end (cdr pair))
-                                     t))
-                             collect pair))
-           when temp collect temp))
+(defun pospcase--list (&rest matches)
+  (append pospcase--prematches matches))
 
 (defun pospcase--iterator (limit)
   "Actual iterator."
@@ -307,10 +286,7 @@ backquotes are not supported."
                        (and (consp temp) (null (car temp)))) ; empty list at `point'
                      (let ((mlist (pospcase--list nil)))
                        (when mlist (list mlist)))
-                     ,clause))
-           (when (or pospcase--fence-start pospcase--fence-end)
-             (setq pospcase--matches (pospcase-fence pospcase--matches)
-                   pospcase--fence-start nil)))
+                     ,clause)))
           (goto-char (1- ,limit)) ; whole parsing is already done, no crawling
          (pospcase--iterator ,limit))
      (error
@@ -328,6 +304,10 @@ backquotes are not supported."
     (car (pospcase-read (point))))
    limit))
 
+(defvar pospcase--fence-start nil
+  "Boundary cons cell (exp . (start . end)) for dropping
+  unnecessary tree branches before here.")
+
 (defun pospcase-match-key (limit)
   "Matcher iterator for a list of symbol or two or three length lists."
   (pospcase--call-iterator
@@ -338,7 +318,9 @@ backquotes are not supported."
                    '((`(,name ,init ,sup) (pospcase--list name init sup))
                      (`(,name ,init) (pospcase--list name init))
                      (`,name (pospcase--list name)))))
-    (car (pospcase-read (point))))
+    (if pospcase--fence-start
+        (member pospcase--fence-start (car (pospcase-read (point))))
+      (car (pospcase-read (point)))))
    limit))
 
 (defun pospcase-match-varlist-cars (limit)
@@ -351,8 +333,14 @@ length lists"
       (pospcase-at (point)
                    '((`(,name . ,_) (pospcase--list name))
                      (`,name (pospcase--list name)))))
-    (car (pospcase-read (point))))
+    (if pospcase--fence-start
+        (let* ((temp (car (pospcase-read (point))))
+               (temp2 (member pospcase--fence-start temp))) ; emacs bug?
+          (or temp2 temp))
+      (car (pospcase-read (point)))))
    limit))
+
+(defalias #'pospcase-match-defstruct #'pospcase-match-varlist-cars)
 
 (defun pospcase-match-flet (limit)
   "Matcher iterator for a list of `flet' bindings"
@@ -442,8 +430,7 @@ length lists"
   `(progn
      (setq pospcase--matches nil
            pospcase--prematches nil
-           pospcase--fence-start nil
-           pospcase--fence-end nil)
+           pospcase--fence-start nil)
      ,@body))
 
 (defun pospcase-lisp-keywords ()
@@ -647,27 +634,35 @@ The keywords highlight variable bindings and quoted expressions."
          ;; For `defstruct'
          (,(concat "("
                    "\\(?:cl-\\)?defstruct"
+                   space+
+                   "\\("
+                   symbol
+                   "\\)"
                    space+)
           (pospcase-match-varlist-cars
            (pospcase--preform
+            (setq pospcase--prematches
+                  (list (cons (match-beginning 1) (match-end 1))))
             (goto-char (match-beginning 0))
             (save-excursion
               (condition-case nil
                   (progn
                     (forward-char)
                     (forward-sexp 2)    ; skip keyword and name
-                    (forward-comment (buffer-size))
+                    (forward-comment most-positive-fixnum)
                     (when (= (following-char) ?\") ; skip docstring
-                      (forward-sexp)
-                      (forward-comment (buffer-size)))
-                    (setq pospcase--fence-start (1- (point)))
+                      (forward-sexp))
+                    (setq pospcase--fence-start
+                          (ignore-errors (pospcase-read (point))))
                     ;; Search limit
                     (up-list)
                     (point))
-                (error (end-of-defun)))))
+                (error (end-of-defun)
+                       (point)))))
            (pospcase--postform)
            ;; Faces
-           (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
+           (1 'font-lock-type-face nil t)
+           (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))
               nil t)))
 
          ;; For `&key'
@@ -678,10 +673,11 @@ The keywords highlight variable bindings and quoted expressions."
            (pospcase--preform
             (let ((end (1- (match-end 0))))
               (if (let ((table (syntax-ppss (point))))
-                    (or (nth 4 table)   ; in string
+                    (or (nth 3 table)   ; in string
                         (nth 4 table))) ; in comment
                   (goto-char end)
-                (setq pospcase--fence-start end)
+                (setq pospcase--fence-start
+                      (ignore-errors (pospcase-read (1+ end))))
                 (if (condition-case nil
                         (progn
                           (backward-up-list)

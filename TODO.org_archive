@@ -50,3 +50,32 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   - State "TODO"       from              [2018-11-16 Fri 06:37]
   - [X] inf-loop with ~&key~ in comment
 
+
+* TODO &key inf-loop [1/1]
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-17 Sat 12:34
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: TODO
+  :END:
+  - State "TODO"       from              [2018-11-17 Sat 11:38]
+  ~(funcall #'regexp-opt lisp-extra-argument-list-key-keywards)~
+  doesn’t loop, but
+
+  ~(concat (funcall #'regexp-opt lisp-extra-argument-list-key-keywards) space+)~
+  loops. Why?
+
+  - [X] (match-end 0) to (1- (match-end 0))
+
+
+* DONE defstruct fontspecs prematches mixup
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-17 Sat 14:48
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-11-17 Sat 14:48]
+  - State "TODO"       from              [2018-11-17 Sat 14:16]
