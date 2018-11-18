@@ -404,7 +404,7 @@ length lists"
                     (ignore-p temp)) return result
              else if (leaf-p temp) return (append
                                            result
-                                           (list (list (cdr temp))))
+                                           (list (pospcase--list (cdr temp))))
              else unless (ignore-p (car temp)) do (setq
                                                    result
                                                    (append
@@ -624,6 +624,11 @@ length lists"
                       '(((binds . destructuring) .
                          ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
+                      '(`(defmacro ,name ,args . ,_))
+                      '((name . (font-lock-function-name-face))
+                        ((args . destructuring) .
+                         ((lisp-extra-font-lock-variable-face-form (match-string 2))))))
+  (pospcase-font-lock 'lisp-mode
                       '(`(flet ,funs . ,_))
                       '(((funs . flet) .
                          (font-lock-function-name-face
@@ -641,19 +646,22 @@ length lists"
                          ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(&key whatever)
-                      '(((pospcase--dummy . key) . (font-lock-function-name-face
-                                                    default
-                                                    default))))
+                      '(((pospcase--dummy . key) .
+                         ((lisp-extra-font-lock-variable-face-form (match-string 1))
+                          default
+                          default))))
   (pospcase-font-lock 'lisp-mode
                       '(&aux whatever)
-                      '(((pospcase--dummy . key) . (font-lock-function-name-face
-                                                    default
-                                                    default))))
+                      '(((pospcase--dummy . key) .
+                         ((lisp-extra-font-lock-variable-face-form (match-string 1))
+                          default
+                          default))))
   (pospcase-font-lock 'lisp-mode
                       '(&optional whatever)
-                      '(((pospcase--dummy . key) . (font-lock-function-name-face
-                                                    default
-                                                    default)))))
+                      '(((pospcase--dummy . key) .
+                         ((lisp-extra-font-lock-variable-face-form (match-string 1))
+                          default
+                          default)))))
 
 
 ;;;###autoload

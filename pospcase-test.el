@@ -561,5 +561,12 @@ woof woof
              '((`(mydefmethod (setf ,name) ,args ,(pred keywordp) . ,_) t)
                (`(mydefmethod (setf ,name) ,args . ,_) t)
                (`(mydefmethod ,name ,args ,(pred keywordp) . ,_) t)
-               (`(mydefmethod ,name `,args . ,_) t)))
+               (`(mydefmethod ,name ,args . ,_) t)))
 (mydefmethod foo (bar) baz quux)
+
+
+(setq pospcase-font-lock-lisp-mode-keywords nil)
+(ppr(pospcase-font-lock-build '(`(defmacro ,name ,args . ,_))
+                          '((name . (font-lock-function-name-face))
+                            ((args . destructuring) .
+                             (font-lock-variable-name-face)))))
