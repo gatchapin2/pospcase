@@ -554,3 +554,12 @@ woof woof
                                                 default))))
 
 (&mykey (foo bar baz))
+
+
+
+(pospcase-at (point)
+             '((`(mydefmethod (setf ,name) ,args ,(pred keywordp) . ,_) t)
+               (`(mydefmethod (setf ,name) ,args . ,_) t)
+               (`(mydefmethod ,name ,args ,(pred keywordp) . ,_) t)
+               (`(mydefmethod ,name `,args . ,_) t)))
+(mydefmethod foo (bar) baz quux)
