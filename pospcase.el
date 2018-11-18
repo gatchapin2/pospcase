@@ -455,6 +455,9 @@ length lists"
 
 ;;; easy font-lock
 
+(defvar pospcase-font-lock-lisp-mode-keywords--installed nil
+  "BUffer local list for `pospcase-font-lock-lisp-mode-mode'.")
+
 (defun pospcase-font-lock-lisp-mode-keywords-add ()
   (set (make-local-variable 'font-lock-multiline) t)
   (when (local-variable-p 'pospcase-font-lock-lisp-mode-keywords--installed)
