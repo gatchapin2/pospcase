@@ -458,7 +458,8 @@ foo
                               (when (equal
                                      (syntax-after (point))
                                      '(7)) ; skip docstring
-                                (forward-sexp))
+                                (forward-sexp)
+                                (forward-comment most-positive-fixnum))
                               (pp(setq pospcase--fence-start
                                     (ignore-errors (pospcase-read (point)))))
                               ;; Search limit

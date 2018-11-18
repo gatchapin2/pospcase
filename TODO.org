@@ -8,9 +8,12 @@
    - [X] destructuring
    - [X] flet
    - [X] macrolet
-   - [X] defstruct
-   - [ ] &key [0/1]
-     - [ ] no heading "(" needed
+   - [X] defstruct [2/2]
+     - [X] use syntax-ppss
+     - [X] docstring
+   - [-] &key [1/2]
+     - [X] no heading "(" needed
+     - [ ] listp &mykey
 ** TODO Choose between dot-notation, pospcase-read-from-string, pospcase-read-from-temp-buffer
 
    - State "TODO"       from              [2018-11-17 Sat 08:14]

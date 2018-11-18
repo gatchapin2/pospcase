@@ -71,9 +71,9 @@ Which returns:
    ((((if 21 . 23)      ; (if bar baz (quux))
       (bar 24 . 27)
       (baz 34 . 37)     ; Note dot notation matches the rest of
-      (((quux 43 . 47)) ; s-expression. You have to `cdr' to get
-       42 . 48))        ; positional metadata in this case.
-     20 . 49)))
+      (((quux 43 . 47)) ; s-expression for a good technical reson.
+       42 . 48))        ; Use `pospcase-pos' to get positional metadata
+     20 . 49)))         ; when using dot notation for arbitrary tail match.
 
 You can reparse trees returned by `pospcase-read' or dot notation
 of `pospcase':
@@ -235,6 +235,25 @@ backquotes are not supported."
 (defun pospcase-at (pos cases)
   "`pospcase' at position POS of buffer."
   (pospcase (pospcase-read pos) cases))
+
+
+(defun pospcase-pos (match)
+  (when match
+    (cond
+     ((numberp (cdr match))                        ; (BEG . END)
+      match)
+     ((and (consp (cdr (car match)))
+           (numberp (cddr (car match))))           ; ((SEXP BEG . END)
+                                                   ;  ... (SEXP BEG . END))
+      (cons (cadr (car match))
+            (cddr (car (last match)))))
+     (t
+      (cons (if (numberp (car (car match)))        ; ((BEG . END) ...)
+                (car (car match))
+              (cadar (car match)))                 ; (((SEXP BEG . END) ...) ...)
+            (if (numberp (cdr (car (last match)))) ; (... (BEG . END))
+                (cdr (car (last match)))
+              (cddr (car (last (car (last match)))))))))))
 
 
 ;;; font-lock specific codes
@@ -649,7 +668,8 @@ The keywords highlight variable bindings and quoted expressions."
                     (forward-sexp 2)    ; skip keyword and name
                     (forward-comment most-positive-fixnum)
                     (when (= (following-char) ?\") ; skip docstring
-                      (forward-sexp))
+                      (forward-sexp)
+                      (forward-comment most-positive-fixnum))
                     (setq pospcase--fence-start
                           (ignore-errors (pospcase-read (point))))
                     ;; Search limit
