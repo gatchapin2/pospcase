@@ -238,23 +238,37 @@ backquotes are not supported."
   (pospcase (pospcase-read pos) cases))
 
 (defun pospcase-pos (match)
-  "Extract positional data from a tree returned by
-`pospcase-read' or dot notation pattern within `pospcase' or
-`pospcase-at'."
-  (when match
+  "Extract a positional metadata cons cell (start . end) from a
+sexp tree. Especially useful for `pospcase-read' or a pattern
+with dot cdr notation for `pospcase' or `pospcase-at' like:
+
+  (pospcase-pos (pospcase-read (point)))
+
+  or
+
+  (pospcase-pos (pospcase-at (point) '((`(,foo . ,bar) bar))))"
+  (when (consp match)
     (cond
-     ((numberp (cdr match))                        ; (START . END)
+
+     ((numberp (cdr match))                        ; (start . end)
       match)
+
+     ((and (consp (cdr match))                     ; (sexp . (start . end))
+           (numberp (cadr match))
+           (numberp (cddr match)))
+      (cdr match))
+
      ((and (consp (cdr (car match)))
-           (numberp (cddr (car match))))           ; ((SEXP START . END)
-                                                   ;  ... (SEXP START . END))
+           (numberp (cddr (car match))))           ; ((sexp start . end)
+                                                   ;  ... (sexp start . end))
       (cons (cadr (car match))
             (cddr (car (last match)))))
+
      (t
-      (cons (if (numberp (car (car match)))        ; ((START . END) ...)
+      (cons (if (numberp (car (car match)))        ; ((start . end) ...)
                 (car (car match))
-              (cadar (car match)))                 ; (((SEXP START . END) ...) ...)
-            (if (numberp (cdr (car (last match)))) ; (... (START . END))
+              (cadar (car match)))                 ; (((sexp start . end) ...) ...)
+            (if (numberp (cdr (car (last match)))) ; (... (start . end))
                 (cdr (car (last match)))
               (cddr (car (last (car (last match)))))))))))
 
