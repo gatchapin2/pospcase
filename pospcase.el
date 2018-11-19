@@ -828,71 +828,79 @@ with better comments."
        (,(intern (concat "pospcase-match-" (symbol-name submatcher)))
         (pospcase--preform
          (goto-char (match-beginning 0))
-         (let ((match-end
-                ,(cond
+         (let ((table (syntax-ppss (point))))
+           (cond
+            ((nth 3 table)              ; in string
+             (search-backward "\"" nil t)
+             (ignore-errors (forward-sexp))
+             (point))
+            ((nth 4 table)              ; in comment
+             (search-backward ";" nil t)
+             (skip-chars-backward ";")
+             (forward-comment most-positive-fixnum)
+             (point))
+            (t
+             (let ((match-end
+                    ,(cond
 
-                  ((memq submatcher varlist-group)
-                   '(save-excursion
-                      (or
-                       (ignore-errors
-                         (scan-sexps (match-end 0) 1)) ; same nested keywords are not supported
-                       (progn
-                         (end-of-defun)
-                         (point)))))
+                      ((memq submatcher varlist-group)
+                       '(save-excursion
+                          (or
+                           (ignore-errors
+                             (scan-sexps (match-end 0) 1)) ; nested same keywords are not supported
+                           (progn
+                             (end-of-defun)
+                             (point)))))
 
-                  ((memq submatcher defstruct-group)
-                   '(save-excursion
-                      (condition-case nil
-                          (progn
-                            (forward-char)
-                            (forward-sexp 2) ; skip keyword and name
-                            (forward-comment most-positive-fixnum)
-                            (when (equal
-                                   (syntax-after (point))
-                                   '(7)) ; skip docstring
-                              (forward-sexp)
-                              (forward-comment most-positive-fixnum))
-                            (setq pospcase--fence-start
-                                  (ignore-errors (pospcase-read (point))))
-                            ;; Search limit
-                            (up-list)
-                            (point))
-                        (error (end-of-defun)
-                               (point)))))
+                      ((memq submatcher defstruct-group)
+                       '(save-excursion
+                          (condition-case nil
+                              (progn
+                                (forward-char)
+                                (forward-sexp 2) ; skip keyword and name
+                                (forward-comment most-positive-fixnum)
+                                (when (equal
+                                       (syntax-after (point))
+                                       '(7)) ; skip docstring
+                                  (forward-sexp)
+                                  (forward-comment most-positive-fixnum))
+                                (setq pospcase--fence-start
+                                      (ignore-errors (pospcase-read (point))))
+                                ;; Search limit
+                                (up-list)
+                                (point))
+                            (error (end-of-defun)
+                                   (point)))))
 
-                  ((memq submatcher parameter-group)
-                   '(let ((end (1- (match-end 0))))
-                      (if (let ((table (syntax-ppss (point))))
-                            (or (nth 3 table)   ; in string
-                                (nth 4 table))) ; in comment
-                          (goto-char end)
-                        (setq pospcase--fence-start
-                              (ignore-errors (pospcase-read (1+ end))))
-                        (if (condition-case nil
-                                (progn
-                                  (backward-up-list)
-                                  (when (> (- (match-beginning 0) (point))
-                                           500) ; arbitrary limit to prevent inf-loop
-                                    (goto-char end)
-                                    nil))
-                              (error (goto-char end) nil))
-                            ;; Search limit
-                            (ignore-errors (scan-sexps (point 1)))
-                          end))))
+                      ((memq submatcher parameter-group)
+                       '(let ((end (1- (match-end 0))))
+                          (setq pospcase--fence-start
+                                (ignore-errors (pospcase-read (1+ end))))
+                          (if (condition-case nil
+                                  (progn
+                                    (backward-up-list)
+                                    (when (> (- (match-beginning 0) (point))
+                                             500) ; arbitrary limit to prevent inf-loop
+                                      (goto-char end)
+                                      nil))
+                                (error (goto-char end) nil))
+                              ;; Search limit
+                              (ignore-errors (scan-sexps (point 1)))
+                            end)))
 
-                  (t (error "Not supported submatcher.")))))
-           (multiple-value-bind ,vars (pospcase-at (point) ',cases)
-             (if (and ,(not (memq submatcher parameter-group))
-                      (memq nil ,(cons 'list vars))) ; not exact match
-                 (goto-char match-end)
-               ,(unless (null non-subvars)
-                  `(setq pospcase--prematches ,(cons 'list non-subvars)))
+                      (t (error "Not supported submatcher.")))))
+               (multiple-value-bind ,vars (pospcase-at (point) ',cases)
+                 (if (and ,(not (memq submatcher parameter-group))
+                          (memq nil ,(cons 'list vars))) ; not exact match
+                     (goto-char match-end)
+                   ,(unless (null non-subvars)
+                      `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-               ,(cond
-                 ((memq submatcher varlist-group)
-                  `(goto-char (car ,subvar))))))
+                   ,(cond
+                     ((memq submatcher varlist-group)
+                      `(goto-char (car ,subvar))))))
 
-           match-end))
+               match-end)))))
         (pospcase--postform)
         ,@fontspecs)))))
 
