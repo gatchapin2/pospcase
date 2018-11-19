@@ -1,7 +1,222 @@
-;;; Should I get rid of this dependency?
-(require 'lisp-extra-font-lock)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Stolen from pospcase-font-lock, for historical reason
 
+(defcustom pospcase-font-lock-dolist-functions
+  '("dolist"
+    "dotimes"
+    "cl-dolist"
+    "cl-dotimes")
+  "List of function using same syntax as `dolist' to bind variables."
+  :type '(repeat string)
+  :group 'pospcase-font-lock)
 
+(defcustom pospcase-font-lock-bind-first-functions
+  '("condition-case"
+    "define-symbol-macro"
+    "defvar*"
+    "defconstant*"
+    "defparameter*"
+    "define-special"
+    "define-interactive-keymap"
+    "define-stumpwm-type")
+  "List of function that bind their first argument."
+  :type '(repeat string)
+  :group 'pospcase-font-lock)
+
+(defcustom pospcase-font-lock-loop-functions
+  '("loop"
+    "cl-loop")
+  "List of functions using same syntax as `loop' to bind variables.."
+  :type '(repeat string)
+  :group 'pospcase-font-lock)
+
+(defcustom pospcase-font-lock-special-variable-name-face
+  'font-lock-warning-face
+  "The face used to highlight special variables bound by `let'.
+
+A special variable is a global variable defined by `defvar'. See
+`special-variable-p' for details.
+
+To disable this highlighting, set this to nil. To highlight
+special variables like plain variables, set this to
+`font-lock-variable-name-face'."
+  :type '(choice (const nil)
+                 face)
+  :group 'pospcase-font-lock)
+
+(defcustom pospcase-font-lock-quoted-face
+  'font-lock-constant-face
+  "The face used to highlight quoted expressions.
+To disable this highlighting, set this to nil."
+  :type '(choice (const nil)
+                 face)
+  :group 'pospcase-font-lock)
+
+(defcustom pospcase-font-lock-backquote-face
+  'font-lock-warning-face
+  "The face used to highlight backquotes and the comma operator.
+To disable this highlighting, set this to nil."
+  :type '(choice (const nil)
+                 face)
+  :group 'pospcase-font-lock)
+
+(defcustom pospcase-font-lock-quoted-function-face
+  'font-lock-function-name-face
+  "The face used to highlight #'-quoted function symbols.
+To disable this highlighting, set this to nil."
+  :type '(choice (const nil)
+                 face)
+  :group 'pospcase-font-lock)
+
+(defun pospcase-font-lock-variable-face-form (name)
+  "A form suitable for a font-lock face expression.
+
+NAME is a form that should evalute to the name of the symbol, as a string."
+  `(if (ignore-errors (let ((symbol (intern-soft ,name)))
+                        (and symbol
+                             (special-variable-p symbol))))
+       pospcase-font-lock-special-variable-name-face
+     font-lock-variable-name-face))
+
+(defun pospcase-font-lock-match-quote-and-backquote (limit)
+  "Search for quote and backquote in in code.
+Set match data 1 if character matched is backquote."
+  (let (res)
+    (while
+        (progn (setq res (re-search-forward "\\(?:\\(`\\)\\|'\\)" limit t))
+               (and res
+                    (pospcase-font-lock-is-in-comment-or-string
+                     (match-beginning 0)))))
+    res))
+
+(defun pospcase-font-lock-match-quoted-content (limit)
+  "Match next part of a quoted content.
+
+Match up to next comma operator or quoted subexpression, or to
+the end of the quoted expression."
+  (and (< (point) limit)
+       (let ((p (point))
+             res)
+         (while
+             (progn
+               (setq res (re-search-forward "\\(,@?\\|[`']\\)" limit t))
+               (and res
+                    (pospcase-font-lock-is-in-comment-or-string
+                     (match-beginning 0)))))
+         (if res
+             ;; Match up to next quoted subpart or comma operator.
+             (let ((is-comma (eq (char-after (match-beginning 0)) ?,)))
+               (set-match-data (list
+                                ;; Match data 0: Full match.
+                                p (match-end 0)
+                                ;; Match data 1: Part of the quoted expression
+                                p
+                                (match-beginning 0)
+                                ;; Match data 2; Comma operator (if present)
+                                (and is-comma (match-beginning 0))
+                                (and is-comma (match-end 0))))
+               (condition-case nil
+                   (forward-sexp)
+                 (error (goto-char limit))))
+           ;; Match to the end of the quoted expression.
+           (set-match-data (list p limit
+                                 p limit))
+           (goto-char limit))
+         t)))
+
+(defvar pospcase-font-lock-loop-keywords
+  '("=" "above" "across" "across-ref" "always" "and" "append" "as"
+    "being" "below" "buffer" "buffers" "by"
+    "collect" "collecting" "concat" "count"
+    "do" "doing" "downfrom" "downto"
+    "each" "element" "elements" "else" "end"
+    "extent" "extents" "external-symbol" "external-symbols"
+    "finally" "frames" "from"
+    "hash-key" "hash-keys" "hash-value" "hash-values"
+    "if" "in" "in-ref" "initially" "interval" "intervals"
+    "key-binding" "key-bindings" "key-code" "key-codes" "key-seq" "key-seqs"
+    "maximize" "minimize"
+    "named" "nconc" "nconcing" "never"
+    "of" "of-ref" "on" "overlay" "overlays"
+    "present-symbol" "present-symbols" "property"
+    "repeat" "return"
+    "screen" "screens" "sum" "symbol" "symbols"
+    "the" "then" "thereis" "to"
+    "unless" "until" "upfrom" "upto" "using"
+    "vconcat"
+    "when" "while" "windows")
+  "List of `cl-loop' named parameters, excluding variable binding ones.")
+
+(defvar pospcase-font-lock-loop-keywords-with-var '("for"
+                                                    "index"
+                                                    "into"
+                                                    "with")
+  "List of `cl-loop' named variable binding parameters.")
+
+(defun pospcase-font-lock-match-loop-keywords (limit)
+  "Match named keyword of `loop' and highlight variable arguments."
+  (while
+      (progn
+        (forward-comment (buffer-size))
+        (and (< (point) limit)
+             (not (looking-at
+                   (concat
+                    "\\_<"
+                    "\\("
+                    (regexp-opt (append
+                                 pospcase-font-lock-loop-keywords-with-var
+                                 pospcase-font-lock-loop-keywords))
+                    "\\)"
+                    "\\_>")))))
+    (condition-case nil
+        (forward-sexp)
+      (error (goto-char limit))))
+  (if (not (< (point) limit))
+      nil
+    (goto-char (match-end 0))
+    (when (member (match-string 1) pospcase-font-lock-loop-keywords-with-var)
+      (forward-comment (buffer-size))
+      (let ((var-start (point)))
+        (when (condition-case nil
+                  (progn
+                    (forward-sexp)
+                    t)
+                (error nil))
+          (set-match-data (list
+                           (match-beginning 0)
+                           (point)
+                           (match-beginning 1)
+                           (match-end 1)
+                           var-start
+                           (point))))))
+    t))
+
+(defun pospcase-font-lock-is-in-comment-or-string (pos)
+  "Return non-nil if POS is in a comment, string, constant, or reader macro.
+
+This assumes that Font Lock is active and has fontified comments
+and strings."
+  (or (let ((props (text-properties-at (point)))
+            (faces '()))
+        (while props
+          (let ((pr (pop props))
+                (value (pop props)))
+            (if (eq pr 'face)
+                (setq faces value))))
+        (unless (listp faces)
+          (setq faces (list faces)))
+        (or (memq 'font-lock-comment-face faces)
+            (memq 'font-lock-string-face faces)
+            (memq 'font-lock-doc-face faces)))
+      ;; Plain character constant ?<char>.
+      (eq (char-before pos) ??)
+      ;; Escaped character constant ?\<char>.
+      (and (eq (char-before pos) ?\\)
+           (eq (char-before (- pos 1)) ??))
+      ;; Reader macro like #'.
+      (eq (char-before pos) ?#)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; `pcase' powered matcher codes
 
 (defun pospcase-read (pos)
@@ -298,7 +513,7 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
   "Actual iterator."
   (if pospcase--matches
       (let ((mlist (cl-loop for pair in (car pospcase--matches)
-                            append (-cons-to-list pair))))
+                            append (list (car pair) (cdr pair)))))
         (set-match-data (append (list pospcase--match-beginning
                                       limit)
                                 mlist))
@@ -488,61 +703,61 @@ length lists"
                                  "\\)")))
       `(;; For `dolist'
         (,(concat "("
-                  (regexp-opt lisp-extra-font-lock-dolist-functions)
+                  (regexp-opt pospcase-font-lock-dolist-functions)
                   space+
                   "(\\("
                   symbol
                   "\\)")
          ;; Faces
-         (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
+         (1 ,(pospcase-font-lock-variable-face-form '(match-string 1))))
         ;; For `condition-case'
         (,(concat "("
-                  (regexp-opt lisp-extra-font-lock-bind-first-functions)
+                  (regexp-opt pospcase-font-lock-bind-first-functions)
                   space+
                   "\\("
                   symbol
                   "\\)")
          ;; Faces
          (1 (and (not (string= (match-string 1) "nil"))
-                 ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
+                 ,(pospcase-font-lock-variable-face-form '(match-string 1)))))
         ;; For `cl-loop'
         (,(concat "("
-                  (regexp-opt lisp-extra-font-lock-loop-functions)
+                  (regexp-opt pospcase-font-lock-loop-functions)
                   "\\_>")
-         (lisp-extra-font-lock-match-loop-keywords
+         (pospcase-font-lock-match-loop-keywords
           ;; Pre-match form
           (progn
             (goto-char (match-end 0))
             (save-excursion
               (goto-char (match-beginning 0))
-              (ignore-errors (scan-lisp-extras (point) 1))))
+              (ignore-errors (scan-sexps (point) 1))))
           ;; Post-match form.
           (goto-char (match-end 0))
           ;; Faces
           (1 font-lock-builtin-face)
-          (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2)) nil t)))
+          (2 ,(pospcase-font-lock-variable-face-form '(match-string 2)) nil t)))
         (;; For quote and backquote
          ;;
          ;; Matcher: Set match-data 1 if backquote.
-         lisp-extra-font-lock-match-quote-and-backquote
-         (1 lisp-extra-font-lock-backquote-face nil t)
+         pospcase-font-lock-match-quote-and-backquote
+         (1 pospcase-font-lock-backquote-face nil t)
          (;; Submatcher, match part of quoted expression or comma.
-          lisp-extra-font-lock-match-quoted-content
+          pospcase-font-lock-match-quoted-content
           ;; Pre-match form. Value of expression is limit for submatcher.
           (progn
             (goto-char (match-end 0))
             ;; Search limit
-            (ignore-errors (scan-lisp-extras (point) 1)))
+            (ignore-errors (scan-sexps (point) 1)))
           ;; Post-match form
           (goto-char (match-end 0))
           ;; Faces
-          (1 lisp-extra-font-lock-quoted-face append)
-          (2 lisp-extra-font-lock-backquote-face nil t)))
+          (1 pospcase-font-lock-quoted-face append)
+          (2 pospcase-font-lock-backquote-face nil t)))
         ;; For function read syntax
         (,(concat "#'\\("
                   symbol
                   "\\)")
-         1 lisp-extra-font-lock-quoted-function-face))))
+         1 pospcase-font-lock-quoted-function-face))))
   "List of font lock keywords for lisp.")
 
 (defvar-local pospcase-font-lock-lisp-keywords--installed nil
@@ -722,19 +937,19 @@ examples."
                         `(defun ,name ,args . ,_))
                       '((name . (font-lock-function-name-face))
                         ((args . varlist-cars) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(let* ,binds . ,_))
                       '(((binds . varlist-cars) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(let ,binds . ,_))
                       '(((binds . varlist-cars) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock  'lisp-mode
                        '(`(symbol-macrolet ,binds . ,_))
                        '(((binds . varlist) .
-                          ((lisp-extra-font-lock-variable-face-form (match-string 1))
+                          ((pospcase-font-lock-variable-face-form (match-string 1))
                            font-lock-constant-face))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defmethod (setf ,name) ,args ,(pred keywordp) . ,_)
@@ -743,49 +958,49 @@ examples."
                         `(defmethod ,name ,args . ,_))
                       '((name . (font-lock-function-name-face))
                         ((args . varlist) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))
                           font-lock-type-face))))
   (pospcase-font-lock 'lisp-mode
                       '(`(destructuring-bind ,binds . ,_))
                       '(((binds . destructuring) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defmacro ,name ,args . ,_))
                       '((name . (font-lock-function-name-face))
                         ((args . destructuring) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 2))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(flet ,funs . ,_))
                       '(((funs . flet) .
                          (font-lock-function-name-face
-                          (lisp-extra-font-lock-variable-face-form (match-string 2))))))
+                          (pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(macrolet ,macros . ,_))
                       '(((macros . macrolet) .
                          (font-lock-function-name-face
-                          (lisp-extra-font-lock-variable-face-form (match-string 2))))))
+                          (pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defstruct ,name ,(pred stringp) ,first . ,_)
                         `(defstruct ,name ,first . ,_))
                       '((name . (font-lock-type-face))
                         ((first . defstruct) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(&key whatever)
                       '(((pospcase--dummy . key) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))
                           default
                           default))))
   (pospcase-font-lock 'lisp-mode
                       '(&aux whatever)
                       '(((pospcase--dummy . key) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))
                           default
                           default))))
   (pospcase-font-lock 'lisp-mode
                       '(&optional whatever)
                       '(((pospcase--dummy . key) .
-                         ((lisp-extra-font-lock-variable-face-form (match-string 1))
+                         ((pospcase-font-lock-variable-face-form (match-string 1))
                           default
                           default)))))
 
