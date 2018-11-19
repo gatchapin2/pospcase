@@ -75,3 +75,25 @@
   : (1 . 41)
 
   More detailed explanation can be found in ~pospcase-read~ docstring.
+
+* Limitation
+  No support for nested binding list like:
+
+  #+BEGIN_SRC emacs-lisp
+    (let ((foo
+           (let ((bar 'baz))
+             bar)))
+      foo)
+  #+END_SRC
+
+  But supports:
+
+  #+BEGIN_SRC emacs-lisp
+    (let ((foo 'bar))
+      (let ((baz foo))
+        baz))
+  #+END_SRC
+
+  This limitation is maybe due to my inexperience with font-lock
+  programming and ignorance of the internals. I’m eager to support it
+  though.
