@@ -606,7 +606,7 @@ are planned."
                    '(save-excursion
                       (or
                        (ignore-errors
-                         (scan-sexps (point) 1)) ; same nested keywords are not supported
+                         (scan-sexps (match-end 0) 1)) ; same nested keywords are not supported
                        (progn
                          (end-of-defun)
                          (point)))))
