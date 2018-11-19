@@ -760,6 +760,9 @@ length lists"
          1 pospcase-font-lock-quoted-function-face))))
   "List of font lock keywords for lisp.")
 
+(defvar-local pospcase-font-lock-lisp-local-keywords nil
+  "List of font lock buffer local keywords for lisp.")
+
 (defvar-local pospcase-font-lock-lisp-keywords--installed nil
   "BUffer local list for `pospcase-font-lock-lisp-mode'.")
 

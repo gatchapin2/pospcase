@@ -57,15 +57,21 @@
   With ~pospcase-read~ you can get the same result with:
 
   #+BEGIN_SRC emacs-lisp
-    (backward-up-list)
-    (cl-loop for pair in (car (pospcase-read (point))) ; `car' because `cdr' contains
-                                                       ; position data of entire list
-             collect (cdr pair))
+    (if (zerop current-level)
+        (error "The point is in the top level.")
+      (backward-up-list)
+
+      (cl-loop for pair in (car (pospcase-read (point))) ; `car' because `cdr' contains
+                                                         ; position data of entire list
+               collect (cdr pair)))
   #+END_SRC
 
-  Moreover, recently, Emacs got this nice pattern matching macro
-  called ~pcase~. Nowadays You can easily match and destructure any kind
-  of S-expression whenever you want.
+  Sorry, a little bit too dramatic. I admit it’s exaggerated and real
+  codes are more messier than the above.
+
+  BTW, recently Emacs got this nice pattern matching macro called
+  ~pcase~. Nowadays You can easily match and destructure any kind of
+  S-expression whenever you want.
 
   I suppose the above reasons are good enough to write a ~pcase~-based
   font-locker.

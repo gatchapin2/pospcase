@@ -2,4 +2,6 @@
 * Bugs
 ** TODO Common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
    - State "TODO"       from              [2018-11-18 Sun 18:56]
+** TODO inf-loop with cl-cookbook/macros.md
+   - State "TODO"       from              [2018-11-19 Mon 10:57]
 * Features
