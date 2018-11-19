@@ -568,8 +568,8 @@ length lists"
 
 (defun pospcase-font-lock-build (patterns specs)
   "Actual font lock keywords generator. Deep magic is
-involved. Don't dismay More simplification and better commenting
-are planned."
+involved. Don't dismay. I'm planning to simplify and to supply
+with better comments."
   (let* ((matcher (let ((str (prin1-to-string
                               (if (consp (car patterns))
                                   (if (memq (caar patterns) '(\` \, quote))
