@@ -23,10 +23,12 @@
 
   #+BEGIN_SRC emacs-lisp
     ;;; match and collect all symbol positions with the same nest level
-    (let ((current-level (car (syntax-ppss))))
+    (let ((current-level (car (syntax-ppss)))
+          (symbol-pat "\\_<\\(?:\\sw\\|\\s_\\)+\\_>")
+          (skip-pat "\\(?:\\sw\\|\\s_\\|\\s \\)"))
 
       ;; skip the starting non-symbol chars
-      (skip-chars-forward "\\(?:\\sw\\|\\s_\\|\\s \\)")
+      (skip-chars-forward skip-pat)
 
       (cl-loop
        with result
@@ -37,7 +39,7 @@
        ;; actual matching
        do (progn
             (forward-comment most-positive-fixnum)
-            (looking-at "\\_<\\(?:\\sw\\|\\s_\\)+\\_>"))
+            (looking-at symbol-pat))
 
        ;; collect matched symbol's range in a cons pair
        if (= (car (syntax-ppss)) current-level)
@@ -46,7 +48,7 @@
        ;; skip non-interesting characters
        do (progn
             (goto-char (match-end 0))
-            (skip-chars-forward "\\(?:\\sw\\|\\s_\\|\\s \\)"))))
+            (skip-chars-forward skip-pat))))
   #+END_SRC
 
   Moreover, recently Emacs got this nice pattern matching macro called
