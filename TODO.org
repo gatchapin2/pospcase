@@ -1,8 +1,5 @@
 #+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
 * Bugs
-** TODO common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
+** TODO Common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
    - State "TODO"       from              [2018-11-18 Sun 18:56]
 * Features
-** TODO Choose between dot-notation, pospcase-read-from-string, pospcase-read-from-temp-buffer
-
-   - State "TODO"       from              [2018-11-17 Sat 08:14]

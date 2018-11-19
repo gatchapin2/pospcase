@@ -5,8 +5,9 @@
 ;;; `pcase' powered matcher codes
 
 (defun pospcase-read (pos)
-  "Read a s-expression at POS. Recursively attach positional
-metadata (start . end) at cdr of each s-expression.
+  "Read a s-expression at POS. Recursively wrap each s-expression
+in cons cell then attach positional metadata (start . end) at
+each `cdr'.
 
 For example, when reading from a buffer with contents:
 
@@ -311,7 +312,8 @@ backquotes are not supported."
           (goto-char (1- ,limit)) ; whole parsing is already done, no crawling
          (pospcase--iterator ,limit))
      (error
-      (goto-char ,limit))))
+      (goto-char ,limit)
+      nil)))
 
 (defun pospcase-match-varlist (limit)
   "Matcher iterator for a list of symbol or two length lists."
@@ -551,8 +553,9 @@ length lists"
   "Used in a hack for empty `multiple-value-bind'.")
 
 (defun pospcase-font-lock-build (patterns specs)
-  "Actual font lock code generator. More simplifications are
-planed."
+  "Actual font lock keywords generator. Deep magic is
+involved. Don't dismay More simplification and better commenting
+are planned."
   (let* ((matcher (let ((str (prin1-to-string
                               (if (consp (car patterns))
                                   (if (memq (caar patterns) '(\` \, quote))
@@ -561,9 +564,9 @@ planed."
                                 (car patterns)))))
                     (string-match "^[^ \t\n]+" str)
                     (regexp-quote (match-string 0 str))))
-         (keyword (concat "\\<"
+         (keyword (concat "\\_<"
                           (substring matcher (string-match "[^(]" matcher))
-                          "\\>"))
+                          "\\_>"))
          (submatcher (let ((temp specs) result)
                        (while (and temp (null result))
                          (setq result (and (consp (caar temp)) (cdaar temp))
@@ -602,7 +605,8 @@ planed."
                   ((memq submatcher varlist-group)
                    '(save-excursion
                       (or
-                       (ignore-errors (scan-sexps (point) 1))
+                       (ignore-errors
+                         (scan-sexps (point) 1)) ; same nested keywords are not supported
                        (progn
                          (end-of-defun)
                          (point)))))
@@ -706,8 +710,11 @@ examples."
                         ((args . varlist-cars) .
                          ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(let* ,binds . ,_)
-                        `(let ,binds . ,_))
+                      '(`(let* ,binds . ,_))
+                      '(((binds . varlist-cars) .
+                         ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(let ,binds . ,_))
                       '(((binds . varlist-cars) .
                          ((lisp-extra-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock  'lisp-mode
