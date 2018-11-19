@@ -769,7 +769,8 @@ length lists"
   (when (local-variable-p 'pospcase-font-lock-lisp-keywords--installed)
     (font-lock-remove-keywords nil pospcase-font-lock-lisp-keywords--installed))
   (set (make-local-variable 'pospcase-font-lock-lisp-keywords--installed)
-       pospcase-font-lock-lisp-keywords)
+       (append pospcase-font-lock-lisp-local-keywords
+               pospcase-font-lock-lisp-keywords))
   (font-lock-add-keywords nil
                           pospcase-font-lock-lisp-keywords--installed
                           'append))
@@ -904,7 +905,7 @@ with better comments."
         (pospcase--postform)
         ,@fontspecs)))))
 
-(defun pospcase-font-lock (mode patterns specs)
+(defun pospcase-font-lock (mode patterns specs &optional buffer-local-p)
   "Font lock keywords generator with `pcase' powered pattern
 matching. Currently you can use sub-matchers:
 
@@ -915,7 +916,7 @@ Group two:  defstruct
 Group three: key
 
 So far sufficiently Common Lisp and Emacs Lisp highlighting is
-achieved with either of them. 
+achieved by using them.
 
 Argument PATTERNS is a list of `pcase' patterns.
 
@@ -928,11 +929,18 @@ And SPECS is a list of slightly extended fontspec for
 See the code of `pospcase-font-lock-lisp-setup' for working
 examples."
   (let* ((id (car (split-string (symbol-name mode) "-mode")))
-         (container (intern (format "pospcase-font-lock-%s-keywords" id)))
+         (container (intern (format "pospcase-font-lock-%s%s-keywords"
+                                    id
+                                    (if buffer-local-p "-local" ""))))
          (keywords (pospcase-font-lock-build patterns specs)))
     (unless (boundp container)
-      (eval `(defvar ,container nil
-               ,(format "List of font lock keywords for %s." id))))
+      (eval `(progn
+               (,(if buffer-local-p 'defvar-local 'defvar)
+                ,container
+                nil
+                ,(format "List of font lock %skeywords for %s."
+                         (if buffer-local-p "buffer local " "")
+                         id)))))
     (mapc (lambda (keyword)
             (unless (member keyword (symbol-value container))
               (set container (cons keyword (symbol-value container)))))
@@ -979,6 +987,11 @@ examples."
                          ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(flet ,funs . ,_))
+                      '(((funs . flet) .
+                         (font-lock-function-name-face
+                          (pospcase-font-lock-variable-face-form (match-string 2))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(labels ,funs . ,_))
                       '(((funs . flet) .
                          (font-lock-function-name-face
                           (pospcase-font-lock-variable-face-form (match-string 2))))))
