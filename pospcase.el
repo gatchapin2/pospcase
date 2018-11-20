@@ -305,60 +305,62 @@ which returns:
   (20 . 49)"
   (cl-labels
       ((walk (limit)
-             (destructuring-bind (start sexp . lim)
-                 (cons (point)
-                       (condition-case err
-                           (read-from-string
-                            (buffer-substring-no-properties (point) limit))
-                         (invalid-read-syntax
-                          (cons nil (- limit (point))))))
-               (incf lim (point))
-               (forward-comment lim)
-               (cons
-                (if (or (atom sexp)
-                        (memq (car sexp) '(\` \, quote function)))
-                    sexp
-                  (down-list)
-                  (cl-loop
-                   with str
-                   with rpair
-                   with dot
-                   with temp
-                   with result
-                   do (setq str (progn
-                                  (forward-comment lim)
-                                  (buffer-substring-no-properties (point) lim))
-                            rpair
-                            (condition-case err
-                                (read-from-string str)
-                              (invalid-read-syntax
-                               (if (string= (cadr err) ".")
-                                   (progn
-                                     (setq dot t
-                                           str (progn
-                                                 (forward-sexp)
-                                                 (forward-comment lim)
-                                                 (buffer-substring-no-properties (point) lim)))
-                                     (read-from-string str))
-                                 (cons nil (- limit (point))))))
-                            rlim (+ (point) (cdr rpair))
-                            temp (if (or (atom (car rpair))
-                                         (memq (car rpair) '(\` \, quote function)))
-                                     (cons (car rpair) (cons (point) rlim))
-                                   (save-excursion
-                                     (walk rlim))))
-                   if dot
-                   do (setq result (cons result temp))
-                   else
-                   do (setq result (append result (list temp)))
-                   until (progn
-                           (ignore-errors (forward-sexp))
-                           (forward-comment lim)
-                           (while (> (skip-chars-forward ")") 0)
-                             (forward-comment lim))
-                           (>= (point) lim))
-                   finally return result))
-                (cons start lim)))))
+             (condition-case err
+                 (destructuring-bind (start sexp . lim)
+                     (cons (point)
+                           (condition-case err
+                               (read-from-string
+                                (buffer-substring-no-properties (point) limit))
+                             (invalid-read-syntax
+                              (cons nil (- limit (point))))))
+                   (incf lim (point))
+                   (forward-comment lim)
+                   (cons
+                    (if (or (atom sexp)
+                            (memq (car sexp) '(\` \, quote function)))
+                        sexp
+                      (down-list)
+                      (cl-loop
+                       with str
+                       with rpair
+                       with dot
+                       with temp
+                       with result
+                       do (setq str (progn
+                                      (forward-comment lim)
+                                      (buffer-substring-no-properties (point) lim))
+                                rpair
+                                (condition-case err
+                                    (read-from-string str)
+                                  (invalid-read-syntax
+                                   (if (string= (cadr err) ".")
+                                       (progn
+                                         (setq dot t
+                                               str (progn
+                                                     (forward-sexp)
+                                                     (forward-comment lim)
+                                                     (buffer-substring-no-properties (point) lim)))
+                                         (read-from-string str))
+                                     (cons nil (- limit (point))))))
+                                rlim (+ (point) (cdr rpair))
+                                temp (if (or (atom (car rpair))
+                                             (memq (car rpair) '(\` \, quote function)))
+                                         (cons (car rpair) (cons (point) rlim))
+                                       (save-excursion
+                                         (walk rlim))))
+                       if dot
+                       do (setq result (cons result temp))
+                       else
+                       do (setq result (append result (list temp)))
+                       until (progn
+                               (ignore-errors (forward-sexp))
+                               (forward-comment lim)
+                               (while (> (skip-chars-forward ")") 0)
+                                 (forward-comment lim))
+                               (>= (point) lim))
+                       finally return result))
+                    (cons start lim)))
+               (scan-error nil))))
     (save-excursion
       (goto-char pos)
       (walk (scan-sexps (point) 1)))))
@@ -867,10 +869,7 @@ with better comments."
                                      (list '\, submatched)
                                      (reverse (cadar patterns)))))
                                 1))
-                          (error (or (ignore-errors (scan-sexps (point) 1))
-                                     (progn
-                                       (end-of-defun)
-                                       (point))))))
+                          (error (match-end 0))))
 
                       ((memq submatcher defstruct-group)
                        '(save-excursion
