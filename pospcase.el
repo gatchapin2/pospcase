@@ -542,8 +542,12 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
                                       (read-from-string
                                        (buffer-substring-no-properties (point) lim))))))
                        (and (consp temp) (null (car temp)))) ; empty list at `point'
-                     nil
-                   ,clause)))
+                     (if pospcase--prematches
+                         (prog1
+                             (list (pospcase--list nil))
+                           (setq pospcase--prematches nil))
+                       nil)
+                     ,clause)))
           (goto-char (1- ,limit)) ; whole parsing is already done, no crawling
          (pospcase--iterator ,limit))
      (error

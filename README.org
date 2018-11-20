@@ -5,21 +5,22 @@
   ~pcase~ pattern matching ability.
 
   At this moment the package contains a pattern matcher ~pospcase~ and a
-  minor-mode ~pospcase-lisp-font-lock-mode~, robust code highlighter for
-  both ~lisp-mode~ and ~emacs-lisp-mode~.
+  pretty advanced code highlighter for ~lisp-mode~ and ~emacs-lisp-mode~.
 
 * Rational
-  Emacs’s font-locking heavily relies on regular expression
-  (regexp). There’s already an attempt to do [[https://github.com/Lindydancer/lisp-extra-font-lock][extra highlighting]] for
-  Lisp and Emacs Lisp. Which is completely regexp based too. When you
-  look into his [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Search_002dbased-Fontification.html][anchored-matcher]], such as
-  ~lisp-extra-font-lock-match-let,~ you’ll notice parsing S-expression
-  with regexp is inherently awkward and error-prone (you also notice
-  in-between comments break the regexp matching too, which is
-  terrible). To overcome the problem, you basically have to call
-  ~syntax-ppss~ and ~forward-comment~ everywhere. The product is
-  unreadable hybrid of regexp matchings, constant syntax-table
-  checkings, and corner-case coverings like:
+  Emacs’s font-locking (highlighting) heavily relies on regular
+  expression (regexp). There’s already an attempt to do [[https://github.com/Lindydancer/lisp-extra-font-lock][extra
+  highlighting]] for Lisp and Emacs Lisp. Which is completely regexp
+  based. When you follow the above link and look into its
+  [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Search_002dbased-Fontification.html][anchored-matcher]], let’s say ~lisp-extra-font-lock-match-let~ for
+  example.  you’ll notice parsing S-expression with regexp is
+  inherently awkward and error-prone (you also notice in-between
+  comments break the parsing too). To overcome the problem, you
+  basically have to call ~syntax-ppss~ and ~forward-comment~ everywhere in
+  pattern matching part of your code. The resulting code is quite
+  unreadable mess of regexp matchings, constant syntax-table
+  checkings, and numerous corner-case coverages. If you want to see
+  what kind of mess it will be. Here’s an example:
 
   #+BEGIN_SRC emacs-lisp
     ;;; match and collect all symbol positions within the same nested level
@@ -54,7 +55,9 @@
               (skip-chars-forward skip-pat)))))
   #+END_SRC
 
-  With ~pospcase-read~ you can get the same result with:
+  Next I present you what kind of code it will be like if you use
+  ~pospcase-read~, the S-expression reader I implemented, to get the
+  same result:
 
   #+BEGIN_SRC emacs-lisp
     (if (zerop current-level)
@@ -66,15 +69,16 @@
                collect (cdr pair)))
   #+END_SRC
 
-  Sorry, a little bit too dramatic. I admit it’s exaggerated and real
-  codes are more messier than the above.
+  Well, I admit it’s exaggerated to illustrate the point. The actual
+  code is messier than this. But I hope you see some novelty into the
+  way this package is trying to achieve.
 
-  BTW, recently Emacs got this nice pattern matching macro called
-  ~pcase~. Nowadays You can easily match and destructure any kind of
-  S-expression whenever you want.
+  In addition, Emacs recently got this nice pattern matching macro
+  called ~pcase~. Nowadays You can easily match and destructure any kind
+  of S-expression whenever you want.
 
-  I suppose the above reasons are good enough to write a ~pcase~-based
-  font-locker.
+  So I decided it’s a good time to write a ~pcase~-based position
+  extractor and use it for a font-locker.
 
 * Usage
   To turn of the font-lock for lisp-mode and emacs-lisp-mode, run:
@@ -84,7 +88,13 @@
     (pospcase-font-lock-lisp-setup)
   #+END_SRC
 
-  If you want to add 
+  It add ~pospcase-font-lock-lisp-keywords~add~ to the two lisp
+  major-modes’ hooks. It has no minor-mode for turn on highlighting
+  like ~lisp-extra-font-lock~ package do. The reason is I want to add
+  buffer specific keywords for each code from different codebase. It
+  seems unlikely, but I’ve actually seen different codebases define
+  ~defun*~ with completely different meanings with different argument
+  list styles. If I 
 
   If you have some reason to get positions of S-expression in a
   buffer, you can use ~pospcase-at~ with ~pcase~ like syntax:
