@@ -532,7 +532,7 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
   "Catch parsing error, and call `pospcase--iterator'."
   `(condition-case nil
        (when (or (< (point) limit) pospcase--matches)
-         (unless pospcase--matches ; initialize
+         (unless pospcase--matches      ; initialize
            (setq pospcase--matches
                  (if (let* ((lim (ignore-errors (scan-sexps (point) 1)))
                             (temp (when lim
@@ -540,9 +540,8 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
                                       (read-from-string
                                        (buffer-substring-no-properties (point) lim))))))
                        (and (consp temp) (null (car temp)))) ; empty list at `point'
-                     (let ((mlist (pospcase--list nil)))
-                       (when mlist (list mlist)))
-                     ,clause)))
+                     nil
+                   ,clause)))
           (goto-char (1- ,limit)) ; whole parsing is already done, no crawling
          (pospcase--iterator ,limit))
      (error
@@ -810,6 +809,11 @@ with better comments."
                          (setq result (and (consp (caar temp)) (cdaar temp))
                                temp (cdr temp)))
                        result))
+         (submatched (let ((temp specs) result)
+                       (while (and temp (null result))
+                         (setq result (and (consp (caar temp)) (caaar temp))
+                               temp (cdr temp)))
+                       result))
          (subvar (let ((temp specs) result)
                    (while (and temp (null result))
                      (setq result (and (consp (caar temp)) (caaar temp))
@@ -853,13 +857,20 @@ with better comments."
                     ,(cond
 
                       ((memq submatcher varlist-group)
-                       '(save-excursion
-                          (or
-                           (ignore-errors
-                             (scan-sexps (match-end 0) 1)) ; nested same keywords are not supported
-                           (progn
-                             (end-of-defun)
-                             (point)))))
+                       `(condition-case err
+                            (scan-sexps
+                             (match-end 0)
+                             ,(if (consp (car patterns)) ; only first pattern is scanned
+                                  (length
+                                   (cdr
+                                    (member
+                                     (list '\, submatched)
+                                     (reverse (cadar patterns)))))
+                                1))
+                          (error (or (ignore-errors (scan-sexps (point) 1))
+                                     (progn
+                                       (end-of-defun)
+                                       (point))))))
 
                       ((memq submatcher defstruct-group)
                        '(save-excursion
@@ -878,8 +889,7 @@ with better comments."
                                 ;; Search limit
                                 (up-list)
                                 (point))
-                            (error (end-of-defun)
-                                   (point)))))
+                            (error (match-end 0)))))
 
                       ((memq submatcher parameter-group)
                        '(let ((end (1- (match-end 0))))
@@ -897,7 +907,8 @@ with better comments."
                               (ignore-errors (scan-sexps (point 1)))
                             end)))
 
-                      (t (error "Not supported submatcher.")))))
+                      (t (error "Not supported submatcher: %s" submatcher)))))
+
                (multiple-value-bind ,vars (pospcase-at (point) ',cases)
                  (if (and ,(not (memq submatcher parameter-group))
                           (memq nil ,(cons 'list vars))) ; not exact match
@@ -961,6 +972,10 @@ examples."
                         `(defun ,name ,args . ,_))
                       '((name . (font-lock-function-name-face))
                         ((args . varlist-cars) .
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(lambda ,args . ,_))
+                      '(((args . varlist-cars) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(let* ,binds . ,_))
