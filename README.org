@@ -80,7 +80,7 @@
   So I decided it’s a good time to write a ~pcase~-based position
   extractor and use it for a font-locker.
 
-* Usage
+* How to Enable Font Lock
   To turn of the font-lock for lisp-mode and emacs-lisp-mode, run:
 
   #+BEGIN_SRC emacs-lisp
@@ -88,14 +88,17 @@
     (pospcase-font-lock-lisp-setup)
   #+END_SRC
 
-  It add ~pospcase-font-lock-lisp-keywords~add~ to the two lisp
-  major-modes’ hooks. It has no minor-mode for turn on highlighting
-  like ~lisp-extra-font-lock~ package do. The reason is I want to add
-  buffer specific keywords for each code from different codebase. It
-  seems unlikely, but I’ve actually seen different codebases define
-  ~defun*~ with completely different meanings with different argument
-  list styles. If I 
+  The above code add ~pospcase-font-lock-lisp-keywords~add~ to the two
+  lisp major-modes’ hooks. ~pospcase-font-lock~ don’t have minor-mode
+  unlike ~lisp-extra-font-lock~. The reason is I designed font-lock
+  specific functions so I can easily making buffer-local keywords. So
+  I can simultaneously work on different codebases in a single Emacs
+  session with different highlighting rules for each codebase. It may
+  never happened to you, but I’ve actually seen two codebases define
+  ~defun*~ themselves with completely different meanings (one of them
+  enforce type check) with different argument styles.
 
+* How to use ~pospcase~, ~pospcase-at~, ~pospcase-read~
   If you have some reason to get positions of S-expression in a
   buffer, you can use ~pospcase-at~ with ~pcase~ like syntax:
 
@@ -135,7 +138,13 @@
       foo)
   #+END_SRC
 
-  Note that the last snippet use different two keywords ~let~ and ~let*~.
+  Note that the last snippet use two different keywords ~let~ and ~let*~.
 
   This limitation is maybe due to my ignorance of font-lock
   internals. But I’m eager to fix it.
+
+* Font-Lock Specific Limitation
+  ~pospcase-font-lock~ totally depends on ~pcase~. But it still use regexp
+  for searching heading keywords. I still have no use case for
+  in-middle keyword matching. So it isn’t implemented. Therefore
+  ~pospcase-font-lock~ only supports heading keyword patterns.

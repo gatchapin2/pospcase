@@ -150,7 +150,11 @@ the end of the quoted expression."
 (defvar pospcase-font-lock-loop-keywords-with-var '("for"
                                                     "index"
                                                     "into"
-                                                    "with")
+                                                    "with"
+                                                    ":for"
+                                                    ":index"
+                                                    ":into"
+                                                    ":with")
   "List of `cl-loop' named variable binding parameters.")
 
 (defun pospcase-font-lock-match-loop-keywords (limit)
