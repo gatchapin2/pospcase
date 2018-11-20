@@ -2,19 +2,10 @@
 * Bugs
 ** TODO Common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
    - State "TODO"       from              [2018-11-18 Sun 18:56]
-** TODO inf-loop with ?\  ?\t ?;
-   - State "TODO"       from              [2018-11-19 Mon 10:57]
-     - [ ] trigger example
 
-   (defun foo () <- *insert here either of ’(?\  ?\t ?;)*
-   ())
-
-   and
-
-   (defun foo
-   () <- *her too*
-   ())
-
+   Known reader macros so far
+   - #\char
+   - #H() from cl21
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]

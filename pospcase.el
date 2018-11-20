@@ -977,6 +977,10 @@ examples."
                       '(((args . varlist-cars) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
+                      '(`(multiple-value-bind ,binds . ,_))
+                      '(((binds . varlist-cars) .
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+  (pospcase-font-lock 'lisp-mode
                       '(`(let* ,binds . ,_))
                       '(((binds . varlist-cars) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
