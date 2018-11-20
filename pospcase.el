@@ -307,8 +307,11 @@ which returns:
       ((walk (limit)
              (destructuring-bind (start sexp . lim)
                  (cons (point)
-                       (read-from-string
-                        (buffer-substring-no-properties (point) limit)))
+                       (condition-case err
+                           (read-from-string
+                            (buffer-substring-no-properties (point) limit))
+                         (invalid-read-syntax
+                          (cons nil (- limit (point))))))
                (incf lim (point))
                (forward-comment lim)
                (cons
@@ -329,13 +332,15 @@ which returns:
                             (condition-case err
                                 (read-from-string str)
                               (invalid-read-syntax
-                               (when (string= (cadr err) ".")
-                                 (setq dot t
-                                       str (progn
-                                             (forward-sexp)
-                                             (forward-comment lim)
-                                             (buffer-substring-no-properties (point) lim)))
-                                 (read-from-string str))))
+                               (if (string= (cadr err) ".")
+                                   (progn
+                                     (setq dot t
+                                           str (progn
+                                                 (forward-sexp)
+                                                 (forward-comment lim)
+                                                 (buffer-substring-no-properties (point) lim)))
+                                     (read-from-string str))
+                                 (cons nil (- limit (point))))))
                             rlim (+ (point) (cdr rpair))
                             temp (if (or (atom (car rpair))
                                          (memq (car rpair) '(\` \, quote function)))

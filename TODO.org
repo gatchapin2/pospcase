@@ -4,4 +4,12 @@
    - State "TODO"       from              [2018-11-18 Sun 18:56]
 ** TODO inf-loop with cl-cookbook/macros.md
    - State "TODO"       from              [2018-11-19 Mon 10:57]
+** TODO Especially characters starts with #
+   - State "TODO"       from              [2018-11-19 Mon 13:23]
 * Features
+** TODO Use as much ~pcase~ as possible
+   - State "TODO"       from              [2018-11-19 Mon 12:27]
+** TODO elispification
+   - State "TODO"       from              [2018-11-19 Mon 13:34]
+** TODO (defun foo () ()) locks but not (foo () bar)
+   - State "TODO"       from              [2018-11-19 Mon 17:48]

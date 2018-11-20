@@ -25,3 +25,12 @@
                        (cdr (car (last match)))
                      (cddr (car (last (car (last match)))))) ; (... (... (SEXP BEG . END)))
                    nil t))))))
+
+;; try to rewrite with `pcase'
+
+(pcase match
+    (`(,_ . ,(pred numberp)) match)
+    (`(,_ . (,(pred numberp) . ,(pred numberp))) (cdr match))
+    (`(,_  ,_ ,(pred numberp) . ,(pred numberp)) (cons (cadr (car match))
+                                                       (cddr (car (last match)))))
+    (`((,(pred numberp) . ,_)  )))      ; how do I get (last match)?
