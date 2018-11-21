@@ -244,7 +244,7 @@ preprocessing to make S-expression consumable for Emacs Lisp."
           (read-from-string str)
         (invalid-read-syntax
          (read-from-string
-          (reduce (lambda (str pair)
+          (cl-reduce (lambda (str pair)
                     (replace-regexp-in-string (car pair) (cdr pair) str))
                   (cons str elispify))))))))
 
