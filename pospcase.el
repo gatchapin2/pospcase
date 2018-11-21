@@ -230,15 +230,16 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                                `(lambda (str)
                                  (concat
                                   (make-string
-                                   (- (match-end 0) (match-beginning 0) 1)
+                                   (- (match-end 0) (match-beginning 0))
                                    ?\ )
                                   ,delim))))
     (let ((elispify `(("\\[" . "(")
                       ("\\]" . ")")
-                      ("#\\\\[^]) \t\n]+" . (lambda (str) (concat "\"" (substring str 2) "\"")))
-                      ("#\\+" . "  ")
-                      ("#p\"" . ,(reader-lambda "\"")) ; "#[^ \t\n]+\"" doesn't work,
-                                                       ; it's `replace-regexp-in-string' bug
+                      ("#\\\\[^]) \t\n]+" .
+                       (lambda (str) (concat "\"" (substring str 2) "\"")))
+                      ("#\\+\\(\\sw\\|\\s_\\)" .
+                       (lambda (str) (concat "  " (match-string 1))))
+                      ("#[^]) \t\n\"]+\"" . ,(reader-lambda "\""))
                       ("#[^ \t\n]+(" . ,(reader-lambda "(")))))
       (condition-case err
           (read-from-string str)
@@ -826,7 +827,7 @@ length lists"
 
 (defun pospcase-font-lock-build (patterns specs)
   "Actual font lock keywords generator. Deep magic is
-involved. Don't dismay. I'm planning to simplify and to supply
+involved. Don't dismay. I'm planning to simplify and to supply it
 with better comments."
   (let* ((matcher (let ((str (prin1-to-string
                               (if (consp (car patterns))

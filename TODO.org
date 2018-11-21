@@ -34,3 +34,10 @@
        (pospcase-font-lock-submatcher `(,arg . ,__))
 ** TODO add chop-off-p to pospcase-read
    - State "TODO"       from              [2018-11-21 Wed 05:44]
+
+   - detect trailing ". ,__)", attach closing parens for read-from-string
+
+   - calculate number of closing parens with
+
+     (- (count-open str lim) (count-close str lim))
+
