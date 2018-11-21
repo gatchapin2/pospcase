@@ -651,3 +651,21 @@ woof woof
 (with-current-buffer "pospcase.el" (pospcase-font-lock-lisp-keywords-remove))
 (with-current-buffer "*scratch*" (pospcase-font-lock-lisp-keywords-remove))
 
+
+;;; elispification
+
+(let ((strs '("[foo bar]" "#\\x" "#H(foo)"))
+      (elispify '(("\\[" . "(")
+                  ("\\]" . ")")
+                  ("#\\\\" . " ?")
+                  ("#[^ \t\n]+(" . (lambda (str)
+                                     (concat
+                                      (make-string
+                                       (- (match-end 0) (match-beginning 0) 1)
+                                       ?\ )
+                                      "("))))))
+  (mapcar (lambda (str)
+            (reduce (lambda (str pair)
+                      (replace-regexp-in-string (car pair) (cdr pair) str))
+                    (cons str elispify)))
+          strs))

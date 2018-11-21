@@ -223,6 +223,31 @@ and strings."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; `pcase' powered matcher codes
 
+(defun pospcase--read-from-string (str)
+  "`read-from-string' wrapper with simple regexp based
+preprocessing to make S-expression consumable for Emacs Lisp."
+  (cl-macrolet ((reader-lambda (delim)
+                               `(lambda (str)
+                                 (concat
+                                  (make-string
+                                   (- (match-end 0) (match-beginning 0) 1)
+                                   ?\ )
+                                  ,delim))))
+    (let ((elispify `(("\\[" . "(")
+                      ("\\]" . ")")
+                      ("#\\\\[^]) \t\n]+" . (lambda (str) (concat "\"" (substring str 2) "\"")))
+                      ("#\\+" . "  ")
+                      ("#p\"" . ,(reader-lambda "\"")) ; "#[^ \t\n]+\"" doesn't work,
+                                                       ; it's `replace-regexp-in-string' bug
+                      ("#[^ \t\n]+(" . ,(reader-lambda "(")))))
+      (condition-case err
+          (read-from-string str)
+        (invalid-read-syntax
+         (read-from-string
+          (reduce (lambda (str pair)
+                    (replace-regexp-in-string (car pair) (cdr pair) str))
+                  (cons str elispify))))))))
+
 (defun pospcase-read (pos)
   "Read a s-expression at POS. Recursively wrap each s-expression
 in cons cell then attach positional metadata (start . end) at
@@ -313,7 +338,7 @@ which returns:
                  (destructuring-bind (start sexp . lim)
                      (cons (point)
                            (condition-case err
-                               (read-from-string
+                               (pospcase--read-from-string
                                 (buffer-substring-no-properties (point) limit))
                              (invalid-read-syntax
                               (cons nil (- limit (point))))))
@@ -335,7 +360,7 @@ which returns:
                                       (buffer-substring-no-properties (point) lim))
                                 rpair
                                 (condition-case err
-                                    (read-from-string str)
+                                    (pospcase--read-from-string str)
                                   (invalid-read-syntax
                                    (if (string= (cadr err) ".")
                                        (progn
@@ -344,7 +369,7 @@ which returns:
                                                      (forward-sexp)
                                                      (forward-comment lim)
                                                      (buffer-substring-no-properties (point) lim)))
-                                         (read-from-string str))
+                                         (pospcase--read-from-string str))
                                      (cons nil (- limit (point))))))
                                 rlim (+ (point) (cdr rpair))
                                 temp (if (or (atom (car rpair))

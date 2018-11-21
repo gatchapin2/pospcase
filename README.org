@@ -70,8 +70,8 @@
   #+END_SRC
 
   Well, I admit it’s exaggerated to illustrate the point. The actual
-  code is messier than this. But I hope you see some novelty into the
-  way this package is trying to achieve.
+  code is messier than this. But I hope you see some novelty behind
+  it.
 
   In addition, Emacs recently got this nice pattern matching macro
   called ~pcase~. Nowadays You can easily match and destructure any kind
@@ -96,7 +96,14 @@
   session with different highlighting rules for each codebase. It may
   never happened to you, but I’ve actually seen two codebases define
   ~defun*~ themselves with completely different meanings (one of them
-  enforce type check) with different argument styles.
+  enforce type check) with different argument styles. If you want to
+  enforce the same highlighting rule to a single major-mode,
+  minor-mode is the best way to do it. But your workflow involves
+  numerous per-project highlighting rules, I feel there’s not much
+  point to use it. But by all means I don’t oppose defining your own
+  minor-mode. You can write it by simply using
+  ~pospcase-font-lock-lisp-keywords~add~ and
+  ~pospcase-font-lock-lisp-keywords~remove~ to for highlight toggling.
 
 * How to use ~pospcase~, ~pospcase-at~, ~pospcase-read~
   If you have some reason to get positions of S-expression in a
@@ -111,9 +118,63 @@
 
   More detailed explanation can be found in ~pospcase-read~ docstring.
 
-* Limitation
-  No support for nested binding list like:
 
+* How ~pospcase-font-lock~ Works
+** The quirks
+  Admittedly, ~pospcase-font-lock~ do something very weird. Here, I’m
+  talking about anchored-matchers. As you can see all of them calls
+  ~pospcase--call-iterator~ macro. True to its name, the macro realize
+  the behavior of the iterator pattern (very crudely using a global
+  variable ~pospcase--matches~ as the place holder for pre-collected
+  data.) I’m not very please with the implementation either. But I
+  think making lambda functions dynamically for each iterators,
+  managing and dispatching them correct for each call, is far
+  complexer than current implementation. And ultimately Emacs’s
+  font locking (and jit-lock) is single-threaded. So I decided it
+  doesn’t worth the trouble to implement proper iterator.
+
+  You may ask why do you have to implement iterator in the first
+  place? Well, because it’s how ~font-lock-add-keywords~ is designed,
+  and I don’t want to reimplement font-lock feature from
+  scratch. ~font-lock.el~ is obviously designed for regexp-based pattern
+  matching and I’m using it wrongly. This is why ~pospcase-font-lock~
+  needs this weird iterator.
+
+** Data flow
+  To understand and add your own font lock keywords without feeling
+  uncomfortable, there are some points you have to know:
+
+*** The anchored-matchers
+    ~pcase~ is not particularly designed to match arbitrary length list
+    of specific element pattern. To overcome the limitation currently
+    seven anchored-matchers are implemented using ~pospcase-at~ or
+    ~pospcase-read~.
+
+    - varlist
+    - varlist-cars
+    - key
+    - defstruct
+    - flet
+    - destructuring
+    - macrolet
+
+
+* Limitation of ~pospcase~, ~pospcase-at~, ~pospcase-read~
+
+* Limitation of ~pospcase-font-lock~
+** Secretly using Regular Expression
+  ~pospcase-font-lock~ totally depends on ~pcase~. But it still use regexp
+  for searching heading keywords. The reason why I don’t use something
+  like [[https://github.com/emacsmirror/el-search][el-search]] is I fear further degeneration of performance. And I
+  feel it’s overkill.
+
+  So far I have no use case for in-middle keyword matching. So it’s
+  not implemented. Purposely ~pospcase-font-lock~ only supports heading
+  keyword patterns.
+
+** No support for nest in binding list
+   Following doesn’t work:
+   
   #+BEGIN_SRC emacs-lisp
     (let ((foo
            (let ((bar 'baz))
@@ -121,7 +182,7 @@
       foo)
   #+END_SRC
 
-  But supports:
+  But following works:
 
   #+BEGIN_SRC emacs-lisp
     (let ((foo 'bar))
@@ -140,11 +201,6 @@
 
   Note that the last snippet use two different keywords ~let~ and ~let*~.
 
-  This limitation is maybe due to my ignorance of font-lock
-  internals. But I’m eager to fix it.
+  Maybe this is due to my ignorance of font-lock internals and not a
+  real technical limitation. I’m eager to fix it.
 
-* Font-Lock Specific Limitation
-  ~pospcase-font-lock~ totally depends on ~pcase~. But it still use regexp
-  for searching heading keywords. I still have no use case for
-  in-middle keyword matching. So it isn’t implemented. Therefore
-  ~pospcase-font-lock~ only supports heading keyword patterns.

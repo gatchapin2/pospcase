@@ -3,13 +3,34 @@
 ** TODO Common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
    - State "TODO"       from              [2018-11-18 Sun 18:56]
 
-   Known reader macros so far
+** TODO Known reader macros so far
+   - State "TODO"       from              [2018-11-21 Wed 01:42]
    - #\char
    - #H() from cl21
+
+** TODO replace-regex-in-string ideas [4/4]
+   - State "TODO"       from              [2018-11-21 Wed 01:42]
+   - [X] "#\\" -> " ?", a half assed char conversion
+   - [X] "#[^ (]+(" -> "(", for cl21 hash
+   - [X] "#p\"" -> "\"", pathname
+   - [X] "#\\+" -> "  "
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]
 ** TODO elispification
    - State "TODO"       from              [2018-11-19 Mon 13:34]
-** TODO (defun foo () ()) locks but not (foo () bar)
-   - State "TODO"       from              [2018-11-19 Mon 17:48]
+** submatcher generator
+   - Something like:
+
+       (pospcase-font-lock ’lisp-mode
+                            '(`(defun ,name ,args))
+                            '((name . font-lock-function-name-face)
+                              ((args . `(,arg . ,_)))
+                              ((arg . font-lock-function-name-face))))
+
+     and it calls
+
+       (goto-char (car args))
+       (pospcase-font-lock-submatcher `(,arg . ,__))
+** TODO add chop-off-p to pospcase-read
+   - State "TODO"       from              [2018-11-21 Wed 05:44]
