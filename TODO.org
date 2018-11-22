@@ -40,4 +40,16 @@
    - calculate number of closing parens with
 
      (- (count-open str lim) (count-close str lim))
+* Design guideline
+** ENTRY errors
+   - State "ENTRY"      from              [2018-11-22 Thu 10:32]
 
+   - Generic functions like ~pospcase~, ~pospcase-at~, ~pospcase-read~
+     shouldn't silently discard errors like ~scan-error~ for unmatched
+     parenthesis, ~invalid-read-syntax~ for unparsable buffer segment
+     even after elispification.
+
+   - Externally exposed font-lock functions (submatchers, preform,
+     postform, etc.) and macros should discard errors silently.
+
+   - How about internal font-lock functions (iterator, etc)?

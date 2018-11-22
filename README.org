@@ -135,13 +135,21 @@
     - macrolet
 
 ** Data flow
-   Anchored-matchers parse S-expression of interest using ~pospcase-at~
-   and ~pospcase-read~.
+   Anchored-matchers call ~pospcase-at~ and ~pospcase-read~ to parse
+   S-expression and get positional metadata.
 
-   That return list of cons cells in ~(start . end)~ structure.
+   ~pospcase-at~ returns cons cells in ~(start . end)~.
 
-   Anchored-matchers filter the list and store it in
-   ~pospcase--matches~ with structure like this:
+   ~pospcase-read~ returns S-expression tree with each node with cons
+   cell in ~(sexp . (start . end))~
+
+   Anchored-matchers either manually collect ~(start . end)~ pairs of
+   interest or call ~pospcase~, ~pospcase-at~ or ~pospcase-read~ repeatedly
+   on each start position ~(car (start . end))~ of interested
+   S-expression and collect the result.
+
+   Structure the collected ~(start . end)~ pairs in ~pospcase--matches~
+   suitable for ~pospcase–iterator~ consumption like this:
 
    #+BEGIN_SRC emacs-lisp
      (((start . end)              ; (match-string 1) of first (match-data)
@@ -151,8 +159,8 @@
        (start . end)))            ; (match-string 2) of second (match-data)
    #+END_SRC
 
-   ~pospcase–iterator~ pops ~car~ of the list at each call to
-   Anchored-matchers.
+   ~pospcase–iterator~ set ~car~ of ~pospcase--matches~ to ~~match-data~ using
+   ~set-match-data~.
 
 ** Emacs-Lisp-fy
    The thing is, Emacs Lisp doesn’t have reader macro. In ~pospcase~
