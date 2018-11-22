@@ -60,13 +60,13 @@
   same result:
 
   #+BEGIN_SRC emacs-lisp
-    (if (zerop current-level)
+    (if (zerop (car (syntax-ppss)))
         (error "The point is in the top level.")
       (backward-up-list)
 
-      (cl-loop for pair in (car (pospcase-read (point))) ; `car' because `cdr' contains
-                                                         ; position data of entire list
-               collect (cdr pair)))
+      (mapcar #'cdr
+                (car                        ; `car' because `cdr' contains
+                 (pospcase-read (point))))) ; position data of entire list
   #+END_SRC
 
   Well, I admit it’s exaggerated to illustrate the point. The actual
@@ -78,36 +78,118 @@
   of S-expression whenever you want.
 
   So I decided it’s a good time to write a ~pcase~-based position
-  extractor and use it for a font-locker.
+  extractor and use it for a lisp code highlighter.
 
-* How to Enable Font Lock
-  To turn of the font-lock for lisp-mode and emacs-lisp-mode, run:
+* How to Enable Pospcase Font Lock
+  To turn on the font-lock for lisp-mode and emacs-lisp-mode, eval the
+  following code:
 
   #+BEGIN_SRC emacs-lisp
     (require 'pospcase)
     (pospcase-font-lock-lisp-setup)
   #+END_SRC
 
-  The above code add ~pospcase-font-lock-lisp-keywords~add~ to the two
-  lisp major-modes’ hooks. ~pospcase-font-lock~ don’t have minor-mode
-  unlike ~lisp-extra-font-lock~. The reason is I designed font-lock
-  specific functions so I can easily making buffer-local keywords. So
-  I can simultaneously work on different codebases in a single Emacs
-  session with different highlighting rules for each codebase. It may
-  never happened to you, but I’ve actually seen two codebases define
-  ~defun*~ themselves with completely different meanings (one of them
-  enforce type check) with different argument styles. If you want to
-  enforce the same highlighting rule to a single major-mode,
-  minor-mode is the best way to do it. But your workflow involves
-  numerous per-project highlighting rules, I feel there’s not much
-  point to use it. But by all means I don’t oppose defining your own
-  minor-mode. You can write it by simply using
-  ~pospcase-font-lock-lisp-keywords~add~ and
-  ~pospcase-font-lock-lisp-keywords~remove~ to for highlight toggling.
+  The above code add ~pospcase-font-lock-lisp-keywords~add~ to the said
+  two lisp major-modes’ hooks. Currently ~pospcase-font-lock~ doesn’t
+  have minor-mode unlike ~lisp-extra-font-lock~. The reason is I
+  designed the font-lock specific functions so I can easily making
+  buffer-local keywords. Then I can simultaneously work on different
+  codebases in a single Emacs session with different highlighting
+  rules with the same keywords for each codebases. It may never
+  happened to you, but I’ve actually seen two codebases define ~defun*~
+  by themselves with completely different meanings with different
+  argument styles (one of them enforce type check with ~->~
+  (dash-greater-than) arrow syntax).
+
+  If you want to enforce the same highlighting rule to a single
+  major-mode, minor-mode is the best way to do it. But your workflow
+  involves numerous per-project highlighting rules, I feel there’s not
+  much point using minor-mode for it.
+
+  But, by all means I don’t oppose defining your own minor-mode. You
+  can write it by simply using ~pospcase-font-lock-lisp-keywords~add~
+  and ~pospcase-font-lock-lisp-keywords~remove~ to for highlight
+  toggling.
+
+* How to Write Your Pospcase Font Lock Keywords
+  Unfortunately current ~pospcase-font-lock~ limitation doesn’t allow
+  you to simply write ~pcase~ patterns and let the software to take care
+  of the rest.
+
+  There are some concept you need to know before writing functional
+  keywords.
+
+** Anchored-Matchers
+   ~pcase~ macro, this package is heavily depending on, is not
+   particularly designed to match arbitrary length list. To overcome
+   the limitation, seven anchored-matchers are implemented so far.
+
+    - varlist
+    - varlist-cars
+    - key
+    - defstruct
+    - flet
+    - destructuring
+    - macrolet
+
+** Data flow
+   Anchored-matchers parse S-expression of interest using ~pospcase-at~
+   and ~pospcase-read~.
+
+   That return list of cons cells in ~(start . end)~ structure.
+
+   Anchored-matchers filter the list and store it in
+   ~pospcase--matches~ with structure like this:
+
+   #+BEGIN_SRC emacs-lisp
+     (((start . end)              ; (match-string 1) of first (match-data)
+       (start . end))             ; (match-string 2) of first (match-data)
+
+      ((start . end)              ; (match-string 1) of second (match-data)
+       (start . end)))            ; (match-string 2) of second (match-data)
+   #+END_SRC
+
+   ~pospcase–iterator~ pops ~car~ of the list at each call to
+   Anchored-matchers.
+
+** Emacs-Lisp-fy
+   The thing is, Emacs Lisp doesn’t have reader macro. In ~pospcase~
+   context it means you can’t really use Emacs’s build-in reader
+   ~read-from-string~ to parse Common Lisp’s S-expressions.
+
+   To circumvent and not really tackle the limitation,
+   ~pospcase--read-from-string~ does quick hack using regexp to convert
+   unless unparsable S-expressions into Emacs Lisp counterpart as
+   smoothly as possible.
+
+   It’s simple text replacement rule. So don’t expect too much. If you
+   experience a major problem you can’t think any way to circumvent,
+   well, accept it as unparsable and give up the fancy highlighting
+   for that section.
+
+** Quirks
+   Admittedly, ~pospcase-font-lock~ do something very weird. Here, I’m
+   talking about anchored-matchers. As you can see all of them calls
+   ~pospcase--call-iterator~ macro. True to its name, the macro realize
+   the behavior of the iterator pattern (very crudely using a global
+   variable ~pospcase--matches~ as the place holder for pre-collected
+   data.) I’m not very please with the implementation either. But I
+   think making lambda functions dynamically for each iterators,
+   managing and dispatching them correct for each call, is far
+   complexer than current implementation. And ultimately Emacs’s font
+   locking (and jit-lock) is single-threaded. So I decided it doesn’t
+   worth the trouble to implement proper iterator.
+
+   You may ask why do you have to implement iterator in the first
+   place? Well, because it’s how ~font-lock-add-keywords~ is designed,
+   and I don’t want to reimplement font-lock feature from
+   scratch. ~font-lock.el~ is obviously designed for regexp-based
+   pattern matching and I’m using it wrongly. This is why
+   ~pospcase-font-lock~ needs this weird iterator.
 
 * How to use ~pospcase~, ~pospcase-at~, ~pospcase-read~
-  If you have some reason to get positions of S-expression in a
-  buffer, you can use ~pospcase-at~ with ~pcase~ like syntax:
+  If you have some reason to directly get positions of S-expressions
+  in a buffer, you can use ~pospcase-at~ with ~pcase~ like syntax:
 
   #+BEGIN_SRC emacs-lisp
     (pospcase-at (point-min) '((`,exp exp)))
@@ -117,46 +199,6 @@
   : (1 . 41)
 
   More detailed explanation can be found in ~pospcase-read~ docstring.
-
-
-* How ~pospcase-font-lock~ Works
-** The quirks
-  Admittedly, ~pospcase-font-lock~ do something very weird. Here, I’m
-  talking about anchored-matchers. As you can see all of them calls
-  ~pospcase--call-iterator~ macro. True to its name, the macro realize
-  the behavior of the iterator pattern (very crudely using a global
-  variable ~pospcase--matches~ as the place holder for pre-collected
-  data.) I’m not very please with the implementation either. But I
-  think making lambda functions dynamically for each iterators,
-  managing and dispatching them correct for each call, is far
-  complexer than current implementation. And ultimately Emacs’s
-  font locking (and jit-lock) is single-threaded. So I decided it
-  doesn’t worth the trouble to implement proper iterator.
-
-  You may ask why do you have to implement iterator in the first
-  place? Well, because it’s how ~font-lock-add-keywords~ is designed,
-  and I don’t want to reimplement font-lock feature from
-  scratch. ~font-lock.el~ is obviously designed for regexp-based pattern
-  matching and I’m using it wrongly. This is why ~pospcase-font-lock~
-  needs this weird iterator.
-
-** Data flow
-  To understand and add your own font lock keywords without feeling
-  uncomfortable, there are some points you have to know:
-
-*** The anchored-matchers
-    ~pcase~ is not particularly designed to match arbitrary length list
-    of specific element pattern. To overcome the limitation currently
-    seven anchored-matchers are implemented using ~pospcase-at~ or
-    ~pospcase-read~.
-
-    - varlist
-    - varlist-cars
-    - key
-    - defstruct
-    - flet
-    - destructuring
-    - macrolet
 
 
 * Limitation of ~pospcase~, ~pospcase-at~, ~pospcase-read~

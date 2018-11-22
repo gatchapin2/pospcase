@@ -235,12 +235,12 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                                   ,delim))))
     (let ((elispify `(("\\[" . "(")
                       ("\\]" . ")")
-                      ("#\\\\[^]) \t\n]+" .
+                      ("#\\\\[^]) \t\n;]+" .
                        (lambda (str) (concat "\"" (substring str 2) "\"")))
                       ("#\\+\\(\\sw\\|\\s_\\)" .
                        (lambda (str) (concat "  " (match-string 1))))
-                      ("#[^]) \t\n\"]+\"" . ,(reader-lambda "\""))
-                      ("#[^ \t\n]+(" . ,(reader-lambda "(")))))
+                      ("#[^])\" \t\n;]+\"" . ,(reader-lambda "\""))
+                      ("#[^ \t\n;]+(" . ,(reader-lambda "(")))))
       (condition-case err
           (read-from-string str)
         (invalid-read-syntax
@@ -835,7 +835,7 @@ with better comments."
                                       (cadar patterns)
                                     (caar patterns))
                                 (car patterns)))))
-                    (string-match "^[^ \t\n]+" str)
+                    (string-match "^[^ \t\n;]+" str)
                     (regexp-quote (match-string 0 str))))
          (keyword (concat "\\_<"
                           (substring matcher (string-match "[^(]" matcher))
@@ -871,7 +871,7 @@ with better comments."
          (varlist-group '(varlist varlist-cars destructuring flet macrolet))
          (defstruct-group '(defstruct))
          (parameter-group '(key)))
-    (setq matcher (concat matcher "[ \t\n]+"))
+    (setq matcher (concat matcher "[ \t\n;]+"))
     `((,keyword . font-lock-keyword-face)
       (,matcher
        (,(intern (concat "pospcase-match-" (symbol-name submatcher)))
