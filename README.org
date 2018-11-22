@@ -60,13 +60,15 @@
   same result:
 
   #+BEGIN_SRC emacs-lisp
+    ;;; collect all symbol positions within the same nested level
     (if (zerop (car (syntax-ppss)))
         (error "The point is in the top level.")
       (backward-up-list)
 
-      (mapcar #'cdr
-                (car                        ; `car' because `cdr' contains
-                 (pospcase-read (point))))) ; position data of entire list
+      (cl-loop for pair in (car (pospcase-read (point))) ; `car' because `cdr' contains
+                                                         ; position data of entire list
+               if (symbolp (car pair)) collect (cdr pair)))
+
   #+END_SRC
 
   Well, I admit it’s exaggerated to illustrate the point. The actual
