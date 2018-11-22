@@ -221,7 +221,7 @@ and strings."
       (eq (char-before pos) ?#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; `pcase' powered matcher codes
+;;; `pcase' powered matcher
 
 (defun pospcase--read-from-string (str)
   "`read-from-string' wrapper with simple regexp based
@@ -372,7 +372,8 @@ which returns:
                                                str (progn
                                                      (forward-sexp)
                                                      (forward-comment lim)
-                                                     (buffer-substring-no-properties (point) lim)))
+                                                     (buffer-substring-no-properties
+                                                      (point) lim)))
                                          (pospcase--read-from-string str))
                                      (cons nil (- limit (point))))))
                                 rlim (+ (point) (cdr rpair))
