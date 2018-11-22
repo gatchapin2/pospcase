@@ -580,7 +580,7 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
                              (list (pospcase--list nil))
                            (setq pospcase--prematches nil))
                        nil)
-                     ,clause)))
+                     (ignore-errors ,clause))))
           (goto-char (1- ,limit)) ; whole parsing is already done, no crawling
          (pospcase--iterator ,limit))
      (error
@@ -898,7 +898,7 @@ with better comments."
                     ,(cond
 
                       ((memq submatcher varlist-group)
-                       `(condition-case err
+                       `(condition-case nil
                             (scan-sexps
                              (match-end 0)
                              ,(if (consp (car patterns)) ; only first pattern is scanned
@@ -947,17 +947,18 @@ with better comments."
 
                       (t (error "Not supported submatcher: %s" submatcher)))))
 
-               (multiple-value-bind ,vars (pospcase-at (point) ',cases)
-                 (if (and ,(not (memq submatcher parameter-group))
-                          (memq nil ,(cons 'list vars))) ; not exact match
-                     (goto-char match-end)
-                   ,(unless (null non-subvars)
-                      `(setq pospcase--prematches ,(cons 'list non-subvars)))
+               (condition-case nil
+                   (multiple-value-bind ,vars (pospcase-at (point) ',cases)
+                     (if (and ,(not (memq submatcher parameter-group))
+                              (memq nil ,(cons 'list vars))) ; not exact match
+                         (goto-char match-end)
+                       ,(unless (null non-subvars)
+                          `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                   ,(cond
-                     ((memq submatcher varlist-group)
-                      `(goto-char (car ,subvar))))))
-
+                       ,(cond
+                         ((memq submatcher varlist-group)
+                          `(goto-char (car ,subvar))))))
+                 (error (goto-char match-end)))
                match-end)))))
         (pospcase--postform)
         ,@fontspecs)))))
