@@ -235,6 +235,8 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                                   ,delim))))
     (let ((elispify `(("\\[" . "(")
                       ("\\]" . ")")
+                      ("{" . "(")
+                      ("}" . ")")
                       ("#\\\\[^]) \t\n;]+" .
                        (lambda (str) (concat "\"" (substring str 2) "\"")))
                       ("#\\+\\(\\sw\\|\\s_\\)" .
