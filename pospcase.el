@@ -872,7 +872,9 @@ with better comments."
          (varlist-group '(varlist varlist-cars destructuring flet macrolet))
          (defstruct-group '(defstruct))
          (parameter-group '(key)))
-    (setq matcher (concat matcher "[ \t\n;]+"))
+    (if (string-match "," matcher)
+        (error "In-middle keyword is not supported.")
+      (setq matcher (concat matcher "[ \t\n;]+")))
     `((,keyword . font-lock-keyword-face)
       (,matcher
        (,(intern (concat "pospcase-match-" (symbol-name submatcher)))

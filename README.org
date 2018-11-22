@@ -249,3 +249,8 @@
   Maybe this is due to my ignorance of font-lock internals and not a
   real technical limitation. I’m eager to fix it.
 
+** Anchored-matcher
+   Currently only one anchored-matcher per-pattern is supported. This
+   limitation is simply because I have yet encountered the codebase
+   utilizing multiple arbitrary length lists for its syntax. Maybe
+   someday I feel fancy and implement it, though.
