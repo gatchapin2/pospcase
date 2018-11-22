@@ -342,7 +342,8 @@ which returns:
                                (pospcase--read-from-string
                                 (buffer-substring-no-properties (point) limit))
                              (invalid-read-syntax
-                              (cons nil (- limit (point))))))
+                              (cons 'pospcase-invalid-read-syntax
+                                    (- limit (point))))))
                    (incf lim (point))
                    (forward-comment lim)
                    (cons

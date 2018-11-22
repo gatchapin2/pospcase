@@ -181,11 +181,12 @@
    worth the trouble to implement proper iterator.
 
    You may ask why do you have to implement iterator in the first
-   place? Well, because it’s how ~font-lock-add-keywords~ is designed,
-   and I don’t want to reimplement font-lock feature from
-   scratch. ~font-lock.el~ is obviously designed for regexp-based
-   pattern matching and I’m using it wrongly. This is why
-   ~pospcase-font-lock~ needs this weird iterator.
+   place? Well, clearly Emacs’ font-lock.el was written with
+   regexp-based crawler like behavior in mind. So
+   ~font-lock-add-keywords~ was designed accordingly.  Lazy me just
+   don’t want to reimplement everything from scratch. Obviously I’m
+   misusing them. And this is why ~pospcase-font-lock~ needs its weird
+   iterator.
 
 * How to use ~pospcase~, ~pospcase-at~, ~pospcase-read~
   If you have some reason to directly get positions of S-expressions
