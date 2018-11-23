@@ -101,7 +101,7 @@
   happened to you, but I’ve actually seen two codebases define ~defun*~
   by themselves with completely different meanings with different
   argument styles (one of them enforce type check with ~->~
-  (dash-greater-than) arrow syntax).
+  (dash-greater-than) arrow infix).
 
   If you want to enforce the same highlighting rule to a single
   major-mode, minor-mode is the best way to do it. But your workflow
