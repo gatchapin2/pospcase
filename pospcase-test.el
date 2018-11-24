@@ -669,3 +669,9 @@ woof woof
                       (replace-regexp-in-string (car pair) (cdr pair) str))
                     (cons str elispify)))
           strs))
+
+
+(insert (make-string
+         (car (parse-partial-sexp (point) (+ (point) 10)))
+         ?\)))
+(foo (bar (baz (qux (quux

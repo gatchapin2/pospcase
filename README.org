@@ -49,7 +49,7 @@
          if (= (car (syntax-ppss)) current-level)
          do (setq result (cons (cons (match-beginning 0) (match-end 0)) result))
 
-         ;; skip non-interesting characters
+         ;; skip uninteresting characters
          do (progn
               (goto-char (match-end 0))
               (skip-chars-forward skip-pat)))))
@@ -101,7 +101,7 @@
   happened to you, but I’ve actually seen two codebases define ~defun*~
   by themselves with completely different meanings with different
   argument styles (one of them enforce type check with ~->~
-  (dash-greater-than) arrow infix).
+  (dash-greater-than) as the infix).
 
   If you want to enforce the same highlighting rule to a single
   major-mode, minor-mode is the best way to do it. But your workflow

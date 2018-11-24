@@ -1,4 +1,4 @@
-#+SEQ_TODO: TODO(t!) NOTE(n!) ENTRY(e!) | DONE(d!)
+#+SEQ_TODO: TODO(t!) NOTE(n!) | DONE(d!) HALT(h!)
 * Bugs
 ** TODO Common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
    - State "TODO"       from              [2018-11-18 Sun 18:56]
@@ -35,14 +35,54 @@
 ** TODO add chop-off-p to pospcase-read
    - State "TODO"       from              [2018-11-21 Wed 05:44]
 
-   - detect trailing ". ,__)", attach closing parens for read-from-string
+*** TODO detect trailing ". ,__)", attach closing parens for read-from-string
 
-   - calculate number of closing parens with
+    - State "TODO"       from              [2018-11-21 Wed 05:44]
+*** TODO use syntax-table
 
-     (- (count-open str lim) (count-close str lim))
+    - State "TODO"       from              [2018-11-23 Fri 08:49]
+
+    (insert (make-string
+         (car (parse-partial-sexp (point) (+ (point) 10)))
+         ?\)))
+    (foo (bar (baz (qux (quux
+** TODO Should I add zero submatcher support? Should I implement ~pospcase-match-zero~?
+   - State "TODO"       from              [2018-11-23 Fri 09:32]
+** TODO define ~pospcase--after-open-paren~
+   - State "TODO"       from              [2018-11-23 Fri 11:11]
+
+     #+BEGIN_SRC emacs-lisp
+       (let ((limit (point-max))
+             (keyword "defun"))
+         (when (search-forward keyword limit t)
+           (let ((kw-begin (match-beginning 0))
+                 (kw-end (match-end 0))
+                 begin end)
+             (and
+              (looking-at "[ \t\n;]")
+              (setq end (match-end 0))
+              (search-backward "(" nil t)
+              (setq begin (match-beginning 0))
+              (progn
+                (goto-char (match-end 0))
+                (forward-comment most-positive-fixnum)
+                (= (point) kw-begin))
+              (set-match-data (list begin end
+                                    kw-begin kw-end)))))
+         (match-string 1))
+
+       ;;; bar
+       (
+       ;;; foo
+       defun foo (bar) baz)
+     #+END_SRC
+** TODO Primary matcher should use pcase too?
+   - State "TODO"       from              [2018-11-23 Fri 14:13]
+
+   - Example: `((or labels cl-labels) ,name ,args . ,__)
 * Design guideline
-** ENTRY errors
-   - State "ENTRY"      from              [2018-11-22 Thu 10:32]
+** NOTE errors
+   - State "NOTE"      from              [2018-11-22 Thu 10:32]
 
    - Generic functions like ~pospcase~, ~pospcase-at~, ~pospcase-read~
      shouldn't silently discard errors like ~scan-error~ for unmatched

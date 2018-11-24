@@ -182,3 +182,17 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-11-21 Wed 02:28]
   - State "TODO"       from              [2018-11-19 Mon 17:48]
+
+* HALT calculate number of closing parens with
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-23 Fri 08:49
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features/add chop-off-p to pospcase-read
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: HALT
+  :END:
+
+  - State "HALT"       from "TODO"       [2018-11-23 Fri 08:49]
+  - State "TODO"       from              [2018-11-21 Wed 05:44]
+   (- (count-open str lim) (count-close str lim))
+

@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Stolen from pospcase-font-lock, for historical reason
+;; Stolen from lisp-extra-font-lock, for historical reason
 
 (defcustom pospcase-font-lock-dolist-functions
   '("dolist"
