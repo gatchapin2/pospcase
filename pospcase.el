@@ -233,16 +233,17 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                                    (- (match-end 0) (match-beginning 0))
                                    ?\ )
                                   ,delim))))
-    (let ((elispify `(("\\[" . "(")
-                      ("\\]" . ")")
-                      ("{" . "(")
-                      ("}" . ")")
-                      ("#\\\\[^])\\s<\\s ]+" .
-                       (lambda (str) (concat "\"" (substring str 2) "\"")))
-                      ("#\\+\\(\\sw\\|\\s_\\)" .
-                       (lambda (str) (concat "  " (match-string 1))))
-                      ("#[^])\"\\s<\\s ]+\"" . ,(reader-lambda "\""))
-                      ("#[^\\s<\\s ]+(" . ,(reader-lambda "(")))))
+    (let* ((sym "\\(?:\\sw\\|\\s_\\)+")
+           (elispify `(("\\[" . "(")
+                       ("\\]" . ")")
+                       ("{" . "(")
+                       ("}" . ")")
+                       (,(concat "#\\\\" sym) .
+                        ,(lambda (str) (concat "\"" (substring str 2) "\"")))
+                       (,(concat "#\\+" sym) .
+                        ,(lambda (str) (concat "  " (substring str 2))))
+                       (,(concat "#" sym "\"") . ,(reader-lambda "\""))
+                       (,(concat "#" sym "(") . ,(reader-lambda "(")))))
       (condition-case err
           (read-from-string str)
         (invalid-read-syntax
