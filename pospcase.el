@@ -739,8 +739,8 @@ length lists"
          (symbol (concat symbol-start
                          "\\(?:\\sw\\|\\s_\\)+"
                          symbol-end))
-         (space* "[ \t\n]*")
-         (space+ "[ \t\n]+"))
+         (space* "\\s *")
+         (space+ "\\s +"))
     (cl-flet ((regexp-or (&rest exps)
                          (concat "\\(?:"
                                  (mapconcat #'identity exps "\\|")
@@ -877,7 +877,7 @@ with better comments."
          (parameter-group '(key)))
     (if (string-match "," matcher)
         (error "In-middle keyword is not supported.")
-      (setq matcher (concat matcher "[ \t\n;]+")))
+      (setq matcher (concat matcher "\\_>\\s *")))
     `((,keyword . font-lock-keyword-face)
       (,matcher
        (,(intern (concat "pospcase-match-" (symbol-name submatcher)))
