@@ -237,12 +237,12 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                       ("\\]" . ")")
                       ("{" . "(")
                       ("}" . ")")
-                      ("#\\\\[^]);\\s ]+" .
+                      ("#\\\\[^])\\s<\\s ]+" .
                        (lambda (str) (concat "\"" (substring str 2) "\"")))
                       ("#\\+\\(\\sw\\|\\s_\\)" .
                        (lambda (str) (concat "  " (match-string 1))))
-                      ("#[^])\";\\s ]+\"" . ,(reader-lambda "\""))
-                      ("#[^;\\s ]+(" . ,(reader-lambda "(")))))
+                      ("#[^])\"\\s<\\s ]+\"" . ,(reader-lambda "\""))
+                      ("#[^\\s<\\s ]+(" . ,(reader-lambda "(")))))
       (condition-case err
           (read-from-string str)
         (invalid-read-syntax
@@ -839,7 +839,7 @@ with better comments."
                                       (cadar patterns)
                                     (caar patterns))
                                 (car patterns)))))
-                    (string-match "^[^;\\s ]+" str)
+                    (string-match "^[^\\s<\\s ]+" str)
                     (regexp-quote (match-string 0 str))))
          (keyword (concat "\\_<"
                           (substring matcher (string-match "[^(]" matcher))
