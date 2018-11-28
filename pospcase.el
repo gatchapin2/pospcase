@@ -241,9 +241,11 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                                                              ?\ )
                                                             (match-string 2 str)))))))
     (read-from-string
-     (cl-reduce (lambda (str pair)
-                  (replace-regexp-in-string (car pair) (cdr pair) str))
-                (cons str elispify)))))
+     (if (memq major-mode '(emacs-lisp-mode lisp-interaction-mode))
+         str
+       (cl-reduce (lambda (str pair)
+                    (replace-regexp-in-string (car pair) (cdr pair) str))
+                  (cons str elispify))))))
 
 (defun pospcase-read (pos)
   "Read a s-expression at POS. Recursively wrap each s-expression
