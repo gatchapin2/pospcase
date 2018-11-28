@@ -231,6 +231,7 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                      ("[]}]" . ")")
                      (,(concat "#\\\\" sym) . ,(lambda (str)
                                                  (concat "\"" (substring str 2) "\"")))
+                     ("#\\\\." . ,(lambda (str) (concat "\"" (substring str 2) "\"")))
                      (,(concat "#[-.+]" sym) . ,(lambda (str)
                                                  (concat "  " (substring str 2))))
                      (,(concat "#" sym "\\([(\"]\\)") . ,(lambda (str)
@@ -967,8 +968,8 @@ Group two:  defstruct
 
 Group three: key
 
-So far sufficiently Common Lisp and Emacs Lisp highlighting is
-achieved by using them.
+So far sufficient portions of Common Lisp and Emacs Lisp could be
+highlighted using them.
 
 Argument PATTERNS is a list of `pcase' patterns.
 
