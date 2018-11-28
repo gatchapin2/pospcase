@@ -236,7 +236,7 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                      (,(concat "#" sym "\\([(\"]\\)") . ,(lambda (str)
                                                            (concat
                                                             (make-string
-                                                             (- (match-end 1) (match-beginning 1))
+                                                             (- (match-end 1) (match-beginning 0))
                                                              ?\ )
                                                             (match-string 2 str)))))))
     (read-from-string
