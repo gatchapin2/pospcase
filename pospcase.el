@@ -231,7 +231,7 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                      ("[]}]" . ")")
                      (,(concat "#\\\\" sym) . ,(lambda (str)
                                                  (concat "\"" (substring str 2) "\"")))
-                     (,(concat "#[.+]" sym) . ,(lambda (str)
+                     (,(concat "#[-.+]" sym) . ,(lambda (str)
                                                  (concat "  " (substring str 2))))
                      (,(concat "#" sym "\\([(\"]\\)") . ,(lambda (str)
                                                            (concat
@@ -660,7 +660,7 @@ length lists"
               (numberp (car pair))
               (numberp (cdr pair)))
        (leaf-p (node)
-               (and (symbolp (car node))
+               (and (atom (car node))
                     (pos-p (cdr node))))
        (ignore-p (node)
                  (and (consp (car node))
