@@ -226,31 +226,23 @@ and strings."
 (defun pospcase--read-from-string (str)
   "`read-from-string' wrapper with simple regexp based
 preprocessing to make S-expression consumable for Emacs Lisp."
-  (cl-macrolet ((reader-lambda (delim)
-                               `(lambda (str)
-                                 (concat
-                                  (make-string
-                                   (- (match-end 0) (match-beginning 0))
-                                   ?\ )
-                                  ,delim))))
-    (let* ((sym "\\(?:\\sw\\|\\s_\\)+")
-           (elispify `(("\\[" . "(")
-                       ("\\]" . ")")
-                       ("{" . "(")
-                       ("}" . ")")
-                       (,(concat "#\\\\" sym) .
-                        ,(lambda (str) (concat "\"" (substring str 2) "\"")))
-                       (,(concat "#\\+" sym) .
-                        ,(lambda (str) (concat "  " (substring str 2))))
-                       (,(concat "#" sym "\"") . ,(reader-lambda "\""))
-                       (,(concat "#" sym "(") . ,(reader-lambda "(")))))
-      (condition-case err
-          (read-from-string str)
-        (invalid-read-syntax
-         (read-from-string
-          (cl-reduce (lambda (str pair)
-                    (replace-regexp-in-string (car pair) (cdr pair) str))
-                  (cons str elispify))))))))
+  (let* ((sym "\\(\\sw\\|\\s_\\)+")
+         (elispify `(("[[{]" . "(")
+                     ("[]}]" . ")")
+                     (,(concat "#\\\\" sym) . ,(lambda (str)
+                                                 (concat "\"" (substring str 2) "\"")))
+                     (,(concat "#[.+]" sym) . ,(lambda (str)
+                                                 (concat "  " (substring str 2))))
+                     (,(concat "#" sym "\\([(\"]\\)") . ,(lambda (str)
+                                                           (concat
+                                                            (make-string
+                                                             (- (match-end 1) (match-beginning 1))
+                                                             ?\ )
+                                                            (match-string 2 str)))))))
+    (read-from-string
+     (cl-reduce (lambda (str pair)
+                  (replace-regexp-in-string (car pair) (cdr pair) str))
+                (cons str elispify)))))
 
 (defun pospcase-read (pos)
   "Read a s-expression at POS. Recursively wrap each s-expression
