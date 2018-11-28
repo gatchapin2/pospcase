@@ -832,7 +832,7 @@ with better comments."
                                       (cadar patterns)
                                     (caar patterns))
                                 (car patterns)))))
-                    (string-match "^[^\\s<\\s ]+" str)
+                    (string-match "^\\S +" str)
                     (regexp-quote (match-string 0 str))))
          (keyword (concat "\\_<"
                           (substring matcher (string-match "[^(]" matcher))
