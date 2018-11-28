@@ -241,7 +241,7 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                                                              ?\ )
                                                             (match-string 2 str)))))))
     (read-from-string
-     (if (memq major-mode '(emacs-lisp-mode lisp-interaction-mode))
+     (if (derived-mode-p 'emacs-lisp-mode)
          str
        (cl-reduce (lambda (str pair)
                     (replace-regexp-in-string (car pair) (cdr pair) str))
