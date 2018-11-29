@@ -246,7 +246,7 @@ preprocessing to make S-expression consumable for Emacs Lisp."
          str
        (cl-reduce (lambda (str pair)
                     (replace-regexp-in-string (car pair) (cdr pair) str))
-                  (cons str elispify)))))))
+                  (cons str elispify))))))
 
 (defun pospcase-read (pos)
   "Read a s-expression at POS. Recursively wrap each s-expression
