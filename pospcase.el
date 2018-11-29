@@ -229,25 +229,24 @@ preprocessing to make S-expression consumable for Emacs Lisp."
   (let* ((sym "\\(?:\\sw\\|\\s_\\)")
          (sym* (concat "\\(" sym "*" "\\)"))
          (sym+ (concat "\\(" sym "+" "\\)"))
+         (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
+         (lambda-2 (lambda (str) (concat
+                                  (make-string
+                                   (- (match-end 1) (match-beginning 0))
+                                   ?\ )
+                                  (match-string 2 str))))
          (elispify `(("[[{]" . "(")
                      ("[]}]" . ")")
-                     (,(concat "#\\\\" sym+) . ,(lambda (str)
-                                                 (concat "\"" (substring str 2) "\"")))
-                     ("#\\\\." . ,(lambda (str) (concat "\"" (substring str 2) "\"")))
-                     (,(concat "#[-.+]" sym+) . ,(lambda (str)
-                                                 (concat "  " (substring str 2))))
-                     (,(concat "#" sym* "\\([(\"]\\)") . ,(lambda (str)
-                                                           (concat
-                                                            (make-string
-                                                             (- (match-end 1) (match-beginning 0))
-                                                             ?\ )
-                                                            (match-string 2 str)))))))
+                     (,(concat "#\\\\" sym+) . ,lambda-1)
+                     ("#\\\\." . ,lambda-1)
+                     (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
+                     (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
     (read-from-string
      (if (derived-mode-p 'emacs-lisp-mode)
          str
        (cl-reduce (lambda (str pair)
                     (replace-regexp-in-string (car pair) (cdr pair) str))
-                  (cons str elispify))))))
+                  (cons str elispify)))))))
 
 (defun pospcase-read (pos)
   "Read a s-expression at POS. Recursively wrap each s-expression
