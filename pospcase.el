@@ -226,15 +226,17 @@ and strings."
 (defun pospcase--read-from-string (str)
   "`read-from-string' wrapper with simple regexp based
 preprocessing to make S-expression consumable for Emacs Lisp."
-  (let* ((sym "\\(\\sw\\|\\s_\\)+")
+  (let* ((sym "\\(?:\\sw\\|\\s_\\)")
+         (sym* (concat "\\(" sym "*" "\\)"))
+         (sym+ (concat "\\(" sym "+" "\\)"))
          (elispify `(("[[{]" . "(")
                      ("[]}]" . ")")
-                     (,(concat "#\\\\" sym) . ,(lambda (str)
+                     (,(concat "#\\\\" sym+) . ,(lambda (str)
                                                  (concat "\"" (substring str 2) "\"")))
                      ("#\\\\." . ,(lambda (str) (concat "\"" (substring str 2) "\"")))
-                     (,(concat "#[-.+]" sym) . ,(lambda (str)
+                     (,(concat "#[-.+]" sym+) . ,(lambda (str)
                                                  (concat "  " (substring str 2))))
-                     (,(concat "#" sym "\\([(\"]\\)") . ,(lambda (str)
+                     (,(concat "#" sym* "\\([(\"]\\)") . ,(lambda (str)
                                                            (concat
                                                             (make-string
                                                              (- (match-end 1) (match-beginning 0))
