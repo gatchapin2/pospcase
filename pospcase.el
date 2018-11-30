@@ -359,7 +359,7 @@ which returns:
                        until (progn
                                (ignore-errors (forward-sexp))
                                (forward-comment most-positive-fixnum)
-                               (while (> (skip-chars-forward ")]}") 0)
+                               (while (> (skip-syntax-forward ")") 0)
                                  (forward-comment most-positive-fixnum))
                                (>= (point) lim))
                        finally return result))
@@ -369,14 +369,13 @@ which returns:
     (save-excursion
       (goto-char pos)
       (let* ((sexp-end (save-excursion
-                         (if pospcase--nth-chop-off
-                             (condition-case err
-                                 (progn
-                                   (down-list)
-                                   (forward-sexp pospcase--nth-chop-off))
-                               (scan-error
-                                (forward-sexp)
-                                (forward-comment most-positive-fixnum)))
+                         (if (and pospcase--nth-chop-off
+                                  (progn
+                                    (forward-comment most-positive-fixnum)
+                                    (eq (syntax-class (syntax-after (point))) 4)))
+                             (progn
+                               (down-list)
+                               (forward-sexp pospcase--nth-chop-off))
                            (forward-sexp)
                            (forward-comment most-positive-fixnum))
                          (point)))
@@ -912,7 +911,7 @@ with better comments."
              (point))
             ((nth 4 table)              ; in comment
              (search-backward ";" nil t)
-             (skip-chars-backward ";")
+             (skip-syntax-backward "<")
              (forward-comment most-positive-fixnum)
              (point))
             (t
