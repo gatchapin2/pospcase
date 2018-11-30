@@ -63,6 +63,11 @@
     #+END_SRC
 
 
+*** TODO Entry point should be ~pospcase-at.~ Because ~pospcase-read~ and ~pospcase~ aren’t aware of current patterns.
+    - State "TODO"       from              [2018-11-30 Fri 09:58]
+
+*** TODO ~pospcase-read~ walk down the sexp tree. How should it behave when chop-off point comes?
+    - State "TODO"       from              [2018-11-30 Fri 10:00]
 ** TODO define ~pospcase--after-open-paren~
    - State "TODO"       from              [2018-11-23 Fri 11:11]
 
@@ -121,4 +126,7 @@
      #+BEGIN_SRC emacs-lisp
        (cl-loop with result do (push (walk) result))
      #+END_SRC
-
+** TODO ~read-from-string~ should be major-mode aware? In case someone use (pred vectorp) in emacs-lisp-mode?
+   - State "TODO"       from              [2018-11-30 Fri 09:37]
+** TODO ~down-list~ is major-mode aware. Does ~elispify~ cause inconsistency?
+   - State "TODO"       from              [2018-11-30 Fri 09:43]

@@ -223,29 +223,6 @@ and strings."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; `pcase' powered matcher
 
-(defun pospcase--read-from-string (str)
-  "`read-from-string' wrapper with simple regexp based
-preprocessing to make S-expression consumable for Emacs Lisp."
-  (let* ((sym "\\(?:\\sw\\|\\s_\\)")
-         (sym* (concat "\\(" sym "*" "\\)"))
-         (sym+ (concat "\\(" sym "+" "\\)"))
-         (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
-         (lambda-2 (lambda (str) (concat
-                                  (make-string
-                                   (- (match-end 1) (match-beginning 0))
-                                   ?\ )
-                                  (match-string 2 str))))
-         (elispify `(("[[{]" . "(")
-                     ("[]}]" . ")")
-                     (,(concat "#\\\\" sym+) . ,lambda-1)
-                     ("#\\\\." . ,lambda-1)
-                     (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
-                     (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
-    (read-from-string
-     (cl-reduce (lambda (str pair)
-                  (replace-regexp-in-string (car pair) (cdr pair) str))
-                (cons str elispify)))))
-
 (defun pospcase-read (pos)
   "Read a s-expression at POS. Recursively wrap each s-expression
 in cons cell then attach positional metadata (start . end) at
@@ -336,12 +313,11 @@ which returns:
                  (destructuring-bind (start sexp . lim)
                      (cons (point)
                            (condition-case err
-                               (pospcase--read-from-string
-                                (buffer-substring-no-properties (point) limit))
+                               (read-from-string buf-str (- (point) buf-off))
                              (invalid-read-syntax
                               (cons 'pospcase-invalid-read-syntax
                                     (- limit (point))))))
-                   (incf lim (point))
+                   (incf lim buf-off)
                    (forward-comment most-positive-fixnum)
                    (cons
                     (if (or (atom sexp)
@@ -349,29 +325,24 @@ which returns:
                         sexp
                       (down-list)
                       (cl-loop
-                       with str
                        with rpair
                        with dot
                        with temp
                        with result
-                       do (setq str (progn
-                                      (forward-comment most-positive-fixnum)
-                                      (buffer-substring-no-properties (point) lim))
-                                rpair
+                       do (setq rpair
                                 (condition-case err
-                                    (pospcase--read-from-string str)
+                                    (progn
+                                      (forward-comment most-positive-fixnum)
+                                      (read-from-string buf-str (- (point) buf-off)))
                                   (invalid-read-syntax
                                    (if (string= (cadr err) ".")
                                        (progn
-                                         (setq dot t
-                                               str (progn
-                                                     (forward-sexp)
-                                                     (forward-comment most-positive-fixnum)
-                                                     (buffer-substring-no-properties
-                                                      (point) lim)))
-                                         (pospcase--read-from-string str))
+                                         (setq dot t)
+                                         (forward-sexp)
+                                         (forward-comment most-positive-fixnum)
+                                         (read-from-string buf-str (- (point) buf-off)))
                                      (cons nil (- limit (point))))))
-                                rlim (+ (point) (cdr rpair))
+                                rlim (+ (cdr rpair) buf-off)
                                 temp (if (or (atom (car rpair))
                                              (memq (car rpair) '(\` \, quote function)))
                                          (cons (car rpair) (cons (point) rlim))
@@ -392,7 +363,30 @@ which returns:
                (scan-error nil))))
     (save-excursion
       (goto-char pos)
-      (walk (scan-sexps (point) 1)))))
+      (let* ((sexp-end (save-excursion
+                         (forward-sexp)
+                         (forward-comment most-positive-fixnum)
+                         (point)))
+             (buf-off (point))
+             (buf-str (let* ((sym "\\(?:\\sw\\|\\s_\\)")
+                             (sym* (concat "\\(" sym "*" "\\)"))
+                             (sym+ (concat "\\(" sym "+" "\\)"))
+                             (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
+                             (lambda-2 (lambda (str) (concat
+                                                      (make-string
+                                                       (- (match-end 1) (match-beginning 0))
+                                                       ?\ )
+                                                      (match-string 2 str))))
+                             (elispify `(("[[{]" . "(")
+                                         ("[]}]" . ")")
+                                         (,(concat "#\\\\" sym+) . ,lambda-1)
+                                         ("#\\\\." . ,lambda-1)
+                                         (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
+                                         (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
+                        (cl-reduce (lambda (str pair)
+                                     (replace-regexp-in-string (car pair) (cdr pair) str))
+                                   (cons (buffer-substring-no-properties buf-off sexp-end) elispify)))))
+        (walk sexp-end)))))
 
 (defmacro pospcase-translate (matcher)
   "Translate `pcase' matcher pattern (usually backquoted) to
