@@ -161,7 +161,7 @@ the end of the quoted expression."
   "Match named keyword of `loop' and highlight variable arguments."
   (while
       (progn
-        (forward-comment (buffer-size))
+        (forward-comment most-positive-fixnum)
         (and (< (point) limit)
              (not (looking-at
                    (concat
@@ -179,7 +179,7 @@ the end of the quoted expression."
       nil
     (goto-char (match-end 0))
     (when (member (match-string 1) pospcase-font-lock-loop-keywords-with-var)
-      (forward-comment (buffer-size))
+      (forward-comment most-positive-fixnum)
       (let ((var-start (point)))
         (when (condition-case nil
                   (progn
@@ -344,7 +344,7 @@ which returns:
                               (cons 'pospcase-invalid-read-syntax
                                     (- limit (point))))))
                    (incf lim (point))
-                   (forward-comment lim)
+                   (forward-comment most-positive-fixnum)
                    (cons
                     (if (or (atom sexp)
                             (memq (car sexp) '(\` \, quote function)))
@@ -357,7 +357,7 @@ which returns:
                        with temp
                        with result
                        do (setq str (progn
-                                      (forward-comment lim)
+                                      (forward-comment most-positive-fixnum)
                                       (buffer-substring-no-properties (point) lim))
                                 rpair
                                 (condition-case err
@@ -368,7 +368,7 @@ which returns:
                                          (setq dot t
                                                str (progn
                                                      (forward-sexp)
-                                                     (forward-comment lim)
+                                                     (forward-comment most-positive-fixnum)
                                                      (buffer-substring-no-properties
                                                       (point) lim)))
                                          (pospcase--read-from-string str))
@@ -385,9 +385,9 @@ which returns:
                        do (setq result (append result (list temp)))
                        until (progn
                                (ignore-errors (forward-sexp))
-                               (forward-comment lim)
+                               (forward-comment most-positive-fixnum)
                                (while (> (skip-chars-forward ")") 0)
-                                 (forward-comment lim))
+                                 (forward-comment most-positive-fixnum))
                                (>= (point) lim))
                        finally return result))
                     (cons start lim)))
