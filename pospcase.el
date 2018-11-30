@@ -584,7 +584,7 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
                        (and (consp temp) (null (car temp)))) ; empty list at `point'
                      (if pospcase--prematches
                          (prog1
-                             (list (pospcase--list nil))
+                             (list pospcase--prematches)
                            (setq pospcase--prematches nil))
                        nil)
                      (ignore-errors ,clause))))
