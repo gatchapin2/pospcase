@@ -42,12 +42,27 @@
 
     - State "TODO"       from              [2018-11-23 Fri 08:49]
 
+    #+BEGIN_SRC emacs-lisp
     (insert (make-string
          (car (parse-partial-sexp (point) (+ (point) 10)))
          ?\)))
     (foo (bar (baz (qux (quux
-** TODO Should I add zero submatcher support? Should I implement ~pospcase-match-zero~?
-   - State "TODO"       from              [2018-11-23 Fri 09:32]
+    #+END_SRC
+
+*** TODO pospcase--buffer-substring
+    - State "TODO"       from              [2018-11-29 Thu 14:42]
+
+    #+BEGIN_SRC emacs-lisp
+      (let ((str (buffer-substring-no-properties (point) limit))
+            newstr)
+        (with-temp-buffer
+          (insert str)
+          (goto-char (point-max))
+          (insert (make-string (car (syntax-ppss)) ?\)))
+          (setq pospcase--buffer-substring (buffer-substring (point-min) (point-max)))))
+    #+END_SRC
+
+
 ** TODO define ~pospcase--after-open-paren~
    - State "TODO"       from              [2018-11-23 Fri 11:11]
 
@@ -93,3 +108,17 @@
      postform, etc.) and macros should discard errors silently.
 
    - How about internal font-lock functions (iterator, etc)?
+** TODO use idioms
+   - State "TODO"       from              [2018-11-29 Thu 11:24]
+   - use push
+
+     #+BEGIN_SRC emacs-lisp
+       (cl-loop with result do (setq result (append result (walk))))
+     #+END_SRC
+
+     should be
+
+     #+BEGIN_SRC emacs-lisp
+       (cl-loop with result do (push (walk) result))
+     #+END_SRC
+

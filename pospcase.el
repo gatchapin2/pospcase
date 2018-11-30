@@ -324,7 +324,7 @@ You can reparse trees returned by `pospcase-read' or dot notation
 of `pospcase':
 
   (pospcase
-   (car                 ; dot notation returns with extra list wrap
+   (car                 ; outermost dot notation returns with extra list wrap
     (pospcase-at (point-min)
                  '((`(defun ,_ ,_ . ,temp) temp))))
    '((`,body body)))
@@ -559,6 +559,15 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
         t)
     (goto-char limit)
     (set-match-data nil)
+    nil))
+
+(defun pospcase-match-nil (limit)
+  "Simply set `pospcase--prematches' to `pospcase--matches.'"
+  (if pospcase--prematches
+      (progn
+        (setq pospcase--matches (list pospcase--prematches)
+              pospcase--prematches nil)
+        (pospcase--iterator limit))
     nil))
 
 (defmacro pospcase--call-iterator (clause limit)
@@ -942,6 +951,10 @@ with better comments."
                               ;; Search limit
                               (ignore-errors (scan-sexps (point 1)))
                             end)))
+
+                      ((null submatcher)
+                       (goto-char (match-end 0))
+                       (point))
 
                       (t (error "Not supported submatcher: %s" submatcher)))))
 
