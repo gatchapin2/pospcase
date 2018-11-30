@@ -7,6 +7,8 @@
    - State "TODO"       from              [2018-11-21 Wed 01:42]
    - #\char
    - #H() from cl21
+   - #!?[-+]sym
+   - #(1 2 3)
 
 ** TODO replace-regex-in-string ideas [4/4]
    - State "TODO"       from              [2018-11-21 Wed 01:42]
@@ -14,6 +16,14 @@
    - [X] "#[^ (]+(" -> "(", for cl21 hash
    - [X] "#p\"" -> "\"", pathname
    - [X] "#\\+" -> "  "
+
+** TODO large body sluggishness
+   - State "TODO"       from              [2018-11-30 Fri 16:48]
+
+   - need jit-lock internal understanding
+
+** TODO unmatched double quote hangs
+   - State "TODO"       from              [2018-11-30 Fri 19:56]
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]
@@ -22,16 +32,23 @@
 ** submatcher generator
    - Something like:
 
+     #+BEGIN_SRC emacs-lisp
        (pospcase-font-lock ’lisp-mode
                             '(`(defun ,name ,args))
                             '((name . font-lock-function-name-face)
-                              ((args . `(,arg . ,_)))
-                              ((arg . font-lock-function-name-face))))
+                              ((args . (`(,arg ,type)
+                                        `,arg)))
+                              ((arg . font-lock-function-name-face)
+                               (type . font-lock-type-face))))
+     #+END_SRC
 
      and it calls
 
+     #+BEGIN_SRC emacs-lisp
        (goto-char (car args))
-       (pospcase-font-lock-submatcher `(,arg . ,__))
+       (pospcase-font-lock-submatcher (`(,arg ,type)
+                                       `,arg))
+     #+END_SRC
 ** TODO add chop-off-p to pospcase-read
    - State "TODO"       from              [2018-11-21 Wed 05:44]
 
@@ -100,6 +117,8 @@
    - State "TODO"       from              [2018-11-23 Fri 14:13]
 
    - Example: `((or labels cl-labels) ,name ,args . ,__)
+** TODO multiple heading keywords support for ~pospcase-font-lock~ patterns
+   - State "TODO"       from              [2018-11-30 Fri 16:29]
 * Design guideline
 ** NOTE errors
    - State "NOTE"      from              [2018-11-22 Thu 10:32]
