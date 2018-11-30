@@ -223,6 +223,10 @@ and strings."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; `pcase' powered matcher
 
+(defvar pospcase--nth-chop-off nil
+  "Used for chopping off trailing `. ,_', often happens in
+  font-lock patterns.")
+
 (defun pospcase-read (pos)
   "Read a s-expression at POS. Recursively wrap each s-expression
 in cons cell then attach positional metadata (start . end) at
@@ -361,31 +365,44 @@ which returns:
                        finally return result))
                     (cons start lim)))
                (scan-error nil))))
+
     (save-excursion
       (goto-char pos)
       (let* ((sexp-end (save-excursion
-                         (forward-sexp)
-                         (forward-comment most-positive-fixnum)
+                         (if pospcase--nth-chop-off
+                             (condition-case err
+                                 (progn
+                                   (down-list)
+                                   (forward-sexp pospcase--nth-chop-off))
+                               (scan-error
+                                (forward-sexp)
+                                (forward-comment most-positive-fixnum)))
+                           (forward-sexp)
+                           (forward-comment most-positive-fixnum))
                          (point)))
              (buf-off (point))
-             (buf-str (let* ((sym "\\(?:\\sw\\|\\s_\\)")
-                             (sym* (concat "\\(" sym "*" "\\)"))
-                             (sym+ (concat "\\(" sym "+" "\\)"))
-                             (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
-                             (lambda-2 (lambda (str) (concat
-                                                      (make-string
-                                                       (- (match-end 1) (match-beginning 0))
-                                                       ?\ )
-                                                      (match-string 2 str))))
-                             (elispify `(("[[{]" . "(")
-                                         ("[]}]" . ")")
-                                         (,(concat "#\\\\" sym+) . ,lambda-1)
-                                         ("#\\\\." . ,lambda-1)
-                                         (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
-                                         (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
-                        (cl-reduce (lambda (str pair)
-                                     (replace-regexp-in-string (car pair) (cdr pair) str))
-                                   (cons (buffer-substring-no-properties buf-off sexp-end) elispify)))))
+             (buf-str-1 (let* ((sym "\\(?:\\sw\\|\\s_\\)")
+                               (sym* (concat "\\(" sym "*" "\\)"))
+                               (sym+ (concat "\\(" sym "+" "\\)"))
+                               (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
+                               (lambda-2 (lambda (str) (concat
+                                                        (make-string
+                                                         (- (match-end 1) (match-beginning 0))
+                                                         ?\ )
+                                                        (match-string 2 str))))
+                               (elispify `(("[[{]" . "(")
+                                           ("[]}]" . ")")
+                                           (,(concat "#\\\\" sym+) . ,lambda-1)
+                                           ("#\\\\." . ,lambda-1)
+                                           (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
+                                           (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
+                          (cl-reduce (lambda (str pair)
+                                       (replace-regexp-in-string (car pair) (cdr pair) str))
+                                     (cons (buffer-substring-no-properties buf-off sexp-end) elispify))))
+             (buf-str (with-temp-buffer
+                        (insert buf-str-1)
+                        (insert (make-string (car (syntax-ppss)) ?\)))
+                        (buffer-substring (point-min) (point-max)))))
         (walk sexp-end)))))
 
 (defmacro pospcase-translate (matcher)
@@ -480,7 +497,13 @@ backquotes are not supported."
 
 (defun pospcase-at (pos cases)
   "`pospcase' at position POS of buffer."
-  (pospcase (pospcase-read pos) cases))
+  (let ((pospcase--nth-chop-off (when (and (consp (caar cases))
+                                           (eq (caaar cases) '\`)
+                                           (consp (cdaar cases))
+                                           (consp (car (cdaar cases)))
+                                           (equal (last (car (cdaar cases)) 2) ',_))
+                                  (- (length (car (cdaar cases))) 2))))
+    (pospcase (pospcase-read pos) cases)))
 
 (defun pospcase-pos (match)
   "Extract a positional metadata cons cell (start . end) from a
