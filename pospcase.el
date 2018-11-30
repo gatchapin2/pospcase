@@ -242,11 +242,9 @@ preprocessing to make S-expression consumable for Emacs Lisp."
                      (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
                      (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
     (read-from-string
-     (if (derived-mode-p 'emacs-lisp-mode)
-         str
-       (cl-reduce (lambda (str pair)
-                    (replace-regexp-in-string (car pair) (cdr pair) str))
-                  (cons str elispify))))))
+     (cl-reduce (lambda (str pair)
+                  (replace-regexp-in-string (car pair) (cdr pair) str))
+                (cons str elispify)))))
 
 (defun pospcase-read (pos)
   "Read a s-expression at POS. Recursively wrap each s-expression
@@ -386,7 +384,7 @@ which returns:
                        until (progn
                                (ignore-errors (forward-sexp))
                                (forward-comment most-positive-fixnum)
-                               (while (> (skip-chars-forward ")") 0)
+                               (while (> (skip-chars-forward ")]}") 0)
                                  (forward-comment most-positive-fixnum))
                                (>= (point) lim))
                        finally return result))
