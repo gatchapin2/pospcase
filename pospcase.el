@@ -223,6 +223,27 @@ and strings."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; `pcase' powered matcher
 
+
+(defun pospcase--buffer-substring (start end)
+  (let* ((sym "\\(?:\\sw\\|\\s_\\)")
+         (sym* (concat "\\(" sym "*" "\\)"))
+         (sym+ (concat "\\(" sym "+" "\\)"))
+         (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
+         (lambda-2 (lambda (str) (concat
+                                  (make-string
+                                   (- (match-end 1) (match-beginning 0))
+                                   ?\ )
+                                  (match-string 2 str))))
+         (elispify `(("[[{]" . "(")
+                     ("[]}]" . ")")
+                     (,(concat "#\\\\" sym+) . ,lambda-1)
+                     ("#\\\\." . ,lambda-1)
+                     (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
+                     (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
+    (cl-reduce (lambda (str pair)
+                 (replace-regexp-in-string (car pair) (cdr pair) str))
+               (cons (buffer-substring-no-properties start end) elispify))))
+
 (defvar pospcase--nth-chop-off nil
   "Used for chopping off trailing `. ,_', often happens in
   font-lock patterns.")
@@ -381,24 +402,7 @@ which returns:
                            (forward-comment most-positive-fixnum))
                          (point)))
              (buf-off (point))
-             (buf-str-1 (let* ((sym "\\(?:\\sw\\|\\s_\\)")
-                               (sym* (concat "\\(" sym "*" "\\)"))
-                               (sym+ (concat "\\(" sym "+" "\\)"))
-                               (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
-                               (lambda-2 (lambda (str) (concat
-                                                        (make-string
-                                                         (- (match-end 1) (match-beginning 0))
-                                                         ?\ )
-                                                        (match-string 2 str))))
-                               (elispify `(("[[{]" . "(")
-                                           ("[]}]" . ")")
-                                           (,(concat "#\\\\" sym+) . ,lambda-1)
-                                           ("#\\\\." . ,lambda-1)
-                                           (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
-                                           (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
-                          (cl-reduce (lambda (str pair)
-                                       (replace-regexp-in-string (car pair) (cdr pair) str))
-                                     (cons (buffer-substring-no-properties buf-off sexp-end) elispify))))
+             (buf-str-1 (pospcase--buffer-substring buf-off sexp-end))
              (buf-str (with-temp-buffer
                         (insert buf-str-1)
                         (insert (make-string (car (syntax-ppss)) ?\)))
@@ -592,8 +596,7 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
          (unless pospcase--matches      ; initialize
            (let ((temp (ignore-errors
                          (read-from-string
-                          (buffer-substring-no-properties ; FIXME: not elispified
-                           (point) ,limit)))))
+                          (pospcase--buffer-substring (point) ,limit)))))
              (setq pospcase--matches
                    (cond
                     ((null temp) nil)
