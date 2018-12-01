@@ -1,16 +1,5 @@
 #+SEQ_TODO: TODO(t!) NOTE(n!) | DONE(d!) HALT(h!)
 * Bugs
-** TODO wrong higlight after quoted keyword
-
-   - State "TODO"       from              [2018-11-30 Fri 21:12]
-
-   #+BEGIN_SRC emacs-lisp
-     "(let" (foo (bar baz))
-   #+END_SRC
-
-** TODO Common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
-   - State "TODO"       from              [2018-11-18 Sun 18:56]
-
 ** TODO Known reader macros so far
    - State "TODO"       from              [2018-11-21 Wed 01:42]
    - #\char
@@ -123,8 +112,6 @@
    - State "TODO"       from              [2018-11-23 Fri 14:13]
 
    - Example: `((or labels cl-labels) ,name ,args . ,__)
-** TODO multiple heading keywords support for ~pospcase-font-lock~ patterns
-   - State "TODO"       from              [2018-11-30 Fri 16:29]
 * Design guideline
 ** NOTE errors
    - State "NOTE"      from              [2018-11-22 Thu 10:32]

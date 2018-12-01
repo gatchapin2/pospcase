@@ -833,17 +833,22 @@ length lists"
   "Actual font lock keywords generator. Deep magic is
 involved. Don't dismay. I'm planning to simplify and to supply it
 with better comments."
-  (let* ((matcher (let ((str (prin1-to-string
-                              (if (consp (car patterns))
-                                  (if (memq (caar patterns) '(\` \, quote))
-                                      (cadar patterns)
-                                    (caar patterns))
-                                (car patterns)))))
-                    (string-match "^\\S +" str)
-                    (regexp-quote (match-string 0 str))))
+  (let* ((keywords (mapcar (lambda (pattern)
+                             (let ((str (prin1-to-string
+                                         (if (consp pattern)
+                                             (if (memq (car pattern) '(\` \, quote))
+                                                 (cadr pattern)
+                                               (car pattern))
+                                           pattern))))
+                               (string-match "^\\S +" str)
+                               (regexp-quote (match-string 0 str))))
+                           patterns))
          (keyword (concat "\\_<"
-                          (substring matcher (string-match "[^(]" matcher))
+                          (regexp-opt
+                           (mapcar (lambda (kw) (substring kw (string-match "[^(]" kw)))
+                                   keywords))
                           "\\_>"))
+         (matcher (regexp-opt keywords))
          (submatcher (let ((temp (cdr specs)) result)
                        (while (and temp (null result))
                          (setq result (and (consp (caar temp)) (cdaar temp))
@@ -1026,17 +1031,9 @@ examples."
                         ((args . varlist-cars) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(multiple-value-bind ,binds . ,_))
-                      '(font-lock-keyword-face
-                        ((binds . varlist-cars) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
-  (pospcase-font-lock 'lisp-mode
-                      '(`(let* ,binds . ,_))
-                      '(font-lock-keyword-face
-                        ((binds . varlist-cars) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
-  (pospcase-font-lock 'lisp-mode
-                      '(`(let ,binds . ,_))
+                      '(`(let ,binds . ,_)
+                        `(let* ,binds . ,_)
+                        `(multiple-value-bind ,binds . ,_))
                       '(font-lock-keyword-face
                         ((binds . varlist-cars) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
@@ -1068,19 +1065,17 @@ examples."
                         ((args . destructuring) .
                          ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(flet ,funs . ,_))
+                      '(`(flet ,funs . ,_)
+                        `(labels ,funs . ,_)
+                        `(cl-flet ,funs . ,_)
+                        `(cl-labels ,funs . ,_))
                       '(font-lock-keyword-face
                         ((funs . flet) .
                          (font-lock-function-name-face
                           (pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(labels ,funs . ,_))
-                      '(font-lock-keyword-face
-                        ((funs . flet) .
-                         (font-lock-function-name-face
-                          (pospcase-font-lock-variable-face-form (match-string 2))))))
-  (pospcase-font-lock 'lisp-mode
-                      '(`(macrolet ,macros . ,_))
+                      '(`(macrolet ,macros . ,_)
+                        `(cl-macrolet ,macros . ,_))
                       '(font-lock-keyword-face
                         ((macros . macrolet) .
                          (font-lock-function-name-face
@@ -1093,21 +1088,7 @@ examples."
                         ((first . defstruct) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
-                      '(&key whatever)
-                      '(font-lock-type-face
-                        ((pospcase--dummy . key) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))
-                          default
-                          default))))
-  (pospcase-font-lock 'lisp-mode
-                      '(&aux whatever)
-                      '(font-lock-type-face
-                        ((pospcase--dummy . key) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))
-                          default
-                          default))))
-  (pospcase-font-lock 'lisp-mode
-                      '(&optional whatever)
+                      '(&key &aux &optional)
                       '(font-lock-type-face
                         ((pospcase--dummy . key) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))

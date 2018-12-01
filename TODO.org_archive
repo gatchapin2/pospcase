@@ -218,3 +218,43 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-11-30 Fri 21:12]
   - State "TODO"       from              [2018-11-30 Fri 19:56]
+
+* DONE wrong higlight after quoted keyword
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-01 Sat 09:01
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+
+  - State "DONE"       from "TODO"       [2018-12-01 Sat 09:01]
+  - State "TODO"       from              [2018-11-30 Fri 21:12]
+
+  #+BEGIN_SRC emacs-lisp
+    "(let" (foo (bar baz))
+  #+END_SRC
+
+
+* DONE Common lisp ~#~ reader macro notation cause read-from-string error "(invalid-read-syntax #)"
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-01 Sat 09:02
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-01 Sat 09:02]
+  - State "TODO"       from              [2018-11-18 Sun 18:56]
+
+
+* DONE multiple heading keywords support for ~pospcase-font-lock~ patterns
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-01 Sat 11:53
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-01 Sat 11:53]
+  - State "TODO"       from              [2018-11-30 Fri 16:29]
