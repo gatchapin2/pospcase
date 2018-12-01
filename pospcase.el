@@ -225,7 +225,7 @@ and strings."
 
 
 (defun pospcase--buffer-substring (start end)
-  (let* ((sym "\\(?:\\sw\\|\\s_\\)")
+  (let* ((sym "\\(?:\\sw\\|\\s_\\|\\\\.\\)")
          (sym* (concat "\\(" sym "*" "\\)"))
          (sym+ (concat "\\(" sym "+" "\\)"))
          (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
@@ -740,7 +740,7 @@ length lists"
   (let* ((symbol-start "\\_<")
          (symbol-end "\\_>")
          (symbol (concat symbol-start
-                         "\\(?:\\sw\\|\\s_\\)+"
+                         "\\(?:\\sw\\|\\s_\\|\\\\.\\)+"
                          symbol-end))
          (space* "\\s *")
          (space+ "\\s +"))
@@ -804,7 +804,16 @@ length lists"
         (,(concat "#'\\("
                   symbol
                   "\\)")
-         1 pospcase-font-lock-quoted-function-face))))
+         1 pospcase-font-lock-quoted-function-face)
+        ;; For `defclass' slots
+        (,(concat
+           (regexp-opt '(":accessor" ":constructor" ":copier" ":predicate"
+                         ":reader" ":0writer" ":print-function" ":print-object"))
+           "[ \t\n]+"
+           "\\("
+           symbol
+           "\\)")
+         (1 font-lock-function-name-face)))))
   "List of font lock keywords for lisp.")
 
 (defvar-local pospcase-font-lock-lisp-local-keywords nil
