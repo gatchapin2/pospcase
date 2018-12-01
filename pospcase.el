@@ -1043,6 +1043,17 @@ examples."
                         ((args . varlist-cars) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
+                      '(`(defclass ,name ,supers ,slots . ,_))
+                      '(font-lock-keyword-face
+                        (name . (default))
+                        (supers . (default))
+                        ((slots . varlist-cars) . (font-lock-variable-name-face))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(defclass ,name ,supers . ,_))
+                      '(font-lock-keyword-face
+                        (name . (font-lock-type-face))
+                        ((supers . varlist-cars) . (font-lock-type-face))))
+  (pospcase-font-lock 'lisp-mode
                       '(`(lambda ,args . ,_))
                       '(font-lock-keyword-face
                         ((args . varlist-cars) .
