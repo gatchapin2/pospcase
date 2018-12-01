@@ -243,17 +243,6 @@
         baz))
   #+END_SRC
 
-  and:
-
-  #+BEGIN_SRC emacs-lisp
-    (let ((foo
-           (let* ((bar 'baz))
-             bar)))
-      foo)
-  #+END_SRC
-
-  Note that the last snippet use two different keywords ~let~ and ~let*~.
-
   Maybe this is due to my ignorance of font-lock internals and not a
   real technical limitation. I’m eager to fix it.
 
