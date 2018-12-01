@@ -841,7 +841,7 @@ with better comments."
                                                (car pattern))
                                            pattern))))
                                (string-match "^\\S +" str)
-                               (regexp-quote (match-string 0 str))))
+                               (match-string 0 str)))
                            patterns))
          (keyword (concat "\\_<"
                           (regexp-opt
