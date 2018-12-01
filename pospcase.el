@@ -612,51 +612,37 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
       (goto-char ,limit)
       nil)))
 
-(defun pospcase-match-varlist (limit)
-  "Matcher iterator for a list of symbol or two length lists."
-  (pospcase--call-iterator
-   (mapcar
-    (lambda (srpair)
-      (goto-char (cadr srpair))
-      (pospcase-at (point)
-                   '((`(,name ,type) (pospcase--list name type))
-                     (`,name (pospcase--list name)))))
-    (car (pospcase-read (point))))
-   limit))
-
 (defvar pospcase--fence-start nil
   "Boundary cons cell (exp . (start . end)) for dropping
   unnecessary tree branches before here.")
 
-(defun pospcase-match-key (limit)
-  "Matcher iterator for a list of symbol or two or three length lists."
-  (pospcase--call-iterator
+(defmacro pospcase--varlist (&rest patterns)
+  `(pospcase--call-iterator
    (mapcar
     (lambda (srpair)
       (goto-char (cadr srpair))
-      (pospcase-at (point)
-                   '((`(,name ,init ,sup) (pospcase--list name init sup))
-                     (`(,name ,init) (pospcase--list name init))
-                     (`,name (pospcase--list name)))))
+      (pospcase-at (point) ,(list 'quote patterns)))
     (if pospcase--fence-start
         (member pospcase--fence-start (car (pospcase-read (point))))
       (car (pospcase-read (point)))))
    limit))
 
+(defun pospcase-match-varlist (limit)
+  "Matcher iterator for a list of symbol or two length lists."
+  (pospcase--varlist (`(,name ,type) (pospcase--list name type))
+                     (`,name (pospcase--list name))))
+
+(defun pospcase-match-key (limit)
+  "Matcher iterator for a list of symbol or two or three length lists."
+  (pospcase--varlist (`(,name ,init ,sup) (pospcase--list name init sup))
+                     (`(,name ,init) (pospcase--list name init))
+                     (`,name (pospcase--list name))))
+
 (defun pospcase-match-varlist-cars (limit)
   "Matcher iterator for the `car's of a list of two or longer
 length lists"
-  (pospcase--call-iterator
-   (mapcar
-    (lambda (srpair)
-      (goto-char (cadr srpair))
-      (pospcase-at (point)
-                   '((`(,name . ,_) (pospcase--list name))
-                     (`,name (pospcase--list name)))))
-    (if pospcase--fence-start
-        (member pospcase--fence-start (car (pospcase-read (point))))
-      (car (pospcase-read (point)))))
-   limit))
+  (pospcase--varlist (`(,name . ,_) (pospcase--list name))
+                     (`,name (pospcase--list name))))
 
 (defalias #'pospcase-match-defstruct #'pospcase-match-varlist-cars)
 
