@@ -1032,7 +1032,12 @@ examples."
   "Setup various eye candy font lock keywords for Common Lisp."
   (pospcase-font-lock 'lisp-mode
                       '(`(defun (setf ,name) ,args . ,_)
-                        `(defun ,name ,args . ,_))
+                        `(defun ,name ,args . ,_)
+                        `(defsubst ,name ,args . ,_)
+                        `(define-inline ,name ,args . ,_)
+                        `(cl-defun (setf ,name) ,args . ,_)
+                        `(cl-defun ,name ,args . ,_)
+                        `(cl-defsubst ,name ,args . ,_))
                       '(font-lock-keyword-face
                         (name . (font-lock-function-name-face))
                         ((args . varlist-cars) .
@@ -1059,7 +1064,13 @@ examples."
                       '(`(defmethod (setf ,name) ,args ,(pred keywordp) . ,_)
                         `(defmethod (setf ,name) ,args . ,_)
                         `(defmethod ,name ,args ,(pred keywordp) . ,_)
-                        `(defmethod ,name ,args . ,_))
+                        `(defmethod ,name ,args . ,_)
+                        `(defgeneric ,name ,args . ,_)
+                        `(cl-defmethod (setf ,name) ,args ,(pred keywordp) . ,_)
+                        `(cl-defmethod (setf ,name) ,args . ,_)
+                        `(cl-defmethod ,name ,args ,(pred keywordp) . ,_)
+                        `(cl-defmethod ,name ,args . ,_)
+                        `(cl-defgeneric ,name ,args . ,_))
                       '(font-lock-keyword-face
                         (name . (font-lock-function-name-face))
                         ((args . varlist) .
@@ -1071,7 +1082,8 @@ examples."
                         ((binds . destructuring) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(defmacro ,name ,args . ,_))
+                      '(`(defmacro ,name ,args . ,_)
+                        `(cl-defmacro ,name ,args . ,_))
                       '(font-lock-keyword-face
                         (name . (font-lock-function-name-face))
                         ((args . destructuring) .
