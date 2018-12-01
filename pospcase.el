@@ -910,17 +910,9 @@ with better comments."
 
          (let ((table (syntax-ppss)))
            (cond
-            ((nth 3 table)              ; in string
-             (while (and (not (eobp))
-                         (nth 3 (syntax-ppss)))
-               (forward-char))
-             (match-end 0))
-            ((nth 4 table)              ; in comment
-             (while (and (not (bobp))
-                         (nth 4 (syntax-ppss)))
-               (backward-char))
-             (forward-comment most-positive-fixnum)
-             (match-end 0))
+            ((or (nth 3 table)          ; in string
+                 (nth 4 table))         ; in comment
+             (goto-char (match-end 0)))
 
             (t
              (let ((match-end
