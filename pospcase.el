@@ -361,7 +361,8 @@ which returns:
                                (forward-comment most-positive-fixnum)
                                (while (> (skip-syntax-forward ")") 0)
                                  (forward-comment most-positive-fixnum))
-                               (>= (point) lim))
+                               (or (>= (point) lim)
+                                   (eobp)))
                        finally return result))
                     (cons start lim)))
                (scan-error nil))))
@@ -587,22 +588,25 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
 (defmacro pospcase--call-iterator (clause limit)
   "Catch parsing error, and call `pospcase--iterator'."
   `(condition-case nil
-       (when (or (< (point) ,limit) pospcase--matches)
+       (when (< (point) ,limit)
          (unless pospcase--matches      ; initialize
-           (setq pospcase--matches
-                 (if (let* ((lim (ignore-errors (scan-sexps (point) 1)))
-                            (temp (when lim
-                                    (ignore-errors
-                                      (read-from-string
-                                       (buffer-substring-no-properties (point) lim))))))
-                       (and (consp temp) (null (car temp)))) ; empty list at `point'
+           (let ((temp (ignore-errors
+                         (read-from-string
+                          (buffer-substring-no-properties ; FIXME: not elispified
+                           (point) ,limit)))))
+             (setq pospcase--matches
+                   (cond
+                    ((null temp) nil)
+                    ((and (consp temp)
+                          (or (null (car temp)) ; empty list at `point'
+                              (atom (car temp)))) ; not even list
                      (if pospcase--prematches
                          (prog1
                              (list pospcase--prematches)
                            (setq pospcase--prematches nil))
-                       nil)
-                   (ignore-errors ,clause))))
-         (goto-char (1- ,limit)) ; whole parsing is already done, no crawling
+                       nil))
+                    (t (ignore-errors ,clause)))))
+           (goto-char (1- ,limit)))     ; is there better idea?
          (pospcase--iterator ,limit))
      (error
       (goto-char ,limit)
@@ -903,6 +907,7 @@ with better comments."
        (,(intern (concat "pospcase-match-" (symbol-name submatcher)))
         (pospcase--preform
          (goto-char (match-beginning 0))
+
          (let ((table (syntax-ppss)))
            (cond
             ((nth 3 table)              ; in string
@@ -916,6 +921,7 @@ with better comments."
                (backward-char))
              (forward-comment most-positive-fixnum)
              (match-end 0))
+
             (t
              (let ((match-end
                     ,(cond

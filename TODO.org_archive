@@ -196,3 +196,25 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   - State "TODO"       from              [2018-11-21 Wed 05:44]
    (- (count-open str lim) (count-close str lim))
 
+
+* DONE Should I add zero submatcher support? Should I implement ~pospcase-match-zero~?
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-30 Fri 04:39
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-11-30 Fri 04:39]
+  - State "TODO"       from              [2018-11-23 Fri 09:32]
+
+* DONE unmatched double quote hangs
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-11-30 Fri 21:12
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-11-30 Fri 21:12]
+  - State "TODO"       from              [2018-11-30 Fri 19:56]

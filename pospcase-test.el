@@ -671,6 +671,8 @@ woof woof
           strs))
 
 
+;;; chop-off
+
 (insert (make-string
          (car (parse-partial-sexp (point) (+ (point) 10)))
          ?\)))
