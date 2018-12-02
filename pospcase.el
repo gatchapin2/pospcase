@@ -1035,6 +1035,7 @@ examples."
                         `(defun ,name ,args . ,_)
                         `(defsubst ,name ,args . ,_)
                         `(define-inline ,name ,args . ,_)
+                        `(define-modify-macro ,name ,args . ,_)
                         `(cl-defun (setf ,name) ,args . ,_)
                         `(cl-defun ,name ,args . ,_)
                         `(cl-defsubst ,name ,args . ,_))
