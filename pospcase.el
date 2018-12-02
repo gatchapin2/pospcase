@@ -1061,12 +1061,14 @@ examples."
   (pospcase-font-lock 'lisp-mode
                       '(`(let ,binds . ,_)
                         `(let* ,binds . ,_)
-                        `(multiple-value-bind ,binds . ,_))
+                        `(multiple-value-bind ,binds . ,_)
+                        `(cl-multiple-value-bind ,binds . ,_))
                       '(font-lock-keyword-face
                         ((binds . varlist-cars) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(symbol-macrolet ,binds . ,_))
+                      '(`(symbol-macrolet ,binds . ,_)
+                        `(cl-symbol-macrolet ,binds . ,_))
                       '(font-lock-keyword-face
                         ((binds . varlist) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))

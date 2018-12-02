@@ -246,8 +246,40 @@
   Maybe this is due to my ignorance of font-lock internals and not a
   real technical limitation. I’m eager to fix it.
 
-** Anchored-matcher
-   Currently only one anchored-matcher per-pattern is supported. This
-   limitation is simply because I have yet encountered the codebase
-   utilizing multiple arbitrary length lists for its syntax. Maybe
-   someday I feel fancy and implement it, though.
+** No support for multiple anchored-matcher
+   Currently only single arbitrary length list matching per-pattern is
+   allowed. For example, ~defclass~ has syntax:
+
+   #+BEGIN_SRC emacs-lisp
+     `(defclass ,name ,supers ,slots . ,_)
+   #+END_SRC
+
+   Where ~supers~ is a list of super-classes, and ~slots~ is a list of
+   class’s variables.
+
+   To over come the limitation, font-lock keyword of ~defclass~ is
+   declared as follow:
+
+   #+BEGIN_SRC emacs-lisp
+     (pospcase-font-lock 'lisp-mode
+                         '(`(defclass ,name ,supers ,slots . ,_))
+                         '(font-lock-keyword-face
+                           (name . (default))
+                           (supers . (default))
+                           ((slots . varlist-cars) . (font-lock-variable-name-face))))
+
+     (pospcase-font-lock 'lisp-mode
+                         '(`(defclass ,name ,supers . ,_))
+                         '(font-lock-keyword-face
+                           (name . (font-lock-type-face))
+                           ((supers . varlist-cars) . (font-lock-type-face))))
+   #+END_SRC
+
+   Note ~pospcase-font-lock~ adds new keyword at the start of a keyword
+   list. In other word, the last added keyword will be highlighted
+   first. And since keywords are internally processed with ~'append~
+   flag, the below highlighting is not going to be overwritten by the
+   above keyword’s ~default~ face.
+
+   I’m aware it’s quite unintuitive. Maybe someday I might properly
+   implement support for multiple anchored matchers.
