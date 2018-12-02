@@ -7,6 +7,7 @@
   At this moment the package contains a pattern matcher ~pospcase~ and a
   pretty advanced code highlighter for ~lisp-mode~ and ~emacs-lisp-mode~.
 
+
 * Rational
   Emacs’s font-locking (highlighting) heavily relies on regular
   expression (regexp). There’s already an attempt to do [[https://github.com/Lindydancer/lisp-extra-font-lock][extra
@@ -82,13 +83,18 @@
   So I decided it’s a good time to write a ~pcase~-based position
   extractor and use it for a lisp code highlighter.
 
+
 * How to Enable Pospcase Font Lock
-  To turn on the font-lock for lisp-mode and emacs-lisp-mode, eval the
-  following code:
+  To turn on the font-lock for lisp-mode and emacs-lisp-mode, add the
+  following code to init file:
 
   #+BEGIN_SRC emacs-lisp
-    (require 'pospcase)
-    (pospcase-font-lock-lisp-setup)
+    (add-hook 'after-init-hook
+              (lambda ()
+                (add-to-list 'load-path
+                             "/path/to/pospcase") ; change it appropriately
+                (require 'pospcase)
+                (pospcase-font-lock-lisp-setup)))
   #+END_SRC
 
   The above code add ~pospcase-font-lock-lisp-keywords~add~ to the said
@@ -108,23 +114,33 @@
   involves numerous per-project highlighting rules, I feel there’s not
   much point using minor-mode for it.
 
-  But, by all means I don’t oppose defining your own minor-mode. You
+  But, by all means I don’t oppose writing your own minor-mode. You
   can write it by simply using ~pospcase-font-lock-lisp-keywords~add~
   and ~pospcase-font-lock-lisp-keywords~remove~ to for highlight
   toggling.
 
-* How to Write Your Pospcase Font Lock Keywords
-  Unfortunately current ~pospcase-font-lock~ limitation doesn’t allow
-  you to simply write ~pcase~ patterns and let the software to take care
-  of the rest.
 
-  There are some concept you need to know before writing functional
-  keywords.
+* Use case
+  ~pospcase~ is written because the author wanted easier way to add code
+  highlighting for Lisp code, to embrace Lisp’s extensibility.
+
+  #+BEGIN_SRC emacs-lisp
+    (load-file "~/.emacs.d/pospcase-custom.el")
+  #+END_SRC
+
+
+* Before Writing Your Font Lock Keywords
+  Unfortunately current ~pospcase-font-lock~ limitation doesn’t allow
+  you to simply write ~pcase~ patterns and let Emacs to DWIM.
+
+  There are some concept you need to know before writing
+  ~pospcase-font-lock~ keywords.
 
 ** Anchored-Matchers
-   ~pcase~ macro, this package is heavily depending on, is not
-   particularly designed to match arbitrary length list. To overcome
-   the limitation, seven anchored-matchers are implemented so far.
+   ~pcase~, which ~pospcase~ is heavily depending on, is not particularly
+   designed for pattern-matching arbitrary length S-expression. To
+   overcome the limitation, so far, seven anchored-matchers are
+   implemented.
 
     - varlist
     - varlist-cars
@@ -162,22 +178,9 @@
    ~pospcase–iterator~ set ~car~ of ~pospcase--matches~ to ~~match-data~ using
    ~set-match-data~.
 
-** Emacs-Lisp-fy
-   The thing is, Emacs Lisp doesn’t have reader macro. In ~pospcase~
-   context it means you can’t really use Emacs’s build-in reader
-   ~read-from-string~ to parse Common Lisp’s S-expressions.
 
-   To circumvent and not really tackle the limitation,
-   ~pospcase--read-from-string~ does quick hack using regexp to convert
-   unless unparsable S-expressions into Emacs Lisp counterpart as
-   smoothly as possible.
-
-   It’s simple text replacement rule. So don’t expect too much. If you
-   experience a major problem you can’t think any way to circumvent,
-   well, accept it as unparsable and give up the fancy highlighting
-   for that section.
-
-** Quirks
+* Pospcase Font Lock’s Quirks
+** Iterator
    Admittedly, ~pospcase-font-lock~ do something very weird. Here, I’m
    talking about anchored-matchers. As you can see all of them calls
    ~pospcase--call-iterator~ macro. True to its name, the macro realize
@@ -198,6 +201,22 @@
    misusing them. And this is why ~pospcase-font-lock~ needs its weird
    iterator.
 
+** Emacs-Lisp-fy
+   The thing is, Emacs Lisp doesn’t have reader macro. In ~pospcase~
+   context it means you can’t really use Emacs’s build-in reader
+   ~read-from-string~ to parse Common Lisp’s S-expressions.
+
+   To circumvent and not really tackle the limitation,
+   ~pospcase--read-from-string~ does quick hack using regexp to convert
+   unless unparsable S-expressions into Emacs Lisp counterpart as
+   smoothly as possible.
+
+   It’s simple text replacement rule. So don’t expect too much. If you
+   experience a major problem you can’t think any way to circumvent,
+   well, accept it as unparsable and give up the fancy highlighting
+   for that section.
+
+
 * How to use ~pospcase~, ~pospcase-at~, ~pospcase-read~
   If you have some reason to directly get positions of S-expressions
   in a buffer, you can use ~pospcase-at~ with ~pcase~ like syntax:
@@ -213,6 +232,7 @@
 
 
 * Limitation of ~pospcase~, ~pospcase-at~, ~pospcase-read~
+
 
 * Limitation of ~pospcase-font-lock~
 ** Secretly using Regular Expression

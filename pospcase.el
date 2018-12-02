@@ -236,6 +236,8 @@ and strings."
                                   (match-string 2 str))))
          (elispify `(("[[{]" . "(")
                      ("[]}]" . ")")
+                     ("#|" . "  ")
+                     ("|#" . "  ")
                      (,(concat "#\\\\" sym+) . ,lambda-1)
                      ("#\\\\." . ,lambda-1)
                      (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)

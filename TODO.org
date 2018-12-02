@@ -1,3 +1,4 @@
+
 #+SEQ_TODO: TODO(t!) NOTE(n!) | DONE(d!) HALT(h!)
 * Bugs
 ** TODO Known reader macros so far
@@ -112,6 +113,16 @@
    - State "TODO"       from              [2018-11-23 Fri 14:13]
 
    - Example: `((or labels cl-labels) ,name ,args . ,__)
+* Documentation
+** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
+   - State "NOTE"       from              [2018-12-02 Sun 04:10]
+
+   #+BEGIN_SRC emacs-lisp
+     (let ((read-with-symbol-positions t))
+       (read "(foo (foo))")
+       read-symbol-positions-list)
+   #+END_SRC
+
 * Design guideline
 ** NOTE errors
    - State "NOTE"      from              [2018-11-22 Thu 10:32]
