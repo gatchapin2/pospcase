@@ -20,6 +20,19 @@
 
    - need jit-lock internal understanding
 
+** TODO submatchers doesn’t support nesting
+   - State "TODO"       from              [2018-12-03 Mon 03:44]
+
+   - for example ~bar~ of follow:
+
+   #+BEGIN_SRC emacs-lisp
+     (pospcase-font-lock 'lisp-mode
+                         '(`(foo ((,bar)) ,baz))
+                         '(font-lock-keyword-face
+                           ((bar . varlist-cars) . (font-lock-variable-name-face))
+                           (baz . varlist-cars) . (font-lock-variable-name-face)))
+   #+END_SRC
+
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]

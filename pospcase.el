@@ -711,6 +711,19 @@ length lists"
    (pospcase-collect-all-symbols (pospcase-read (point)))
    limit))
 
+;; alternate implementation without `pospcase-read'. only collects symbols
+(defun pospcase-match-destructuring-alt (limit)
+  "Matcher iterator for symbols in an arbitrarily nested list."
+  (pospcase--call-iterator
+   (let ((read-with-symbol-positions t))
+     (mapcar (lambda (pair)
+               (cons (car pair)
+                     (cons (+ (point) (cdr pair)) (scan-sexps (+ (point) (cdr pair)) 1))))
+             (progn
+               (read (pospcase--buffer-substring (point) (scan-sexps (point) 1)))
+               read-symbol-positions-list)))
+   limit))
+
 (defun pospcase-match-macrolet (limit)
   "Matcher iterator for a lit of `macrolet' bindings"
   (pospcase--flet (if (car arglist)
@@ -863,125 +876,124 @@ with better comments."
                                    keywords))
                           "\\_>"))
          (matcher (regexp-opt keywords))
-         (submatcher (let ((temp (cdr specs)) result)
-                       (while (and temp (null result))
-                         (setq result (and (consp (caar temp)) (cdaar temp))
-                               temp (cdr temp)))
-                       result))
-         (submatched (let ((temp (cdr specs)) result)
-                       (while (and temp (null result))
-                         (setq result (and (consp (caar temp)) (caaar temp))
-                               temp (cdr temp)))
-                       result))
-         (subvar (let ((temp (cdr specs)) result)
-                   (while (and temp (null result))
-                     (setq result (and (consp (caar temp)) (caaar temp))
-                           temp (cdr temp)))
-                   result))
+         (submatchers (cl-loop for spec in (cdr specs)
+                               if (consp (car spec)) collect (car spec)))
+         (subvars (mapcar #'car submatchers))
          (vars (mapcar (lambda (spec) (if (consp (car spec)) (caar spec) (car spec)))
                        (cdr specs)))
-         (non-subvars (remove subvar vars))
-         (fontspecs (cl-loop with i = 0
-                             for spec in (cdr specs)
-                             append (mapcar (lambda (font)
-                                              (list (incf i)
-                                                    (if (symbolp font)
-                                                        (list 'quote font)
-                                                      (apply (car font) (cdr font)))
-                                                    nil t))
-                                            (cdr spec))))
-         (cases (mapcar (lambda (pat) (list pat (cons 'values vars))) patterns))
+         (non-subvars (remove-if (lambda (var) (memq var subvars)) vars))
+         
          (varlist-group '(varlist varlist-cars destructuring flet macrolet))
          (defstruct-group '(defstruct))
          (parameter-group '(key)))
     (if (string-match "," matcher)
         (error "In-middle keyword is not supported.")
       (setq matcher (concat matcher "\\_>\\s *")))
-    `((,keyword . ,(car specs))
-      (,matcher
-       (,(intern (concat "pospcase-match-" (symbol-name submatcher)))
-        (pospcase--preform
-         (goto-char (match-beginning 0))
+    (cons
+     `(,keyword . ,(car specs))
+     (mapcar
+      (lambda (submatcher)
+        `(,matcher
+          (,(intern (concat "pospcase-match-" (symbol-name (cdr submatcher))))
+           (pospcase--preform
+            (goto-char (match-beginning 0))
 
-         (let ((table (syntax-ppss)))
-           (cond
-            ((or (nth 3 table)          ; in string
-                 (nth 4 table))         ; in comment
-             (goto-char (match-end 0)))
+            (let ((table (syntax-ppss)))
+              (cond
+               ((or (nth 3 table)       ; in string
+                    (nth 4 table))      ; in comment
+                (goto-char (match-end 0)))
 
-            (t
-             (let ((match-end
-                    ,(cond
-
-                      ((memq submatcher varlist-group)
-                       `(condition-case nil
-                            (scan-sexps
-                             (match-end 0)
-                             ,(if (consp (car patterns)) ; only first pattern is scanned
-                                  (length
-                                   (cdr
-                                    (member
-                                     (list '\, submatched)
-                                     (reverse (cadar patterns)))))
-                                1))
-                          (error (match-end 0))))
-
-                      ((memq submatcher defstruct-group)
-                       '(save-excursion
-                          (condition-case nil
-                              (progn
-                                (forward-char)
-                                (forward-sexp 2) ; skip keyword and name
-                                (forward-comment most-positive-fixnum)
-                                (when (equal
-                                       (syntax-after (point))
-                                       '(7)) ; skip docstring
-                                  (forward-sexp)
-                                  (forward-comment most-positive-fixnum))
-                                (setq pospcase--fence-start
-                                      (ignore-errors (pospcase-read (point))))
-                                ;; Search limit
-                                (up-list)
-                                (point))
-                            (error (match-end 0)))))
-
-                      ((memq submatcher parameter-group)
-                       '(let ((end (1- (match-end 0))))
-                          (setq pospcase--fence-start
-                                (ignore-errors (pospcase-read (1+ end))))
-                          (if (condition-case nil
-                                  (progn
-                                    (backward-up-list)
-                                    (when (> (- (match-beginning 0) (point))
-                                             500) ; arbitrary limit to prevent inf-loop
-                                      (goto-char end)
-                                      nil))
-                                (error (goto-char end) nil))
-                              ;; Search limit
-                              (ignore-errors (scan-sexps (point 1)))
-                            end)))
-
-                      ((null submatcher)
-                       (goto-char (match-end 0))
-                       (point))
-
-                      (t (error "Not supported submatcher: %s" submatcher)))))
-
-               (condition-case nil
-                   (multiple-value-bind ,vars (pospcase-at (point) ',cases)
-                     (if (and ,(not (memq submatcher parameter-group))
-                              (memq nil ,(cons 'list vars))) ; not exact match
-                         (goto-char match-end)
-                       ,(unless (null non-subvars)
-                          `(setq pospcase--prematches ,(cons 'list non-subvars)))
-
+               (t
+                (let ((submatcher-end
                        ,(cond
-                         ((memq submatcher varlist-group)
-                          `(goto-char (car ,subvar))))))
-                 (error (goto-char match-end)))
-               match-end)))))
-        (pospcase--postform)
-        ,@fontspecs)))))
+
+                         ((memq (cdr submatcher) varlist-group)
+                          `(condition-case nil
+                               (scan-sexps ; FIXME: no nest supported
+                                (match-end 0)
+                                ,(if (consp (car patterns)) ; only first pattern is scanned
+                                     (length
+                                      (cdr
+                                       (member
+                                        (list '\, (car submatcher))
+                                        (reverse (cadar patterns)))))
+                                   1))
+                             (error (match-end 0))))
+
+                         ((memq (cdr submatcher) defstruct-group)
+                          '(save-excursion
+                             (condition-case nil
+                                 (progn
+                                   (forward-char)
+                                   (forward-sexp 2) ; skip keyword and name
+                                   (forward-comment most-positive-fixnum)
+                                   (when (equal
+                                          (syntax-after (point))
+                                          '(7)) ; skip docstring
+                                     (forward-sexp)
+                                     (forward-comment most-positive-fixnum))
+                                   (setq pospcase--fence-start
+                                         (ignore-errors (pospcase-read (point))))
+                                   ;; Search limit
+                                   (up-list)
+                                   (point))
+                               (error (match-end 0)))))
+
+                         ((memq (cdr submatcher) parameter-group)
+                          '(let ((end (1- (match-end 0))))
+                             (setq pospcase--fence-start
+                                   (ignore-errors (pospcase-read (1+ end))))
+                             (if (condition-case nil
+                                     (progn
+                                       (backward-up-list)
+                                       (when (> (- (match-beginning 0) (point))
+                                                500) ; arbitrary limit to prevent inf-loop
+                                         (goto-char end)
+                                         nil))
+                                   (error (goto-char end) nil))
+                                 ;; Search limit
+                                 (ignore-errors (scan-sexps (point 1)))
+                               end)))
+
+                         ((null (cdr submatcher))
+                          '(goto-char (match-end 0)))
+
+                         (t (error "Not supported (cdr submatcher): %s" (cdr submatcher))))))
+
+                  (condition-case nil
+                      (multiple-value-bind ,vars (pospcase-at
+                                                  (point)
+                                                  ',(mapcar
+                                                     (lambda (pat)
+                                                       (list pat (cons 'values vars)))
+                                                     patterns))
+                        (if (and ,(not (memq (cdr submatcher) parameter-group))
+                                 (memq nil ,(cons 'list vars))) ; not exact match
+                            (goto-char submatcher-end)
+                          ,(unless (null non-subvars)
+                             `(setq pospcase--prematches ,(cons 'list non-subvars)))
+
+                          ,(cond
+                            ((memq (cdr submatcher) varlist-group)
+                             `(goto-char (car ,(car submatcher)))))))
+                    (error (goto-char submatcher-end)))
+                  submatcher-end)))))
+           (pospcase--postform)
+           ,@(cl-loop with i = 0
+                      for spec in (cdr specs)
+                      if (or (symbolp (car spec))
+                             (and (consp (car spec))
+                                  (eq (caar spec) (car submatcher))))
+                      append (mapcar (lambda (font)
+                                       (list (incf i)
+                                             (if (symbolp font)
+                                                 (list 'quote font)
+                                               (apply (car font) (cdr font)))
+                                             nil t))
+                                     (cdr spec))))))
+      (or submatchers
+          '(whatever . nil))))))
 
 (defun pospcase-font-lock (mode patterns specs &optional buffer-local-p)
   "Font lock keywords generator with `pcase' powered pattern
@@ -1048,14 +1060,9 @@ examples."
   (pospcase-font-lock 'lisp-mode
                       '(`(defclass ,name ,supers ,slots . ,_))
                       '(font-lock-keyword-face
-                        (name . (default))
-                        (supers . (default))
-                        ((slots . varlist-cars) . (font-lock-variable-name-face))))
-  (pospcase-font-lock 'lisp-mode
-                      '(`(defclass ,name ,supers . ,_))
-                      '(font-lock-keyword-face
                         (name . (font-lock-type-face))
-                        ((supers . varlist-cars) . (font-lock-type-face))))
+                        ((supers . varlist-cars) . (font-lock-type-face))
+                        ((slots . varlist-cars) . (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(`(lambda ,args . ,_))
                       '(font-lock-keyword-face
