@@ -225,6 +225,7 @@ and strings."
 
 
 (defun pospcase--buffer-substring (start end)
+  "`buffer-substring' with regexp based Elisp-ification."
   (let* ((sym "\\(?:\\sw\\|\\s_\\|\\\\.\\)")
          (sym* (concat "\\(" sym "*" "\\)"))
          (sym+ (concat "\\(" sym "+" "\\)"))
@@ -566,6 +567,7 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
   of each list of point pairs.")
 
 (defun pospcase--list (&rest matches)
+  "Same as `list'. But attaches non-submatcher based matches if they exist."
   (append pospcase--prematches matches))
 
 (defun pospcase--iterator (limit)
@@ -644,14 +646,14 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
                      (`,name (pospcase--list name))))
 
 (defun pospcase-match-varlist-cars (limit)
-  "Matcher iterator for the `car's of a list of two or longer
-length lists"
+  "Matcher iterator for the `car's of a list of two or longer length lists"
   (pospcase--varlist (`(,name . ,_) (pospcase--list name))
                      (`,name (pospcase--list name))))
 
 (defalias #'pospcase-match-defstruct #'pospcase-match-varlist-cars)
 
 (defmacro pospcase--flet (clause)
+  "Code shared by `pospcase-match-flet' and `pospcase-match-macrolet'."
   `(pospcase--call-iterator
     (cl-loop for srpair in (car (pospcase-read (point)))
              append
@@ -668,7 +670,7 @@ length lists"
     limit))
 
 (defun pospcase-match-flet (limit)
-  "Matcher iterator for a list of `flet' bindings"
+  "Matcher iterator for a list of `flet' bindings."
   (pospcase--flet (if arglist
                       (mapcar
                        (lambda (exp)
@@ -1034,7 +1036,7 @@ examples."
           keywords)))
 
 (defun pospcase-font-lock-lisp-init ()
-  "Setup various eye candy font lock keywords for Common Lisp."
+  "Setup various eye candy font lock keywords for Common Lisp and Emacs Lisp."
   (pospcase-font-lock 'lisp-mode
                       '(`(defun (setf ,name) ,args . ,_)
                         `(defun ,name ,args . ,_)
@@ -1133,7 +1135,9 @@ examples."
                           default
                           default)))))
 
+;;;###autoload
 (defun pospcase-font-lock-lisp-setup ()
+  "Enable `pospcase' code hightlighting for `lisp-mode' and `emacs-lisp-mode'."
   (interactive)
   (pospcase-font-lock-lisp-init)
   (add-hook 'lisp-mode-hook #'pospcase-font-lock-lisp-keywords-add)
