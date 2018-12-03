@@ -1075,14 +1075,14 @@ examples."
                          ((pospcase-font-lock-variable-face-form (match-string 1))
                           font-lock-constant-face))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(defmethod (setf ,name) ,args ,(pred keywordp) . ,_)
+                      '(`(defmethod (setf ,name) ,(pred keywordp) ,args . ,_)
                         `(defmethod (setf ,name) ,args . ,_)
-                        `(defmethod ,name ,args ,(pred keywordp) . ,_)
+                        `(defmethod ,name ,(pred keywordp) ,args . ,_)
                         `(defmethod ,name ,args . ,_)
                         `(defgeneric ,name ,args . ,_)
-                        `(cl-defmethod (setf ,name) ,args ,(pred keywordp) . ,_)
+                        `(cl-defmethod (setf ,name) ,(pred keywordp) ,args . ,_)
                         `(cl-defmethod (setf ,name) ,args . ,_)
-                        `(cl-defmethod ,name ,args ,(pred keywordp) . ,_)
+                        `(cl-defmethod ,name ,(pred keywordp) ,args . ,_)
                         `(cl-defmethod ,name ,args . ,_)
                         `(cl-defgeneric ,name ,args . ,_))
                       '(font-lock-keyword-face
