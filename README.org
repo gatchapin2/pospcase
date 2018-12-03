@@ -84,7 +84,7 @@
   extractor and use it for a lisp code highlighter.
 
 
-* How to Enable Pospcase Font Lock
+* How to Enable Pospcase Font-Lock
   To turn on the font-lock for lisp-mode and emacs-lisp-mode, add the
   following code to init file:
 
@@ -114,27 +114,93 @@
   involves numerous per-project highlighting rules, I feel there’s not
   much point using minor-mode for it.
 
-  But, by all means I don’t oppose writing your own minor-mode. You
-  can write it by simply using ~pospcase-font-lock-lisp-keywords~add~
-  and ~pospcase-font-lock-lisp-keywords~remove~ to for highlight
-  toggling.
+  But, by all means I don’t oppose writing your own minor-mode if you
+  find it useful. You can write it by simply using
+  ~pospcase-font-lock-lisp-keywords-add~ and
+  ~pospcase-font-lock-lisp-keywords-remove~ to for toggling them.
 
 
-* Use case
-  ~pospcase~ is written because the author wanted easier way to add code
-  highlighting for Lisp code, to embrace Lisp’s extensibility.
+* The First Example
+  ~pospcase~ is written because I wanted flexible and easier way to add
+  new highlighting rules to fully embrace Lisp’s ultimate
+  flexibility. The function ~pospcase-font-lock~ is specifically
+  written for that purpose.
 
+  Suppose I want to add a highlight rule for a new Common Lisp macro
+  ~mydefun,~ I can simply write like this:
+
+  #+BEGIN_SRC emacs-lisp
+    (pospcase-font-lock
+     'lisp-mode                             ; major-mode name
+
+     '(`(mydefun ,name ,args . ,_))         ; `pcase' pattern to match
+
+     ;; font specs
+     '(font-lock-keyword-face               ; face of `mydefun' keyword
+
+       (name
+        . (font-lock-function-name-face))   ; face of new function `name’
+
+       ((args . varlist-cars)               ; `args' is arbitrary length
+                                            ; list of arguments.
+
+        . (font-lock-variable-name-face)))) ; face of every arguments
+  #+END_SRC
+
+  Hopefully it’s straightforward enough for you. The most foreign part
+  is ~varlist-cars~. To understand what it is, You have to understand
+  Anchored-matchers. But I’ll explain with more details later.
+
+* An Example Work Flow
   #+BEGIN_SRC emacs-lisp
     (load-file "~/.emacs.d/pospcase-custom.el")
   #+END_SRC
 
+  In pospcase-custom.el, write following code:
 
-* Before Writing Your Font Lock Keywords
+  #+BEGIN_SRC emacs-lisp
+    (require 'pospcase)
+
+    (eval
+     `(defun my-add-new-font-lock-keyword ()
+        (interactive)
+        (let* ((str
+                (format "(pospcase-font-lock
+     '%s
+     '(`(foo ,bar ,baz . ,_))
+     '(font-lock-keyword-face
+       (bar . (font-lock-function-name-face))
+       ((baz . varlist-cars) . (font-lock-variable-name-face))))"
+                        major-mode)))
+          (find-file ,(buffer-file-name))
+          (goto-char (point-max))
+          (insert "\n" str)
+          (backward-char (- (1+ (length str)) (string-match "foo" str))))))
+  #+END_SRC
+
+  And now whenever you encounter new keyword needing extra
+  highlighting, you can just ~M-x my-add-new-font-lock-keyword~ and
+  start writing a new keyword right away with convenient cookie cutter
+  (you can also write a new snippet for Yasnippet if it suits you
+  better).
+
+  If you are satisfied with the new keyword, save the buffer, ~C-M-x~ or
+  ~C-x C-e~ or whatever to activate it, then go back to your project and
+  reactivate the major mode, for example ~M-x lisp-mode~ for a Common
+  Lisp project. Now you see the new font-lock rule is applied and the
+  code is highlighted accordingly.
+
+
+* Before Writing Your Font-Lock Keywords
   Unfortunately current ~pospcase-font-lock~ limitation doesn’t allow
-  you to simply write ~pcase~ patterns and let Emacs to DWIM.
+  you to simply write ~pcase~ patterns and let Emacs to take care of the
+  rest.
 
-  There are some concept you need to know before writing
-  ~pospcase-font-lock~ keywords.
+  This is largely due to my design choice and nothing more. If I find
+  better workflow, maybe I’m going to redesign ~pospcase-font-lock~.
+
+  But for now, there are some ideas you need to know before writing
+  your original font-lock keywords.
 
 ** Anchored-Matchers
    ~pcase~, which ~pospcase~ is heavily depending on, is not particularly
@@ -150,6 +216,25 @@
     - destructuring
     - macrolet
 
+   I’m going to explain each of them.
+
+*** Varlist
+    If you pair a pattern variable with ~varlist~ in font specs of
+    ~pospcase-font-lock~ like:
+
+    #+BEGIN_SRC emacs-lisp
+      (args . varlist)
+    #+END_SRC
+
+    It means ~args~ is a list of arbitrary length with either symbol or
+    two length list. Like argument list of ~defmethod~:
+
+    #+BEGIN_SRC emacs-lisp
+      (defmethod foo ((bar class1) (baz class2) qux quux)
+        body)
+    #+END_SRC
+
+* Technical Details
 ** Data flow
    Anchored-matchers call ~pospcase-at~ and ~pospcase-read~ to parse
    S-expression and get positional metadata.
@@ -179,7 +264,7 @@
    ~set-match-data~.
 
 
-* Pospcase Font Lock’s Quirks
+* Pospcase Font-Lock’s Quirks
 ** Iterator
    Admittedly, ~pospcase-font-lock~ do something very weird. Here, I’m
    talking about anchored-matchers. As you can see all of them calls
@@ -189,9 +274,9 @@
    data.) I’m not very please with the implementation either. But I
    think making lambda functions dynamically for each iterators,
    managing and dispatching them correct for each call, is far
-   complexer than current implementation. And ultimately Emacs’s font
-   locking (and jit-lock) is single-threaded. So I decided it doesn’t
-   worth the trouble to implement proper iterator.
+   complexer than current implementation. And ultimately Emacs’s
+   font-lock (and jit-lock) is single-threaded. So I decided it
+   doesn’t worth the trouble to implement proper iterator.
 
    You may ask why do you have to implement iterator in the first
    place? Well, clearly Emacs’ font-lock.el was written with
