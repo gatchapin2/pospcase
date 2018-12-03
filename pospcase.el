@@ -235,10 +235,19 @@ and strings."
                                    (- (match-end 1) (match-beginning 0))
                                    ?\ )
                                   (match-string 2 str))))
+         (lambda-3 (lambda (str) (concat
+                                  "/*"
+                                  (make-string
+                                   (- (match-end 1) (match-beginning 1))
+                                   ?\ )
+                                  "*/")))
          (elispify `(("[[{]" . "(")
                      ("[]}]" . ")")
-                     ("#|" . "  ")
-                     ("|#" . "  ")
+                     ("#|" . "﻿") ; *BEWARE* of ZERO-WIDTH-NO-BREAK-SPACE
+                     ("|#" . "​") ; *BEWARE* of ZERO-WIDTH-SPACE
+                     ("﻿\\([^​]*\\)​" . ,lambda-3) ; *BEWARE* of
+                                                ; ZERO-WIDTH-NO-BREAK-SPACE
+                                                ; and ZERO-WIDTH-SPACE
                      (,(concat "#\\\\" sym+) . ,lambda-1)
                      ("#\\\\." . ,lambda-1)
                      (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)

@@ -258,3 +258,71 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-12-01 Sat 11:53]
   - State "TODO"       from              [2018-11-30 Fri 16:29]
+
+* DONE multiple submatchers
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-03 Mon 03:44
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-03 Mon 03:44]
+  - State "TODO"       from              [2018-12-03 Mon 01:47]
+
+  #+BEGIN_SRC emacs-lisp
+    (pospcase-font-lock 'lisp-mode
+                          '(`(defclass ,name ,supers ,slots . ,_))
+                          '(font-lock-keyword-face
+                            (name . (font-lock-type-face))
+                            ((supers . varlist-cars) . (font-lock-type-face))
+                            ((slots . varlist-cars) . (font-lock-variable-name-face))))
+  #+END_SRC
+
+  should generate:
+
+  #+BEGIN_SRC emacs-lisp
+    (pospcase-font-lock 'lisp-mode
+                        '(`(defclass ,name ,supers ,slots . ,_))
+                        '(font-lock-keyword-face
+                          ((slots . varlist-cars) . (font-lock-variable-name-face))))
+    (pospcase-font-lock 'lisp-mode
+                        '(`(defclass ,name ,supers ,slots . ,_))
+                        '(font-lock-keyword-face
+                          (name . (font-lock-type-face))
+                          ((supers . varlist-cars) . (font-lock-type-face))))
+  #+END_SRC
+
+
+* DONE submatchers doesn’t support nesting
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-03 Mon 04:20
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-03 Mon 04:20]
+  - State "TODO"       from              [2018-12-03 Mon 03:44]
+
+  - for example ~bar~ of follow:
+
+  #+BEGIN_SRC emacs-lisp
+    (pospcase-font-lock 'lisp-mode
+                        '(`(foo ((,bar)) ,baz))
+                        '(font-lock-keyword-face
+                          ((bar . varlist-cars) . (font-lock-variable-name-face))
+                          (baz . varlist-cars) . (font-lock-variable-name-face)))
+  #+END_SRC
+
+
+* DONE better "#|foo|#" elispify
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-03 Mon 16:52
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-03 Mon 16:52]
+  - State "TODO"       from              [2018-12-03 Mon 16:25]

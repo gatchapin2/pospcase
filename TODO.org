@@ -8,12 +8,13 @@
    - #!?[-+]sym
    - #(1 2 3)
 
-** TODO replace-regex-in-string ideas [4/4]
+** TODO replace-regex-in-string ideas [5/5]
    - State "TODO"       from              [2018-11-21 Wed 01:42]
    - [X] "#\\" -> " ?", a half assed char conversion
    - [X] "#[^ (]+(" -> "(", for cl21 hash
    - [X] "#p\"" -> "\"", pathname
    - [X] "#\\+" -> "  "
+   - [X] "#|foo|#" -> "/*   */"
 
 ** TODO large body sluggishness
    - State "TODO"       from              [2018-11-30 Fri 16:48]

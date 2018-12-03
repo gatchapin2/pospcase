@@ -192,12 +192,13 @@
 
 
 * Before Writing Your Font-Lock Keywords
-  Unfortunately current ~pospcase-font-lock~ limitation doesn’t allow
-  you to simply write ~pcase~ patterns and let Emacs to take care of the
-  rest.
+  Unfortunately current ~pospcase-font-lock~ design doesn’t allow you to
+  simply write ~pcase~ patterns and let Emacs to take care of the rest.
 
-  This is largely due to my design choice and nothing more. If I find
-  better workflow, maybe I’m going to redesign ~pospcase-font-lock~.
+  This is largely due to my design choice to keep implementation
+  straightforward at the cost of accessibility. Of course I agree
+  leaky abstraction is bad. If I find better way, maybe I’m going to
+  drastically overhaul ~pospcase-font-lock~.
 
   But for now, there are some ideas you need to know before writing
   your original font-lock keywords.
@@ -263,9 +264,8 @@
    ~pospcase–iterator~ set ~car~ of ~pospcase--matches~ to ~~match-data~ using
    ~set-match-data~.
 
-
-* Pospcase Font-Lock’s Quirks
-** Iterator
+** Quirks
+*** Iterator
    Admittedly, ~pospcase-font-lock~ do something very weird. Here, I’m
    talking about anchored-matchers. As you can see all of them calls
    ~pospcase--call-iterator~ macro. True to its name, the macro realize
@@ -286,7 +286,7 @@
    misusing them. And this is why ~pospcase-font-lock~ needs its weird
    iterator.
 
-** Emacs-Lisp-fy
+*** Emacs-Lisp-fy
    The thing is, Emacs Lisp doesn’t have reader macro. In ~pospcase~
    context it means you can’t really use Emacs’s build-in reader
    ~read-from-string~ to parse Common Lisp’s S-expressions.
@@ -302,7 +302,7 @@
    for that section.
 
 
-* How to use ~pospcase~, ~pospcase-at~, ~pospcase-read~
+** How to use ~pospcase~, ~pospcase-at~, ~pospcase-read~
   If you have some reason to directly get positions of S-expressions
   in a buffer, you can use ~pospcase-at~ with ~pcase~ like syntax:
 
@@ -316,10 +316,10 @@
   More detailed explanation can be found in ~pospcase-read~ docstring.
 
 
-* Limitation of ~pospcase~, ~pospcase-at~, ~pospcase-read~
+** Limitation of ~pospcase~, ~pospcase-at~, ~pospcase-read~
 
 
-* Limitation of ~pospcase-font-lock~
+** Limitation of ~pospcase-font-lock~
 ** Secretly using Regular Expression
   ~pospcase-font-lock~ totally depends on ~pcase~. But it still use regexp
   for searching heading keywords. The reason why I don’t use something
@@ -330,7 +330,7 @@
   not implemented. Purposely ~pospcase-font-lock~ only supports heading
   keyword patterns.
 
-** No support for nest in binding list
+*** No support for nest in binding list
    Following doesn’t work:
    
   #+BEGIN_SRC emacs-lisp
@@ -351,7 +351,7 @@
   Maybe this is due to my ignorance of font-lock internals and not a
   real technical limitation. I’m eager to fix it.
 
-** No support for multiple anchored-matcher
+*** No support for multiple anchored-matcher
    Currently only single arbitrary length list matching per-pattern is
    allowed. For example, ~defclass~ has syntax:
 
