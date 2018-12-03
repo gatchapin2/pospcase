@@ -910,7 +910,7 @@ with better comments."
 
                          ((memq (cdr submatcher) varlist-group)
                           `(condition-case nil
-                               (scan-sexps ; FIXME: no nest supported
+                               (scan-sexps ; FIXME: no really accurate for nested submatchers
                                 (match-end 0)
                                 ,(if (consp (car patterns)) ; only first pattern is scanned
                                      (length
