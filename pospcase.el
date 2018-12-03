@@ -908,8 +908,17 @@ with better comments."
                 (let ((submatcher-end
                        ,(cond
 
+                         ((null (cdr submatcher))
+                          '(goto-char (match-end 0)))
+
                          ((memq (cdr submatcher) varlist-group)
                           (match-end 0))
+
+                         ;; Unlike straightforward `varlist-group'
+                         ;; `defstruct-group' and `parameter-group'
+                         ;; starts highlighting in middle of a list by
+                         ;; setting `pospcase--fence-start' for
+                         ;; chopping unnecessary heading sexps off.
 
                          ((memq (cdr submatcher) defstruct-group)
                           '(save-excursion
@@ -920,36 +929,28 @@ with better comments."
                                    (forward-comment most-positive-fixnum)
                                    (when (equal
                                           (syntax-after (point))
-                                          '(7)) ; skip docstring
+                                          '(7)) ; skip docstring if it exists
                                      (forward-sexp)
                                      (forward-comment most-positive-fixnum))
                                    (setq pospcase--fence-start
                                          (ignore-errors (pospcase-read (point))))
-                                   ;; Search limit
                                    (up-list)
                                    (point))
                                (error (match-end 0)))))
 
                          ((memq (cdr submatcher) parameter-group)
-                          '(let ((end (1- (match-end 0))))
+                          '(let ((end (match-end 0)))
                              (setq pospcase--fence-start
-                                   (ignore-errors (pospcase-read (1+ end))))
-                             (if (condition-case nil
-                                     (progn
-                                       (backward-up-list)
-                                       (when (> (- (match-beginning 0) (point))
-                                                500) ; arbitrary limit to prevent inf-loop
-                                         (goto-char end)
-                                         nil))
-                                   (error (goto-char end) nil))
-                                 ;; Search limit
-                                 (ignore-errors (scan-sexps (point 1)))
-                               end)))
-
-                         ((null (cdr submatcher))
-                          '(goto-char (match-end 0)))
+                                   (ignore-errors (pospcase-read end)))
+                             (condition-case nil
+                                 (progn
+                                   (backward-up-list)
+                                   (scan-sexps (point) 1))
+                               (error (goto-char end)))))
 
                          (t (error "Not supported (cdr submatcher): %s" (cdr submatcher))))))
+
+                  ;; 
 
                   (condition-case nil
                       (multiple-value-bind ,vars (pospcase-at
