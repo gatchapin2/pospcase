@@ -909,17 +909,7 @@ with better comments."
                        ,(cond
 
                          ((memq (cdr submatcher) varlist-group)
-                          `(condition-case nil
-                               (scan-sexps ; FIXME: no really accurate for nested submatchers
-                                (match-end 0)
-                                ,(if (consp (car patterns)) ; only first pattern is scanned
-                                     (length
-                                      (cdr
-                                       (member
-                                        (list '\, (car submatcher))
-                                        (reverse (cadar patterns)))))
-                                   1))
-                             (error (match-end 0))))
+                          (match-end 0))
 
                          ((memq (cdr submatcher) defstruct-group)
                           '(save-excursion
@@ -976,9 +966,11 @@ with better comments."
 
                           ,(cond
                             ((memq (cdr submatcher) varlist-group)
-                             `(goto-char (car ,(car submatcher)))))))
-                    (error (goto-char submatcher-end)))
-                  submatcher-end)))))
+                             `(progn
+                                (goto-char (car ,(car submatcher)))
+                                (cdr ,(car submatcher))))
+                            (t 'submatcher-end))))
+                    (error (goto-char submatcher-end))))))))
            (pospcase--postform)
            ,@(cl-loop with i = 0
                       for spec in (cdr specs)
