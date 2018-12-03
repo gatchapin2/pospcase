@@ -221,7 +221,7 @@ and strings."
       (eq (char-before pos) ?#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; `pcase' powered matcher
+;;; `pcase' powered position extractor
 
 
 (defun pospcase--buffer-substring (start end)
@@ -624,6 +624,7 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
   unnecessary tree branches before here.")
 
 (defmacro pospcase--varlist (&rest patterns)
+  "Boilerplate code for arbitrary length variable list matcher iterator."
   `(pospcase--call-iterator
     (mapcar
      (lambda (srpair)
@@ -653,7 +654,7 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
 (defalias #'pospcase-match-defstruct #'pospcase-match-varlist-cars)
 
 (defmacro pospcase--flet (clause)
-  "Code shared by `pospcase-match-flet' and `pospcase-match-macrolet'."
+  "Boilerplate code for arbitrary length function list matcher iterator."
   `(pospcase--call-iterator
     (cl-loop for srpair in (car (pospcase-read (point)))
              append
@@ -1137,7 +1138,7 @@ examples."
 
 ;;;###autoload
 (defun pospcase-font-lock-lisp-setup ()
-  "Enable `pospcase' code hightlighting for `lisp-mode' and `emacs-lisp-mode'."
+  "Enable `pospcase' code highlighting for `lisp-mode' and `emacs-lisp-mode'."
   (interactive)
   (pospcase-font-lock-lisp-init)
   (add-hook 'lisp-mode-hook #'pospcase-font-lock-lisp-keywords-add)
