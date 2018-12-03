@@ -964,12 +964,11 @@ with better comments."
                           ,(unless (null non-subvars)
                              `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                          ,(cond
-                            ((memq (cdr submatcher) varlist-group)
-                             `(progn
-                                (goto-char (car ,(car submatcher)))
-                                (cdr ,(car submatcher))))
-                            (t 'submatcher-end))))
+                          ,(if (memq (cdr submatcher) varlist-group)
+                               `(progn
+                                  (goto-char (car ,(car submatcher)))
+                                  (cdr ,(car submatcher)))
+                             'submatcher-end)))
                     (error (goto-char submatcher-end))))))))
            (pospcase--postform)
            ,@(cl-loop with i = 0
@@ -984,8 +983,7 @@ with better comments."
                                                (apply (car font) (cdr font)))
                                              nil t))
                                      (cdr spec))))))
-      (or submatchers
-          '(whatever . nil))))))
+      submatchers))))
 
 (defun pospcase-font-lock (mode patterns specs &optional buffer-local-p)
   "Font lock keywords generator with `pcase' powered pattern
