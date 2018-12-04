@@ -8,7 +8,7 @@
   pretty advanced code highlighter for ~lisp-mode~ and ~emacs-lisp-mode~.
 
 
-* Rational
+* Introduction
   Emacs’s font-locking (highlighting) heavily relies on regular
   expression (regexp). There’s already an attempt to do [[https://github.com/Lindydancer/lisp-extra-font-lock][extra
   highlighting]] for Lisp and Emacs Lisp. Which is completely regexp

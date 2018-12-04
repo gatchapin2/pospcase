@@ -231,24 +231,31 @@ and strings."
          (sym+ (concat "\\(" sym "+" "\\)"))
          (non-printable-1 (make-string 1 8203)) ; ZERO WIDTH SPACE
          (non-printable-2 (make-string 1 8204)) ; ZERO WIDTH NON-JOINTER
+         (non-printable-3 (make-string 1 8205)) ; ZERO WIDTH JOINTER
          (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
          (lambda-2 (lambda (str) (concat
                                   (make-string
                                    (- (match-end 1) (match-beginning 0))
-                                   non-printable-1)
+                                   8203) ; ZERO WIDTH SPACE
                                   (match-string 2 str))))
          (lambda-3 (lambda (str) (concat
-                                  "/*"
+                                  non-printable-2
+                                  non-printable-2
                                   (replace-regexp-in-string
                                    "\\S "
                                    non-printable-1
                                    (match-string 1 str))
-                                  "*/")))
-         (elispify `(("#|" . ,non-printable-1)
-                     ("|#" . ,non-printable-2)
-                     (,(concat non-printable-1
-                               "\\([^" non-printable-1 "]*\\)"
-                               non-printable-2)
+                                  non-printable-3
+                                  non-printable-3)))
+         (elispify `(("#|" . ,(concat non-printable-2
+                                      non-printable-2))
+                     ("|#" . ,(concat non-printable-3
+                                      non-printable-3))
+                     (,(concat non-printable-2
+                               non-printable-2
+                               "\\([^" non-printable-3 "]*\\)"
+                               non-printable-3
+                               non-printable-3)
                       . ,lambda-3)
                      ("[[{]" . "(")
                      ("[]}]" . ")")
