@@ -1,4 +1,4 @@
-#+TITLE: ~pospcase~: A ~pcase~ variant for getting positional metadata
+#+TITLE: ~pospcase~: `pcase' powered position extraction and S-expression font-lock
 
 * About ~pospcase~
   ~pospcase~ is a package for extracting S-expression positions using

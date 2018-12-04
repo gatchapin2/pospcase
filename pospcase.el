@@ -1,4 +1,4 @@
-;;; pospcase.el -- `pcase' powered position extraction and font-lock -*- lexical-binding: t -*-
+;;; pospcase.el -- `pcase' powered position extraction and S-expression font-lock -*- lexical-binding: t -*-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Stolen from lisp-extra-font-lock, for historical reason
 
