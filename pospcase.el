@@ -1,3 +1,4 @@
+;;; pospcase.el -- `pcase' powered position extraction and font-lock -*- lexical-binding: t -*-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Stolen from lisp-extra-font-lock, for historical reason
 
@@ -355,81 +356,80 @@ of `pospcase':
 which returns:
 
   (20 . 49)"
-  (cl-labels
-      ((walk (limit)
-             (condition-case err
-                 (destructuring-bind (start sexp . lim)
-                     (cons (point)
-                           (condition-case err
-                               (read-from-string buf-str (- (point) buf-off))
-                             (invalid-read-syntax
-                              (cons 'pospcase-invalid-read-syntax
-                                    (- limit (point))))))
-                   (incf lim buf-off)
-                   (forward-comment most-positive-fixnum)
-                   (cons
-                    (if (or (atom sexp)
-                            (memq (car sexp) '(\` \, quote function)))
-                        sexp
-                      (down-list)
-                      (cl-loop
-                       with rpair
-                       with dot
-                       with temp
-                       with result
-                       do (setq rpair
-                                (condition-case err
-                                    (progn
-                                      (forward-comment most-positive-fixnum)
-                                      (read-from-string buf-str (- (point) buf-off)))
-                                  (invalid-read-syntax
-                                   (if (string= (cadr err) ".")
-                                       (progn
-                                         (setq dot t)
-                                         (forward-sexp)
-                                         (forward-comment most-positive-fixnum)
-                                         (read-from-string buf-str (- (point) buf-off)))
-                                     (cons nil (- limit (point))))))
-                                rlim (+ (cdr rpair) buf-off)
-                                temp (if (or (atom (car rpair))
-                                             (memq (car rpair) '(\` \, quote function)))
-                                         (cons (car rpair) (cons (point) rlim))
-                                       (save-excursion
-                                         (walk rlim))))
-                       if dot
-                       do (setq result (cons result temp))
-                       else
-                       do (setq result (append result (list temp)))
-                       until (progn
-                               (ignore-errors (forward-sexp))
-                               (forward-comment most-positive-fixnum)
-                               (while (> (skip-syntax-forward ")") 0)
-                                 (forward-comment most-positive-fixnum))
-                               (or (>= (point) lim)
-                                   (eobp)))
-                       finally return result))
-                    (cons start lim)))
-               (scan-error nil))))
-
-    (save-excursion
-      (goto-char pos)
-      (let* ((sexp-end (save-excursion
-                         (if (and pospcase--nth-chop-off
-                                  (progn
-                                    (forward-comment most-positive-fixnum)
-                                    (eq (syntax-class (syntax-after (point))) 4)))
-                             (progn
-                               (down-list)
-                               (forward-sexp pospcase--nth-chop-off))
-                           (forward-sexp)
-                           (forward-comment most-positive-fixnum))
-                         (point)))
-             (buf-off (point))
-             (buf-str-1 (pospcase--buffer-substring buf-off sexp-end))
-             (buf-str (with-temp-buffer
-                        (insert buf-str-1)
-                        (insert (make-string (car (syntax-ppss)) ?\)))
-                        (buffer-substring (point-min) (point-max)))))
+  (save-excursion
+    (goto-char pos)
+    (let* ((sexp-end (save-excursion
+                       (if (and pospcase--nth-chop-off
+                                (progn
+                                  (forward-comment most-positive-fixnum)
+                                  (eq (syntax-class (syntax-after (point))) 4)))
+                           (progn
+                             (down-list)
+                             (forward-sexp pospcase--nth-chop-off))
+                         (forward-sexp)
+                         (forward-comment most-positive-fixnum))
+                       (point)))
+           (buf-off (point))
+           (buf-str-1 (pospcase--buffer-substring buf-off sexp-end))
+           (buf-str (with-temp-buffer
+                      (insert buf-str-1)
+                      (insert (make-string (car (syntax-ppss)) ?\)))
+                      (buffer-substring (point-min) (point-max)))))
+      (cl-labels
+          ((walk (limit)
+                 (condition-case nil
+                     (destructuring-bind (start sexp . lim)
+                         (cons (point)
+                               (condition-case nil
+                                   (read-from-string buf-str (- (point) buf-off))
+                                 (invalid-read-syntax
+                                  (cons 'pospcase-invalid-read-syntax
+                                        (- limit (point))))))
+                       (incf lim buf-off)
+                       (forward-comment most-positive-fixnum)
+                       (cons
+                        (if (or (atom sexp)
+                                (memq (car sexp) '(\` \, quote function)))
+                            sexp
+                          (down-list)
+                          (cl-loop
+                           with rpair
+                           with dot
+                           with temp
+                           with result
+                           do (setq rpair
+                                    (condition-case err
+                                        (progn
+                                          (forward-comment most-positive-fixnum)
+                                          (read-from-string buf-str (- (point) buf-off)))
+                                      (invalid-read-syntax
+                                       (if (string= (cadr err) ".")
+                                           (progn
+                                             (setq dot t)
+                                             (forward-sexp)
+                                             (forward-comment most-positive-fixnum)
+                                             (read-from-string buf-str (- (point) buf-off)))
+                                         (cons nil (- limit (point))))))
+                                    rlim (+ (cdr rpair) buf-off)
+                                    temp (if (or (atom (car rpair))
+                                                 (memq (car rpair) '(\` \, quote function)))
+                                             (cons (car rpair) (cons (point) rlim))
+                                           (save-excursion
+                                             (walk rlim))))
+                           if dot
+                           do (setq result (cons result temp))
+                           else
+                           do (setq result (append result (list temp)))
+                           until (progn
+                                   (ignore-errors (forward-sexp))
+                                   (forward-comment most-positive-fixnum)
+                                   (while (> (skip-syntax-forward ")") 0)
+                                     (forward-comment most-positive-fixnum))
+                                   (or (>= (point) lim)
+                                       (eobp)))
+                           finally return result))
+                        (cons start lim)))
+                   (scan-error nil))))
         (walk sexp-end)))))
 
 (defmacro pospcase-translate (matcher)
@@ -440,7 +440,7 @@ backquotes are not supported."
       ((meta-pos-symbol (sym)
                         (list '\,
                               (intern (concat
-                                       (symbol-name (cadr node))
+                                       (symbol-name sym)
                                        "-meta-pos"))))
        (walk (node)
                (if (consp node) ; note that in elisp `,foo' is `(\, foo)'
@@ -705,8 +705,8 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
   "Collect all symbols from a tree generated by `pospcase-read'."
   (cl-labels
       ((pos-p (pair)
-              (numberp (car pair))
-              (numberp (cdr pair)))
+              (and (numberp (car pair))
+                   (numberp (cdr pair))))
        (leaf-p (node)
                (and (atom (car node))
                     (pos-p (cdr node))))
@@ -780,7 +780,6 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
          (symbol (concat symbol-start
                          "\\(?:\\sw\\|\\s_\\|\\\\.\\)+"
                          symbol-end))
-         (space* "\\s *")
          (space+ "\\s +"))
     (cl-flet ((regexp-or (&rest exps)
                          (concat "\\(?:"
@@ -904,7 +903,7 @@ with better comments."
          (subvars (mapcar #'car submatchers))
          (vars (mapcar (lambda (spec) (if (consp (car spec)) (caar spec) (car spec)))
                        (cdr specs)))
-         (non-subvars (remove-if (lambda (var) (memq var subvars)) vars))
+         (non-subvars (cl-remove-if (lambda (var) (memq var subvars)) vars))
          
          (varlist-group '(varlist varlist-cars destructuring flet macrolet))
          (defstruct-group '(defstruct))

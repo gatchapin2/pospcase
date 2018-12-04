@@ -114,6 +114,8 @@
    - State "TODO"       from              [2018-11-23 Fri 14:13]
 
    - Example: `((or labels cl-labels) ,name ,args . ,__)
+** TODO Should I make ~pospcase-let~?
+   - State "TODO"       from              [2018-12-04 Tue 11:07]
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]

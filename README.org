@@ -207,7 +207,8 @@
      (add-hook
       'lisp-mode-hook
       (lambda ()
-        (when (equal (file-name-nondirectory (buffer-file-name)) "asdf.lisp")
+        (when (and (buffer-file-name)
+                   (equal (file-name-nondirectory (buffer-file-name)) "asdf.lisp"))
 
           (pospcase-font-lock 'lisp-mode
                               '(`(defun* ,name ,args . ,_)
@@ -224,7 +225,7 @@
 
    Writing a predicate for detecting which codebase the file belongs
    is sometimes tricky. So be more creative than the above example if
-   you are so inclined.
+   your use case demands it.
 
 * Before Writing Your Own Font-Lock Keywords
   Unfortunately current ~pospcase-font-lock~ design doesn’t allow you to
