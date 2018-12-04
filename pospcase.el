@@ -246,7 +246,10 @@ and strings."
                                   "*/")))
          (elispify `(("#|" . ,non-printable-1)
                      ("|#" . ,non-printable-2)
-                     (,(concat non-printable-1 "\\([^​]*\\)" non-printable-2) . ,lambda-3)
+                     (,(concat non-printable-1
+                               "\\([^" non-printable-1 "]*\\)"
+                               non-printable-2)
+                      . ,lambda-3)
                      ("[[{]" . "(")
                      ("[]}]" . ")")
                      (,(concat "#\\\\" sym+) . ,lambda-1)
