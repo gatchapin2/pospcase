@@ -233,13 +233,14 @@ and strings."
          (lambda-2 (lambda (str) (concat
                                   (make-string
                                    (- (match-end 1) (match-beginning 0))
-                                   ?\ )
+                                   ?​)   ; *BEWARE* of ZERO-WIDTH-SPACE
                                   (match-string 2 str))))
          (lambda-3 (lambda (str) (concat
                                   "/*"
-                                  (make-string
-                                   (- (match-end 1) (match-beginning 1))
-                                   ?\ )
+                                  (replace-regexp-in-string
+                                   "\\S "
+                                   "‌"   ; *BEWARE* of ZERO-WIDTH-SPACE
+                                   (match-string 1 str))
                                   "*/")))
          (elispify `(("[[{]" . "(")
                      ("[]}]" . ")")

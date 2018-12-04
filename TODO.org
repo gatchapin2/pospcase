@@ -21,6 +21,8 @@
 
    - need jit-lock internal understanding
 
+** TODO "#| foo |#" generates ((/* . (0 . 1)) (*/ . (3. 7)) (*/ . (5 . 7)))
+   - State "TODO"       from              [2018-12-03 Mon 18:12]
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]

@@ -191,17 +191,17 @@
   code is highlighted accordingly.
 
 
-* Before Writing Your Font-Lock Keywords
+* Before Writing Your Own Font-Lock Keywords
   Unfortunately current ~pospcase-font-lock~ design doesn’t allow you to
   simply write ~pcase~ patterns and let Emacs to take care of the rest.
 
-  This is largely due to my design choice to keep implementation
-  straightforward at the cost of accessibility. Of course I agree
-  leaky abstraction is bad. If I find better way, maybe I’m going to
-  drastically overhaul ~pospcase-font-lock~.
+  This is largely due to my design decision to keep the implementation
+  as straightforward as possible. But if I find better balance between
+  implementation complexity and ergonomic API design, I’m going to
+  overhaul ~pospcase-font-lock~ anytime.
 
-  But for now, there are some ideas you need to know before writing
-  your original font-lock keywords.
+  But for now there are some prior knowledges you need to know before
+  comfortably writing your own font-lock keywords.
 
 ** Anchored-Matchers
    ~pcase~, which ~pospcase~ is heavily depending on, is not particularly
@@ -209,17 +209,17 @@
    overcome the limitation, so far, seven anchored-matchers are
    implemented.
 
-    - varlist
-    - varlist-cars
-    - key
-    - defstruct
-    - flet
-    - destructuring
-    - macrolet
+    - ~varlist~
+    - ~varlist-cars~
+    - ~key~
+    - ~defstruct~
+    - ~flet~
+    - ~destructuring~
+    - ~macrolet~
 
    I’m going to explain each of them.
 
-*** Varlist
+*** ~Varlist~
     If you pair a pattern variable with ~varlist~ in font specs of
     ~pospcase-font-lock~ like:
 
