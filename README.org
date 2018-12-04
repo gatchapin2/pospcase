@@ -231,12 +231,13 @@
   simply write ~pcase~ patterns and let Emacs to take care of the rest.
 
   This is largely due to my design decision to keep the implementation
-  as straightforward as possible. But if I find better balance between
+  as straightforward as possible even at the expense of introducing
+  foreign concept to the users. But if I find better balance between
   implementation complexity and ergonomic API design, I’m going to
-  overhaul ~pospcase-font-lock~ anytime.
+  overhaul ~pospcase-font-lock~ willingly.
 
-  But for now there are some prior knowledges you need to know before
-  comfortably writing your own font-lock keywords.
+  That’s said, here are the prior knowledges you need to know before
+  writing your own font-lock keywords.
 
 ** Anchored-Matchers
    ~pcase~, which ~pospcase~ is heavily depending on, is not particularly
@@ -299,7 +300,7 @@
    ~pospcase–iterator~ set ~car~ of ~pospcase--matches~ to ~~match-data~ using
    ~set-match-data~.
 
-** Quirks
+** Quirks of Pospcase Font Lock
 *** Iterator
    Admittedly, ~pospcase-font-lock~ do something very weird. Here, I’m
    talking about anchored-matchers. As you can see all of them calls
