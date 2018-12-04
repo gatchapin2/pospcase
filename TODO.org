@@ -156,3 +156,5 @@
    - State "TODO"       from              [2018-11-30 Fri 09:37]
 ** TODO ~down-list~ is major-mode aware. Does ~elispify~ cause inconsistency?
    - State "TODO"       from              [2018-11-30 Fri 09:43]
+** TODO consistent arity-like submatcher naming convention
+   - State "TODO"       from              [2018-12-04 Tue 17:16]
