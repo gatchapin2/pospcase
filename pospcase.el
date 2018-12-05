@@ -225,27 +225,6 @@ and strings."
 ;;; `pcase' powered position extractor
 
 (defvar pospcase--elispify-alist
-  `(("#|" . ,(concat non-printable-2
-                     non-printable-2))
-    ("|#" . ,(concat non-printable-3
-                     non-printable-3))
-    (,(concat non-printable-2
-              non-printable-2
-              "\\([^" non-printable-3 "]*\\)"
-              non-printable-3
-              non-printable-3)
-     . ,lambda-3)
-    ("[[{]" . "(")
-    ("[]}]" . ")")
-    (,(concat "#\\\\" sym+) . ,lambda-1)
-    ("#\\\\." . ,lambda-1)
-    (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
-    (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))
-  "Used for simple regexp based translation from Common Lisp
-  S-expression to Emacs Lisp.")
-
-(defun pospcase--buffer-substring (start end)
-  "`buffer-substring' with regexp based Elisp-ification."
   (let* ((sym "\\(?:\\sw\\|\\s_\\|\\\\.\\)")
          (sym* (concat "\\(" sym "*" "\\)"))
          (sym+ (concat "\\(" sym "+" "\\)"))
@@ -267,10 +246,31 @@ and strings."
                                    (match-string 1 str))
                                   non-printable-3
                                   non-printable-3))))
-    (cl-reduce (lambda (str pair)
-                 (replace-regexp-in-string (car pair) (cdr pair) str))
-               (cons (buffer-substring-no-properties start end)
-                     pospcase--elispify-alist))))
+    `(("#|" . ,(concat non-printable-2
+                       non-printable-2))
+      ("|#" . ,(concat non-printable-3
+                       non-printable-3))
+      (,(concat non-printable-2
+                non-printable-2
+                "\\([^" non-printable-3 "]*\\)"
+                non-printable-3
+                non-printable-3)
+       . ,lambda-3)
+      ("[[{]" . "(")
+      ("[]}]" . ")")
+      (,(concat "#\\\\" sym+) . ,lambda-1)
+      ("#\\\\." . ,lambda-1)
+      (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
+      (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2)))
+  "Used for simple regexp based translation from Common Lisp
+  S-expression to Emacs Lisp.")
+
+(defun pospcase--buffer-substring (start end)
+  "`buffer-substring' with regexp based Elisp-ification."
+  (cl-reduce (lambda (str pair)
+               (replace-regexp-in-string (car pair) (cdr pair) str))
+             (cons (buffer-substring-no-properties start end)
+                   pospcase--elispify-alist)))
 
 (defvar pospcase--nth-chop-off nil
   "Used for chopping off trailing `. ,_', often happens in
