@@ -394,6 +394,7 @@ which returns:
                           (down-list)
                           (cl-loop
                            with rpair
+                           with rlim
                            with dot
                            with temp
                            with result
@@ -655,23 +656,25 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
        (car (pospcase-read (point)))))
     limit))
 
-(defun pospcase-match-varlist (limit)
+(defun pospcase-match-list/2 (limit)
   "Matcher iterator for a list of symbol or two length lists."
   (pospcase--call-list-iterator (`(,name ,type) (pospcase--list name type))
                                 (`,name (pospcase--list name))))
 
-(defun pospcase-match-key (limit)
-  "Matcher iterator for a list of symbol or two or three length lists."
+(defun pospcase-match-list/3 (limit)
+  "Matcher iterator for a list of symbol, two or three length lists."
   (pospcase--call-list-iterator (`(,name ,init ,sup) (pospcase--list name init sup))
                                 (`(,name ,init) (pospcase--list name init))
                                 (`,name (pospcase--list name))))
 
-(defun pospcase-match-varlist-cars (limit)
-  "Matcher iterator for the `car's of a list of two or longer length lists"
+(defalias #'pospcase-match-parameter #'pospcase-match-list/3)
+
+(defun pospcase-match-list/1 (limit)
+  "Matcher iterator for a symbol or `car's of a list of lists"
   (pospcase--call-list-iterator (`(,name . ,_) (pospcase--list name))
                                 (`,name (pospcase--list name))))
 
-(defalias #'pospcase-match-defstruct #'pospcase-match-varlist-cars)
+(defalias #'pospcase-match-defstruct #'pospcase-match-list/1)
 
 (defmacro pospcase--call-flet-iterator (clause)
   "Boilerplate code for arbitrary length function list matcher iterator."
@@ -905,9 +908,9 @@ with better comments."
                        (cdr specs)))
          (non-subvars (cl-remove-if (lambda (var) (memq var subvars)) vars))
          
-         (varlist-group '(varlist varlist-cars destructuring flet macrolet))
+         (list-group '(list/2 list/1 destructuring flet macrolet))
          (defstruct-group '(defstruct))
-         (parameter-group '(key)))
+         (parameter-group '(parameter)))
     (if (string-match "," matcher)
         (error "In-middle keyword is not supported.")
       (setq matcher (concat matcher "\\_>\\s *")))
@@ -933,10 +936,10 @@ with better comments."
                          ((null (cdr submatcher))
                           '(goto-char (match-end 0)))
 
-                         ((memq (cdr submatcher) varlist-group)
+                         ((memq (cdr submatcher) list-group)
                           (match-end 0))
 
-                         ;; Unlike straightforward `varlist-group'
+                         ;; Unlike straightforward `list-group'
                          ;; `defstruct-group' and `parameter-group'
                          ;; starts highlighting in middle of a list by
                          ;; setting `pospcase--fence-start' for
@@ -987,7 +990,7 @@ with better comments."
                           ,(unless (null non-subvars)
                              `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                          ,(if (memq (cdr submatcher) varlist-group)
+                          ,(if (memq (cdr submatcher) list-group)
                                `(progn
                                   (goto-char (car ,(car submatcher)))
                                   (cdr ,(car submatcher)))
@@ -1012,7 +1015,7 @@ with better comments."
   "Font lock keywords generator with `pcase' powered pattern
 matching. Currently you can use sub-matchers:
 
-Group one: varlist, varlist-cars, destructuring, flet, macrolet
+Group one: list/2, list/1, destructuring, flet, macrolet
 
 Group two:  defstruct
 
@@ -1068,18 +1071,18 @@ examples."
                         `(cl-defsubst ,name ,args . ,_))
                       '(font-lock-keyword-face
                         (name . (font-lock-function-name-face))
-                        ((args . varlist-cars) .
+                        ((args . list/1) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defclass ,name ,supers ,slots . ,_))
                       '(font-lock-keyword-face
                         (name . (font-lock-type-face))
-                        ((supers . varlist-cars) . (font-lock-type-face))
-                        ((slots . varlist-cars) . (font-lock-variable-name-face))))
+                        ((supers . list/1) . (font-lock-type-face))
+                        ((slots . list/1) . (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(`(lambda ,args . ,_))
                       '(font-lock-keyword-face
-                        ((args . varlist-cars) .
+                        ((args . list/1) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(let ,binds . ,_)
@@ -1087,13 +1090,13 @@ examples."
                         `(multiple-value-bind ,binds . ,_)
                         `(cl-multiple-value-bind ,binds . ,_))
                       '(font-lock-keyword-face
-                        ((binds . varlist-cars) .
+                        ((binds . list/1) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(symbol-macrolet ,binds . ,_)
                         `(cl-symbol-macrolet ,binds . ,_))
                       '(font-lock-keyword-face
-                        ((binds . varlist) .
+                        ((binds . list/2) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))
                           font-lock-constant-face))))
   (pospcase-font-lock 'lisp-mode
@@ -1109,7 +1112,7 @@ examples."
                         `(cl-defgeneric ,name ,args . ,_))
                       '(font-lock-keyword-face
                         (name . (font-lock-function-name-face))
-                        ((args . varlist) .
+                        ((args . list/2) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))
                           font-lock-type-face))))
   (pospcase-font-lock 'lisp-mode
@@ -1150,7 +1153,7 @@ examples."
   (pospcase-font-lock 'lisp-mode
                       '(&key &aux &optional)
                       '(font-lock-type-face
-                        ((pospcase--dummy . key) .
+                        ((pospcase--dummy . parameter) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))
                           default
                           default)))))

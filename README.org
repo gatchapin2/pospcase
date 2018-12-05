@@ -141,14 +141,14 @@
        (name
         . (font-lock-function-name-face))   ; face of new function `name’
 
-       ((args . varlist-cars)               ; `args' is arbitrary length
+       ((args . list/1)               ; `args' is arbitrary length
                                             ; list of arguments.
 
         . (font-lock-variable-name-face)))) ; face of every arguments
   #+END_SRC
 
   Hopefully it’s straightforward enough for you. The most foreign part
-  is ~varlist-cars~. To understand what it is, You have to understand
+  is ~list/1~. To understand what it is, You have to understand
   Anchored-matchers. But I’ll explain with more details later.
 
 * An Example Work Flow
@@ -172,7 +172,7 @@
      '(`(foo ,bar ,baz . ,_))
      '(font-lock-keyword-face
        (bar . (font-lock-function-name-face))
-       ((baz . varlist-cars) . (font-lock-variable-name-face))))"
+       ((baz . list/1) . (font-lock-variable-name-face))))"
                         major-mode)))
           (find-file ,(buffer-file-name))
           (goto-char (point-max))
@@ -216,7 +216,7 @@
                               '(font-lock-keyword-face
                                 (name .
                                       (font-lock-function-name-face))
-                                ((args . varlist-cars)
+                                ((args . list/1)
                                  .
                                  ((pospcase-font-lock-variable-face-form
                                    (match-string 1)))))
@@ -246,22 +246,22 @@
    overcome the limitation, so far, seven anchored-matchers are
    implemented.
 
-    - ~varlist~
-    - ~varlist-cars~
-    - ~key~
-    - ~defstruct~
+    - ~list/2~
+    - ~list/1~
+    - ~key~ (~list/3~)
+    - ~defstruct~ (~list/1~)
     - ~flet~
     - ~destructuring~
     - ~macrolet~
 
    I’m going to explain each of them.
 
-*** ~Varlist~
-    If you pair a pattern variable with ~varlist~ in font specs of
+*** ~list/2~
+    If you pair a pattern variable with ~list/2~ in font specs of
     ~pospcase-font-lock~ like:
 
     #+BEGIN_SRC emacs-lisp
-      (args . varlist)
+      (args . list/2)
     #+END_SRC
 
     It means ~args~ is a list of arbitrary length with either symbol or
@@ -408,13 +408,13 @@
                          '(font-lock-keyword-face
                            (name . (default))
                            (supers . (default))
-                           ((slots . varlist-cars) . (font-lock-variable-name-face))))
+                           ((slots . list/1) . (font-lock-variable-name-face))))
 
      (pospcase-font-lock 'lisp-mode
                          '(`(defclass ,name ,supers . ,_))
                          '(font-lock-keyword-face
                            (name . (font-lock-type-face))
-                           ((supers . varlist-cars) . (font-lock-type-face))))
+                           ((supers . list/1) . (font-lock-type-face))))
    #+END_SRC
 
    Note ~pospcase-font-lock~ adds new keyword at the start of a keyword
