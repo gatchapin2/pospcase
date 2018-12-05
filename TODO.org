@@ -120,6 +120,8 @@
    - Example: `((or labels cl-labels) ,name ,args . ,__)
 ** TODO Should I make ~pospcase-let~?
    - State "TODO"       from              [2018-12-04 Tue 11:07]
+** TODO defcustom based intuitive keyword manager
+   - State "TODO"       from              [2018-12-05 Wed 05:38]
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]

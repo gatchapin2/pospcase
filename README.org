@@ -229,16 +229,16 @@
    detection if your use case is more complex than the above one.
 
 * Before Writing Your Own Font-Lock Keywords
-  Unfortunately current ~pospcase-font-lock~ design doesn’t allow you to
-  simply write a ~pcase~ patterns and Emacs instantly highlight the
-  matching code section. There’s something you need to know before
-  writing your own font-lock keywords.
+  Unfortunately current ~pospcase-font-lock~ design doesn’t simply allow
+  you to write a ~pcase~ patterns then Emacs instantly highlight the
+  matching code section for you. There’s something you need to know
+  before writing your own font-lock keywords.
 
   This is largely due to my design decision to keep the implementation
   as straightforward as possible even at the expense of introducing a
-  new concept. But if I find better balance between implementation
-  complexity and ergonomic API design, I’m willingly redesign
-  ~pospcase-font-lock~ for better user experience.
+  new concept and shoving it at the user’s face.
+
+  So please bear with me and read the following subsections.
 
 ** Anchored-Matchers
    The macro ~pcase~, which ~pospcase~ is heavily depending on, is not
@@ -263,8 +263,8 @@
    bellow.
 
 *** ~list/2~
-    If you pair a pattern variable with ~list/2~ in SPECS of
-    ~pospcase-font-lock~ like:
+    If you pair a ~pcase~ pattern variable with ~list/2~ in the specs of
+    ~pospcase-font-lock~ like this:
 
     #+BEGIN_SRC emacs-lisp
       (args . list/2)
@@ -274,7 +274,8 @@
     strictly two length list. Like argument list of ~defmethod~:
 
     #+BEGIN_SRC emacs-lisp
-      (defmethod foo ((bar class1) (baz class2) qux quux)
+      (defmethod foo
+        ((bar class1) (baz class2) qux quux)  ; <- this list
         body)
     #+END_SRC
 
@@ -291,7 +292,25 @@
 *** ~key~ (~list/3~)
 
 
-* Technical Details
+* Writing Your Own Anchored-Matchers
+  I’m certain eventually you are going to outgrow and find the
+  syntaxes that doesn’t quite fit with the build-in ~pospcase-font-lock~
+  anchored-matchers.
+
+  In that case, it’s time to write your own anchored-matcher using
+  functions like ~pospcase~, ~pospcase-at~, ~pospcase-read~, and even other
+  you can find in the wealth of Emacs Lisp ecosystem.
+
+  Since S-expression is infinity flexible, I just can’t write
+  universally applicable advice on how to write anchored-matcher.
+
+  I think bisecting and explaining the actual working code, and the
+  control flow of invocation, is the best way to go.
+
+  The code of ~pospcase-match-list/1~:
+
+
+* Appendix: Technical Titbits
 ** Data flow
    Anchored-matchers call ~pospcase-at~ and ~pospcase-read~ to parse
    S-expression and get positional metadata.

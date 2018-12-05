@@ -973,7 +973,7 @@ with better comments."
                                (error (match-end 0)))))
 
                          ((memq (cdr submatcher) pospcase-parameter-group)
-                          '(if (memq (char-before (point)) '(?\' ?\`))
+                          '(if (memq (char-before (point)) '(?\\ ?\' ?\` ?\,))
                                (goto-char (match-end 0))
                              (let ((end (match-end 0)))
                                (setq pospcase--fence-start
