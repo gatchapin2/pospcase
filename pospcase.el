@@ -973,14 +973,16 @@ with better comments."
                                (error (match-end 0)))))
 
                          ((memq (cdr submatcher) pospcase-parameter-group)
-                          '(let ((end (match-end 0)))
-                             (setq pospcase--fence-start
-                                   (ignore-errors (pospcase-read end)))
-                             (condition-case nil
-                                 (progn
-                                   (backward-up-list)
-                                   (scan-sexps (point) 1))
-                               (error (goto-char end)))))
+                          '(if (memq (char-before (point)) '(?\' ?\`))
+                               (goto-char (match-end 0))
+                             (let ((end (match-end 0)))
+                               (setq pospcase--fence-start
+                                     (ignore-errors (pospcase-read end)))
+                               (condition-case nil
+                                   (progn
+                                     (backward-up-list)
+                                     (scan-sexps (point) 1))
+                                 (error (goto-char end))))))
 
                          (t (error "Not supported (cdr submatcher): %s" (cdr submatcher))))))
 
