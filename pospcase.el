@@ -224,6 +224,25 @@ and strings."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; `pcase' powered position extractor
 
+(defvar pospcase--elispify-alist
+  `(("#|" . ,(concat non-printable-2
+                     non-printable-2))
+    ("|#" . ,(concat non-printable-3
+                     non-printable-3))
+    (,(concat non-printable-2
+              non-printable-2
+              "\\([^" non-printable-3 "]*\\)"
+              non-printable-3
+              non-printable-3)
+     . ,lambda-3)
+    ("[[{]" . "(")
+    ("[]}]" . ")")
+    (,(concat "#\\\\" sym+) . ,lambda-1)
+    ("#\\\\." . ,lambda-1)
+    (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
+    (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))
+  "Used for simple regexp based translation from Common Lisp
+  S-expression to Emacs Lisp.")
 
 (defun pospcase--buffer-substring (start end)
   "`buffer-substring' with regexp based Elisp-ification."
@@ -247,26 +266,11 @@ and strings."
                                    non-printable-1
                                    (match-string 1 str))
                                   non-printable-3
-                                  non-printable-3)))
-         (elispify `(("#|" . ,(concat non-printable-2
-                                      non-printable-2))
-                     ("|#" . ,(concat non-printable-3
-                                      non-printable-3))
-                     (,(concat non-printable-2
-                               non-printable-2
-                               "\\([^" non-printable-3 "]*\\)"
-                               non-printable-3
-                               non-printable-3)
-                      . ,lambda-3)
-                     ("[[{]" . "(")
-                     ("[]}]" . ")")
-                     (,(concat "#\\\\" sym+) . ,lambda-1)
-                     ("#\\\\." . ,lambda-1)
-                     (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
-                     (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2))))
+                                  non-printable-3))))
     (cl-reduce (lambda (str pair)
                  (replace-regexp-in-string (car pair) (cdr pair) str))
-               (cons (buffer-substring-no-properties start end) elispify))))
+               (cons (buffer-substring-no-properties start end)
+                     pospcase--elispify-alist))))
 
 (defvar pospcase--nth-chop-off nil
   "Used for chopping off trailing `. ,_', often happens in
@@ -881,6 +885,14 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
 (defvar pospcase--dummy nil
   "Used in a hack for empty `multiple-value-bind'.")
 
+
+(defvar pospcase-list-group '(list/2 list/1 destructuring flet macrolet)
+  "Submatchers with same behavior with `pospcase-match-list/2'.")
+(defvar pospcase-defstruct-group '(defstruct)
+  "Submatchers with same behavior with `pospcase-match-defstruct'.")
+(defvar pospcase-parameter-group '(parameter)
+  "Submatchers with same behavior with `pospcase-match-parameter'.")
+
 (defun pospcase-font-lock-build (patterns specs)
   "Actual font lock keywords generator. Deep magic is
 involved. Don't dismay. I'm planning to simplify and to supply it
@@ -906,11 +918,7 @@ with better comments."
          (subvars (mapcar #'car submatchers))
          (vars (mapcar (lambda (spec) (if (consp (car spec)) (caar spec) (car spec)))
                        (cdr specs)))
-         (non-subvars (cl-remove-if (lambda (var) (memq var subvars)) vars))
-         
-         (list-group '(list/2 list/1 destructuring flet macrolet))
-         (defstruct-group '(defstruct))
-         (parameter-group '(parameter)))
+         (non-subvars (cl-remove-if (lambda (var) (memq var subvars)) vars)))
     (if (string-match "," matcher)
         (error "In-middle keyword is not supported.")
       (setq matcher (concat matcher "\\_>\\s *")))
@@ -936,16 +944,17 @@ with better comments."
                          ((null (cdr submatcher))
                           '(goto-char (match-end 0)))
 
-                         ((memq (cdr submatcher) list-group)
+                         ((memq (cdr submatcher) pospcase-list-group)
                           (match-end 0))
 
-                         ;; Unlike straightforward `list-group'
-                         ;; `defstruct-group' and `parameter-group'
-                         ;; starts highlighting in middle of a list by
+                         ;; Unlike straightforward `pospcase-list-group'
+                         ;; `pospcase-defstruct-group' and
+                         ;; `pospcase-parameter-group' starts
+                         ;; highlighting in middle of a list by
                          ;; setting `pospcase--fence-start' for
                          ;; chopping unnecessary heading sexps off.
 
-                         ((memq (cdr submatcher) defstruct-group)
+                         ((memq (cdr submatcher) pospcase-defstruct-group)
                           '(save-excursion
                              (condition-case nil
                                  (progn
@@ -963,7 +972,7 @@ with better comments."
                                    (point))
                                (error (match-end 0)))))
 
-                         ((memq (cdr submatcher) parameter-group)
+                         ((memq (cdr submatcher) pospcase-parameter-group)
                           '(let ((end (match-end 0)))
                              (setq pospcase--fence-start
                                    (ignore-errors (pospcase-read end)))
@@ -984,13 +993,13 @@ with better comments."
                                                      (lambda (pat)
                                                        (list pat (cons 'values vars)))
                                                      patterns))
-                        (if (and ,(not (memq (cdr submatcher) parameter-group))
+                        (if (and ,(not (memq (cdr submatcher) pospcase-parameter-group))
                                  (memq nil ,(cons 'list vars))) ; not exact match
                             (goto-char submatcher-end)
                           ,(unless (null non-subvars)
                              `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                          ,(if (memq (cdr submatcher) list-group)
+                          ,(if (memq (cdr submatcher) pospcase-list-group)
                                `(progn
                                   (goto-char (car ,(car submatcher)))
                                   (cdr ,(car submatcher)))

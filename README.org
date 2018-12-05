@@ -224,53 +224,72 @@
    #+END_SRC
 
    Writing a predicate for detecting which codebase the file belongs
-   is sometimes tricky. So be more creative than the above example if
-   your use case demands it.
+   is sometimes tricky and I can’t provide universal solution for the
+   problem. So be creative and invent your own method for codebase
+   detection if your use case is more complex than the above one.
 
 * Before Writing Your Own Font-Lock Keywords
   Unfortunately current ~pospcase-font-lock~ design doesn’t allow you to
-  simply write ~pcase~ patterns and let Emacs to take care of the rest.
-
-  This is largely due to my design decision to keep the implementation
-  as straightforward as possible even at the expense of introducing
-  foreign concept to the users. But if I find better balance between
-  implementation complexity and ergonomic API design, I’m going to
-  overhaul ~pospcase-font-lock~ willingly.
-
-  That’s said, here are the prior knowledges you need to know before
+  simply write a ~pcase~ patterns and Emacs instantly highlight the
+  matching code section. There’s something you need to know before
   writing your own font-lock keywords.
 
+  This is largely due to my design decision to keep the implementation
+  as straightforward as possible even at the expense of introducing a
+  new concept. But if I find better balance between implementation
+  complexity and ergonomic API design, I’m willingly redesign
+  ~pospcase-font-lock~ for better user experience.
+
 ** Anchored-Matchers
-   ~pcase~, which ~pospcase~ is heavily depending on, is not particularly
-   designed for pattern-matching arbitrary length S-expression. To
-   overcome the limitation, so far, seven anchored-matchers are
-   implemented.
+   The macro ~pcase~, which ~pospcase~ is heavily depending on, is not
+   particularly designed for pattern-matching arbitrary length
+   S-expression. But we exactly want that feature in our use
+   case. Obvious example is argument list for function declaration. To
+   overcome the limitation, you have to choose appropriate
+   anchored-matchers for each arbitrary length list. So far, seven
+   anchored-matchers are implemented.
 
     - ~list/2~
     - ~list/1~
-    - ~key~ (~list/3~)
-    - ~defstruct~ (~list/1~)
     - ~flet~
     - ~destructuring~
     - ~macrolet~
+    - ~defstruct~ (~list/1~)
+    - ~key~ (~list/3~)
 
-   I’m going to explain each of them.
+   If you are skilled programmer, maybe you can just skim the actual
+   keyword declarations in ~pospcase-font-lock-lisp-setup~ and use them
+   without any explanation. But I’m going to explain each of them
+   bellow.
 
 *** ~list/2~
-    If you pair a pattern variable with ~list/2~ in font specs of
+    If you pair a pattern variable with ~list/2~ in SPECS of
     ~pospcase-font-lock~ like:
 
     #+BEGIN_SRC emacs-lisp
       (args . list/2)
     #+END_SRC
 
-    It means ~args~ is a list of arbitrary length with either symbol or
-    two length list. Like argument list of ~defmethod~:
+    It means ~args~ is a arbitrary length list of either symbols or
+    strictly two length list. Like argument list of ~defmethod~:
 
     #+BEGIN_SRC emacs-lisp
       (defmethod foo ((bar class1) (baz class2) qux quux)
         body)
     #+END_SRC
+
+*** ~list/1~
+
+*** ~flet~
+
+*** ~destructuring~
+
+*** ~macrolet~
+
+*** ~defstruct~ (~list/1~)
+
+*** ~key~ (~list/3~)
+
 
 * Technical Details
 ** Data flow

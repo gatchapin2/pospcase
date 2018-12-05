@@ -21,6 +21,10 @@
 
    - need jit-lock internal understanding
 
+** TODO ~pospcase–buffer-substring~ can’t read "#\\\\"
+   - State "TODO"       from              [2018-12-05 Wed 03:50]
+
+
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]
