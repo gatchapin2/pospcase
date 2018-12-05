@@ -1080,7 +1080,8 @@ examples."
                         ((supers . list/1) . (font-lock-type-face))
                         ((slots . list/1) . (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(lambda ,args . ,_))
+                      '(`(lambda ,args . ,_)
+                        `(with-slots ,args . ,_))
                       '(font-lock-keyword-face
                         ((args . list/1) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
