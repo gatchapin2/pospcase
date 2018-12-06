@@ -602,7 +602,7 @@ with better comments."
                           '(goto-char (match-end 0)))
 
                          ((memq (cdr submatcher) pospcase-list-group)
-                          (match-end 0))
+                          '(match-end 0))
 
                          ;; Unlike straightforward `pospcase-list-group'
                          ;; `pospcase-defstruct-group' and
