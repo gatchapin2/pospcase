@@ -1,4 +1,4 @@
-;;; pospcase-font-lock.el: S-expression font-lock -*- lexical-bind: t -*-
+;;; pospcase-font-lock.el: S-expression font-lock -*- lexical-binding: t -*-
 
 (require 'pospcase)
 
