@@ -3,16 +3,16 @@
 (eval-when-compile
   (require 'wid-edit))
 
-(defvar pospcase-wizard--patterns)
-(defvar pospcase-wizard--specs)
+(defvar pospcase-addform--patterns)
+(defvar pospcase-addform--specs)
 
-(defun pospcase-wizard ()
+(defun pospcase-addform ()
   "Create the widgets for `pospcase-font-lock'."
   (interactive)
   (switch-to-buffer "*Pospcase Font Lock*")
   (kill-all-local-variables)
-  (make-local-variable 'pospcase-wizard--patterns)
-  (make-local-variable 'pospcase-wizard--specs)
+  (make-local-variable 'pospcase-addform--patterns)
+  (make-local-variable 'pospcase-addform--specs)
   (let ((inhibit-read-only t))
     (erase-buffer))
   (remove-overlays)
@@ -34,7 +34,7 @@
                  '(choice-item :tag "Buffer-local" t))
 
   (widget-insert "\nPatterns:\n")
-  (setq pospcase-wizard--patterns
+  (setq pospcase-addform--patterns
         (widget-create 'editable-list
                        :entry-format "%i %d %v"
                        :notify
@@ -50,7 +50,7 @@
   (widget-insert "\nGuess specs ")
   (widget-create 'link
                  :notify (lambda (&rest ignore)
-                           (widget-value-set pospcase-wizard--specs
+                           (widget-value-set pospcase-addform--specs
                                              '("En" "To" "Tre"))
                            (widget-setup))
                  "Generate")
@@ -63,7 +63,7 @@
 		            :value (or comment "")))
 
   (widget-insert "\n\nSpecs:\n")
-  (setq pospcase-wizard--specs
+  (setq pospcase-addform--specs
         (widget-create 'editable-list
                        :entry-format "%i %d %v"
                        :notify
@@ -82,7 +82,7 @@
   (widget-create 'push-button
                  :notify (lambda (&rest ignore)
                            (if (= (length
-                                   (widget-value pospcase-wizard--specs))
+                                   (widget-value pospcase-addform--specs))
                                   3)
                                (message "Congratulation!")
                              (error "Three was the count!")))
@@ -90,7 +90,7 @@
   (widget-insert " ")
   (widget-create 'push-button
                  :notify (lambda (&rest ignore)
-                           (pospcase-wizard))
+                           (pospcase-addform))
                  "Reset Keyword")
   (widget-insert "\n")
 
@@ -101,7 +101,7 @@
 
 ;;; eieio based attempt
 
-(defclass pospcase-customize--container ()
+(defclass pospcase-addform--container ()
   ((patterns :type list
              :initarg :patterns
              :initform '(`(defun ,name ,args . ,_))
@@ -120,5 +120,5 @@
           :custom (editable-list (cons sexp sexp))
           :documentation "The spec list for `pospcase-font-lock'. The first of a list is (var-name . submatcher). The second is a list of faces.")))
 
-(eieio-customize-object
- (make-instance 'pospcase-customize--container))
+(eieio-addform-object
+ (make-instance 'pospcase-addform--container))
