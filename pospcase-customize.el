@@ -114,10 +114,10 @@
                  :custom sexp
                  :documentation "The face of the heading keyword.")
 
-   (specs :type list
+   (specs :type cons
           :initarg :specs
           :initform '(((foo . bar) . (baz)))
-          :custom (editable-list (list sexp sexp))
+          :custom (editable-list (cons sexp sexp))
           :documentation "The spec list for `pospcase-font-lock'. The first of a list is (var-name . submatcher). The second is a list of faces.")))
 
 (eieio-customize-object
