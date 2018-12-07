@@ -13,15 +13,18 @@
   expression (regexp). There’s already an attempt to do [[https://github.com/Lindydancer/lisp-extra-font-lock][extra
   highlighting]] for Lisp and Emacs Lisp. Which is completely regexp
   based. When you follow the above link and look into its
-  [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Search_002dbased-Fontification.html][anchored-matcher]], let’s say ~lisp-extra-font-lock-match-let~ for
-  example.  you’ll notice parsing S-expression with regexp is
-  inherently awkward and error-prone (you also notice in-between
-  comments break the parsing too). To overcome the problem, you
-  basically have to call ~syntax-ppss~ and ~forward-comment~ everywhere in
-  pattern matching part of your code. The resulting code is quite
-  unreadable mess of regexp matchings, constant syntax-table
-  checkings, and numerous corner-case coverages. If you want to see
-  what kind of mess it will be. Here’s an example:
+  [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Search_002dbased-Fontification.html][anchored-matcher]] (for some reason I use the term submatcher instead
+  in this package. Hereafter when I say submatcher you can safely
+  assume I mean anchored-matcher), let’s say
+  ~lisp-extra-font-lock-match-let~ for example.  you’ll notice parsing
+  S-expression with regexp is inherently awkward and error-prone (you
+  also notice in-between comments break the parsing too). To overcome
+  the problem, you basically have to call ~syntax-ppss~ and
+  ~forward-comment~ everywhere in pattern matching part of your
+  code. The resulting code is quite unreadable mess of regexp
+  matchings, constant syntax-table checkings, and numerous corner-case
+  coverages. If you want to see what kind of mess it will be. Here’s
+  an example:
 
   #+BEGIN_SRC emacs-lisp
     ;;; match and collect all symbol positions within the same nested level
@@ -149,7 +152,7 @@
 
   Hopefully it’s straightforward enough for you. The most foreign part
   is ~list/1~. To understand what it is, You have to understand
-  Anchored-matchers. But I’ll explain with more details later.
+  Submatchers. But I’ll explain with more details later.
 
 * An Example Work Flow
 ** Good Old Way
@@ -273,14 +276,14 @@
 
   So please bear with me and read the following subsections.
 
-** Anchored-Matchers
+** Submatchers
    The macro ~pcase~, which ~pospcase~ is heavily depending on, is not
    particularly designed for pattern-matching arbitrary length
    S-expression. But we exactly want that feature in our use
    case. Obvious example is argument list for function declaration. To
    overcome the limitation, you have to choose appropriate
-   anchored-matchers for each arbitrary length list. So far, seven
-   anchored-matchers are implemented.
+   submatchers for each arbitrary length list. So far, seven
+   submatchers are implemented.
 
     - ~list/2~
     - ~list/1~
@@ -288,7 +291,7 @@
     - ~destructuring~
     - ~macrolet~
     - ~defstruct~ (~list/1~)
-    - ~key~ (~list/3~)
+    - ~parameter~ (~list/3~)
 
    If you are skilled programmer, maybe you can just skim the actual
    keyword declarations in ~pospcase-font-lock-lisp-setup~ and use them
@@ -312,40 +315,111 @@
         body)
     #+END_SRC
 
+    Yes, the strange ~/2~ (slash two) at the end of name is added to
+    indicate ~list/2~ matches two length list (notation is stolen from
+    function arity notation).
+
 *** ~list/1~
+    This submatcher is almost the same as ~list/2~ (also implementation
+    is almost identical too). But unlike ~list/2~ it matches the first
+    element of arbitrary length list. Like:
+
+    #+BEGIN_SRC emacs-lisp
+      (foo (bar) (baz qux) (quux meow woof) (oink quak quaak quaaak))
+    #+END_SRC
+
+    What happens when you want to match to exact one length list?
+    Well, I haven yet encounter the said use case, so I
+    narrow-mindedly named it ~list/1~ for ease of typing and
+    readability. Should I rename it like ~list/1*~ (asterisk for
+    arbitrary length)? Let me know how you feel.
 
 *** ~flet~
+    This submatcher, as the name indicates, is designed for matching
+    function list of ~flet~.
+
+    The ~car~ and ~cadr~ of of each list. The ~cadr~ part matches arbitrary
+    length list. When a element of the arbitrary list is also a list,
+    it matches only the first like ~list/1~. Like:
+
+    #+BEGIN_SRC emacs-lisp
+      ((foo (bar) body)
+       (baz (qux quux) body)
+       (meow (woof (oink quak)) body))
+    #+END_SRC
 
 *** ~destructuring~
+    This submatcher matches every symbol of a list no matter how
+    deeply nest they are. Like:
+
+    #+BEGIN_SRC emacs-lisp
+      (foo (bar (baz) ((qux))) (((quux))))
+    #+END_SRC
+
+    Of course it’s used for matching ~destructuring-bind~ and ~defmacro~,
+    etc.
 
 *** ~macrolet~
+    Similar to ~flet~. But the ~cadr~ part is the same as ~destructuring~.
 
 *** ~defstruct~ (~list/1~)
+    I was surprized when I realized I have to implement a submatcher
+    specifically for ~defstruct~. The uniqueness comes from the layout
+    ~defstruct~ keyword and a docstring is placed before the slots of
+    the defined structure. As you know it, docstring is optional and
+    submatcher manually have to check whether current pattern has
+    docstring or not. Then set a fence to ignore the unnecessary
+    heading S-expressions from the matches.
 
-*** ~key~ (~list/3~)
+    Hopefully you don’t need to touch this submatcher for your
+    highlighting needs and have no occasion to deal with more strange
+    syntax in the wild.
 
+*** ~parameter~ (~list/3~)
+    The most tricky syntax is the parameter keywords for argument list
+    (or lambda list). They change following semantic meaning and
+    therefore highlighting rules when they appear in the middle of a
+    list. The most notorious example is ~destructuring-bind~ like:
 
-* Writing Your Own Anchored-Matchers
-  I’m certain eventually you are going to outgrow and find the
-  syntaxes that doesn’t quite fit with the build-in ~pospcase-font-lock~
-  anchored-matchers.
+    #+BEGIN_SRC emacs-lisp
+      (destructuring-bind
+          (foo (bar
+                &key (baz 1) (quux 2)))       ; here, the symbol &key change the rule
+          body)
+    #+END_SRC
 
-  In that case, it’s time to write your own anchored-matcher using
-  functions like ~pospcase~, ~pospcase-at~, ~pospcase-read~, and even other
-  you can find in the wealth of Emacs Lisp ecosystem.
+    It matches in-middle keyword appearance, then overwrite the
+    original highlighting rule. So it’s very sensitive to the
+    declaration order of font-lock keywords.
+
+    I really hope you don’t have to touch this submatcher at all.
+
+    (Secret note: this pattern is not even ~pcase~ pattern. So
+    declaration is irregular or non-existent too. They are just a list
+    of keywords. Don’t try to see them as patterns in case you really
+    need to use this submatcher.)
+
+* Writing Your Own SubMatchers
+  I’m certain eventually you’ll outgrow and find the syntaxes that
+  the build-in ~pospcase-font-lock~ submatchers doesn’t quite cover.
+
+  In that case, it’s time to write your own submatcher using raw
+  functions like ~pospcase~, ~pospcase-at~, ~pospcase-read~, or even other
+  functions you can find in the wealth of Emacs Lisp ecosystem.
 
   Since S-expression is infinity flexible, I just can’t write
-  universally applicable advice on how to write anchored-matcher.
+  universally applicable advice how to write a submatcher.
 
-  I think bisecting and explaining the actual working code, and the
-  control flow of invocation, is the best way to go.
+  I think bisecting and explaining the segments of actual working code
+  along with the how the code’s control flow will be like, is the
+  best.
 
   The code of ~pospcase-match-list/1~:
 
 
 * Appendix: Technical Titbits
 ** Data flow
-   Anchored-matchers call ~pospcase-at~ and ~pospcase-read~ to parse
+   Submatchers call ~pospcase-at~ and ~pospcase-read~ to parse
    S-expression and get positional metadata.
 
    ~pospcase-at~ returns cons cells in ~(start . end)~.
@@ -353,7 +427,7 @@
    ~pospcase-read~ returns S-expression tree with each node with cons
    cell in ~(sexp . (start . end))~
 
-   Anchored-matchers either manually collect ~(start . end)~ pairs of
+   Submatchers either manually collect ~(start . end)~ pairs of
    interest or call ~pospcase~, ~pospcase-at~ or ~pospcase-read~ repeatedly
    on each start position ~(car (start . end))~ of interested
    S-expression and collect the result.
@@ -375,7 +449,7 @@
 ** Quirks of Pospcase Font Lock
 *** Iterator
    Admittedly, ~pospcase-font-lock~ do something very weird. Here, I’m
-   talking about anchored-matchers. As you can see all of them calls
+   talking about submatchers. As you can see all of them calls
    ~pospcase--call-iterator~ macro. True to its name, the macro realize
    the behavior of the iterator pattern (very crudely using a global
    variable ~pospcase--matches~ as the place holder for pre-collected
@@ -459,7 +533,7 @@
   Maybe this is due to my ignorance of font-lock internals and not a
   real technical limitation. I’m eager to fix it.
 
-*** No support for multiple anchored-matcher
+*** No support for multiple submatcher
    Currently only single arbitrary length list matching per-pattern is
    allowed. For example, ~defclass~ has syntax:
 
@@ -495,4 +569,4 @@
    above keyword’s ~default~ face.
 
    I’m aware it’s quite unintuitive. Maybe someday I might properly
-   implement support for multiple anchored matchers.
+   implement support for multiple submatchers.
