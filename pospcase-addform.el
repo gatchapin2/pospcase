@@ -40,19 +40,19 @@
 
 (defclass pospcase-addform--container ()
   ((patterns :type list
-             :accessor patterns
+             :accessor pospcase-addform-patterns
              :initarg :patterns
              :initform (cadr pospcase-addform--default)
              :custom (editable-list (sexp :tag ""))
              :documentation "⮴ Add pcase patterns.")
    (keyword-face :type symbol
-                 :accessor keyword-face
+                 :accessor pospcase-addform-keyword-face
                  :initarg :keyword-face
                  :initform (caddr pospcase-addform--default)
                  :custom (sexp :tag "")
                  :documentation "⮴ Specify a face for the heading keyword.")
    (specs :type cons
-          :accessor specs
+          :accessor pospcase-addform-specs
           :initarg :specs
           :initform (cadddr pospcase-addform--default)
           :custom (editable-list (cons :tag ""
@@ -64,13 +64,13 @@
                                              (sexp :tag "Face"))))
           :documentation "⮴ Add variable/submatcher pair and face list.")
    (mode :type symbol
-         :accessor mode
+         :accessor pospcase-addform-mode
          :initarg :mode
          :initform (car pospcase-addform--default)
          :custom (sexp :tag "")
          :documentation "⮴ Specify mode to active the highlighting rule.")
    (predicate :type (or null list)
-              :accessor predicate
+              :accessor pospcase-addform-predicate
               :initform (car (cddddr pospcase-addform--default))
               :custom (choice (const :tag "Always" nil)
                               (sexp list))
@@ -81,19 +81,19 @@
   (with-current-buffer (find-file-noselect pospcase-user-file)
     (goto-char (point-max))
     (insert (pp-to-string
-             (if (predicate obj)
+             (if (pospcase-addform-predicate obj)
                  `(add-hook ',(intern (concat (symbol-name (mode obj)) "-hook"))
                             (lambda ()
-                              (when ,(predicate obj)
+                              (when ,(pospcase-addform-predicate obj)
                                 (pospcase-font-lock ',(mode obj)
-                                                    ',(patterns obj)
+                                                    ',(pospcase-addform-patterns obj)
                                                     ',(cons (keyword-face obj)
-                                                            (specs obj))
+                                                            (pospcase-addform-specs obj))
                                                     t))))
                `(pospcase-font-lock ',(mode obj)
-                                    ',(patterns obj)
+                                    ',(pospcase-addform-patterns obj)
                                     ',(cons (keyword-face obj)
-                                            (specs obj))))))))
+                                            (pospcase-addform-specs obj))))))))
 
 (add-hook 'eieio-custom-mode-hook
           (lambda ()
