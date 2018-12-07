@@ -154,10 +154,10 @@
 * An Example Work Flow
 ** Custom File
   #+BEGIN_SRC emacs-lisp
-    (load-file "~/.emacs.d/pospcase-custom.el")
+    (load-file "~/.emacs.d/pospcase-user.el")
   #+END_SRC
 
-  In pospcase-custom.el, write following code:
+  In pospcase-user.el, write following code:
 
   #+BEGIN_SRC emacs-lisp
     (require 'pospcase)

@@ -1,124 +1,112 @@
-(require 'widget)
+;;; pospcase-addform.el: A handy form for `pospcase-font-lock' -*- lexical-binding: t -*-
 
-(eval-when-compile
-  (require 'wid-edit))
+(require 'eieio-custom)
 
-(defvar pospcase-addform--patterns)
-(defvar pospcase-addform--specs)
+(defgroup pospcase nil
+  "A `pcase' powered position extractor.")
 
-(defun pospcase-addform ()
-  "Create the widgets for `pospcase-font-lock'."
-  (interactive)
-  (switch-to-buffer "*Pospcase Font Lock*")
-  (kill-all-local-variables)
-  (make-local-variable 'pospcase-addform--patterns)
-  (make-local-variable 'pospcase-addform--specs)
-  (let ((inhibit-read-only t))
-    (erase-buffer))
-  (remove-overlays)
-  (widget-insert "Add Pospcase Font Lock Keywords.\n\n")
+(defcustom pospcase-user-file "~/.emacs.d/pospcase-user.el"
+  "Elisp file for user customization."
+  :group 'pospcase)
 
+(defcustom pospcase-addform--default
+  '(lisp-mode
+    (`(defun* ,name ,args . ,_))
+    font-lock-keyword-face
+    ((name . (font-lock-function-name-face))
+     ((args . list/1) .
+      ((pospcase-font-lock-variable-face-form (match-string 1)))))
+    (and (buffer-file-name)
+         (equal (file-name-nondirectory (buffer-file-name))
+                "asdf.lisp")))
 
-  (widget-create 'sexp
-                 :size 13
-                 :format "Mode: %v "
-                 'lisp-mode)
+  "Template Form for `pospcase-addform'."
 
-  (widget-create 'menu-choice
-                 :tag "Scope: "
-                 :value nil
-                 :notify (lambda (widget &rest ignore)
-                           (message "buffer-local-p is %s."
-                                    (widget-value widget)))
-                 '(item :tag "Global" :value nil)
-                 '(choice-item :tag "Buffer-local" t))
-
-  (widget-insert "\nPatterns:\n")
-  (setq pospcase-addform--patterns
-        (widget-create 'editable-list
-                       :entry-format "%i %d %v"
-                       :notify
-                       (lambda (widget &rest ignore)
-                         (let ((old (widget-get widget
-                                                ':list-length))
-                               (new (length (widget-value widget))))
-                           (unless (eq old new)
-                             (widget-put widget ':list-length new))))
-                       :value '(`(defun ,name ,args . ,_))
-                       '(sexp :value `(defun ,name ,args . ,_))))
-
-  (widget-insert "\nGuess specs ")
-  (widget-create 'link
-                 :notify (lambda (&rest ignore)
-                           (widget-value-set pospcase-addform--specs
-                                             '("En" "To" "Tre"))
-                           (widget-setup))
-                 "Generate")
-
-  (widget-create 'editable-list
-                 :entry-format "%i %d %v"
-                 :children (widget-create-child-and-convert
-		            widget 'custom-comment
-		            :parent widget
-		            :value (or comment "")))
-
-  (widget-insert "\n\nSpecs:\n")
-  (setq pospcase-addform--specs
-        (widget-create 'editable-list
-                       :entry-format "%i %d %v"
-                       :notify
-                       (lambda (widget &rest ignore)
-                         (let ((old (widget-get widget
-                                                ':list-length))
-                               (new (length (widget-value widget))))
-                           (unless (eq old new)
-                             (widget-put widget ':list-length new))))
-                       :value '((nil . font-lock-keyword-face)
-                                (name . (font-lock-function-name-face))
-                                ((args . list/1) . ((pospcase-font-lock-variable-face-form (match-string 1)))))
-                       '(sexp :type (cons var-pair font-list) :value nil)))
-
-  (widget-insert "\n")
-  (widget-create 'push-button
-                 :notify (lambda (&rest ignore)
-                           (if (= (length
-                                   (widget-value pospcase-addform--specs))
-                                  3)
-                               (message "Congratulation!")
-                             (error "Three was the count!")))
-                 "Save Keyword")
-  (widget-insert " ")
-  (widget-create 'push-button
-                 :notify (lambda (&rest ignore)
-                           (pospcase-addform))
-                 "Reset Keyword")
-  (widget-insert "\n")
-
-  (use-local-map widget-keymap)
-  (widget-setup)
-  (goto-char (point-min)))
-
-
-;;; eieio based attempt
+  :type '(list (symbol :tag "Mode")
+               (repeat :tag "List of patterns"
+                       (sexp :tag "Pattern"))
+               (symbol :tag "Keyword Face")
+               (repeat :tag "List of Specs"
+                       (cons :tag "Spec"
+                             (choice (cons :tag "Name/Submatcher"
+                                           (sexp :tag "Name")
+                                           (sexp :tag "Submatcher"))
+                                     (sexp :tag "Name")
+                                     )
+                             (list :tag "List of Faces"
+                                   (sexp :tag "Face"))))
+               (sexp :tag "Predicate"))
+  :group 'pospcase)
 
 (defclass pospcase-addform--container ()
   ((patterns :type list
+             :accessor patterns
              :initarg :patterns
-             :initform '(`(defun ,name ,args . ,_))
-             :custom (editable-list sexp)
-             :documentation "The list `pcase' patterns to match.")
-
+             :initform (cadr pospcase-addform--default)
+             :custom (editable-list (sexp :tag ""))
+             :documentation "⮴ Add pcase patterns.")
    (keyword-face :type symbol
+                 :accessor keyword-face
                  :initarg :keyword-face
-                 :initform 'font-lock-keyword-face
-                 :custom sexp
-                 :documentation "The face of the heading keyword.")
-
+                 :initform (caddr pospcase-addform--default)
+                 :custom (sexp :tag "")
+                 :documentation "⮴ Specify a face for the heading keyword.")
    (specs :type cons
+          :accessor specs
           :initarg :specs
-          :initform '(((foo . bar) . (baz)))
-          :custom (editable-list (cons sexp sexp))
-          :documentation "The spec list for `pospcase-font-lock'. The first of a list is (var-name . submatcher). The second is a list of faces.")))
+          :initform (cadddr pospcase-addform--default)
+          :custom (editable-list (cons :tag ""
+                                       (choice (symbol :tag "Variable")
+                                               (cons :tag "Variable/Submatcher"
+                                                     (symbol :tag "Variable")
+                                                     (symbol :tag "Submatcher")))
+                                       (list :tag "List of Faces"
+                                             (sexp :tag "Face"))))
+          :documentation "⮴ Specify variable/submatcher pair and face list.")
+   (mode :type symbol
+         :accessor mode
+         :initarg :mode
+         :initform (car pospcase-addform--default)
+         :custom (sexp :tag "")
+         :documentation "Specify mode to active the highlighting rule.")
+   (predicate :type (or null list)
+              :accessor predicate
+              :initform (car (cddddr pospcase-addform--default))
+              :custom (choice (const :tag "Always" nil)
+                              (sexp list))
+              :documentation "⮴ Specify predicate expression when to enable.")))
 
-(eieio-addform-object
- (make-instance 'pospcase-addform--container))
+(cl-defmethod eieio-done-customizing ((obj pospcase-addform--container))
+  (quit-window)
+  (with-current-buffer (find-file-noselect pospcase-user-file)
+    (goto-char (point-max))
+    (insert (pp-to-string
+             (if (predicate obj)
+                 `(add-hook ',(intern (concat (symbol-name (mode obj)) "-hook"))
+                            (lambda ()
+                              (when ,(predicate obj)
+                                (pospcase-font-lock ',(mode obj)
+                                                    ',(patterns obj)
+                                                    ',(cons (keyword-face obj)
+                                                            (specs obj))
+                                                    t))))
+               `(pospcase-font-lock ',(mode obj)
+                                    ',(patterns obj)
+                                    ',(cons (keyword-face obj)
+                                            (specs obj))))))))
+
+;;;###autoload
+(defun pospcase-addform ()
+  (interactive)
+  (let ((obj (make-instance 'pospcase-addform--container))
+        (g 'default))
+    (select-window
+     (display-buffer (get-buffer-create (concat
+                                         "*CUSTOMIZE "
+                                         (eieio-object-name obj)
+                                         " "
+                                         (symbol-name g)
+                                         "*"))))
+    (eieio-customize-object obj)))
+
+(provide 'pospcase-addform)
