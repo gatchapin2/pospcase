@@ -103,6 +103,8 @@
               (setq-local widget-push-button-suffix "")
               (setq-local completion-at-point-functions '(elisp-completion-at-point t)))))
 
+(put 'eieio-custom-mode 'derived-mode-parent 'emacs-lisp-mode) ; for smartparens
+
 ;;;###autoload
 (defun pospcase-addform ()
   (interactive)
