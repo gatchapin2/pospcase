@@ -243,14 +243,22 @@
 
    Then ~M-x pospcase-addform~.
 
-   If you read the previous section surely you can guess what each of
-   form represents. So add/delete/edit them to make your own
-   highlighting rule.
+   If you read the previous section surely you can guess what each
+   entity of the forms represents. Add/delete/edit them accordingly to
+   make your own highlighting rule.
 
    Once done, click on Accept button. It automatically generate
    identical code to what you wrote in the previous section in the
    user config file. If you see no problem with the code, evaluate it
    then reactivate the major-mode to apply the new highlighting rule.
+
+   I like writing Lisp code. Directly writing font-lock rule in my
+   config file has never bothered me. But sometimes tabbing through
+   and tinkering the form entries feels good. So here it is, if you
+   like this style of editing, ~pospcase-addform~ is here for you.
+
+   A minor inconvenience is you can’t comment your code within the
+   forms. You have to add it manually to the user config file later.
 
 
 * Before Writing Your Own Font-Lock Keywords

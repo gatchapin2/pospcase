@@ -337,3 +337,14 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-12-04 Tue 07:12]
   - State "TODO"       from              [2018-12-03 Mon 18:12]
+
+* DONE proper completion support for pospcase-addform
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-07 Fri 10:22
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-07 Fri 10:22]
+  - State "TODO"       from              [2018-12-07 Fri 10:13]

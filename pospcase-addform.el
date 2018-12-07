@@ -100,7 +100,8 @@
             (when (string-match "pospcase-addform--container" (buffer-name))
               (setq-local widget-button-face custom-button)
               (setq-local widget-push-button-prefix "")
-              (setq-local widget-push-button-suffix ""))))
+              (setq-local widget-push-button-suffix "")
+              (setq-local completion-at-point-functions '(elisp-completion-at-point t)))))
 
 ;;;###autoload
 (defun pospcase-addform ()
