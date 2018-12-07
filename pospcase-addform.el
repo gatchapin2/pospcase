@@ -60,7 +60,7 @@
                                                (cons :tag "Variable/Submatcher"
                                                      (symbol :tag "Variable")
                                                      (symbol :tag "Submatcher")))
-                                       (list :tag "List of Faces"
+                                       (editable-list :tag "List of Faces"
                                              (sexp :tag "Face"))))
           :documentation "⮴ Add variable/submatcher pair and face list.")
    (mode :type symbol
