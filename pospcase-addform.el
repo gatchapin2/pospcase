@@ -62,7 +62,7 @@
                                                      (symbol :tag "Submatcher")))
                                        (list :tag "List of Faces"
                                              (sexp :tag "Face"))))
-          :documentation "⮴ Specify variable/submatcher pair and face list.")
+          :documentation "⮴ Add variable/submatcher pair and face list.")
    (mode :type symbol
          :accessor mode
          :initarg :mode
@@ -94,6 +94,13 @@
                                     ',(patterns obj)
                                     ',(cons (keyword-face obj)
                                             (specs obj))))))))
+
+(add-hook 'eieio-custom-mode-hook
+          (lambda ()
+            (when (string-match "pospcase-addform--container" (buffer-name))
+              (setq-local widget-button-face custom-button)
+              (setq-local widget-push-button-prefix "")
+              (setq-local widget-push-button-suffix ""))))
 
 ;;;###autoload
 (defun pospcase-addform ()
