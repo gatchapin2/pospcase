@@ -68,7 +68,7 @@
          :initarg :mode
          :initform (car pospcase-addform--default)
          :custom (sexp :tag "")
-         :documentation "Specify mode to active the highlighting rule.")
+         :documentation "⮴ Specify mode to active the highlighting rule.")
    (predicate :type (or null list)
               :accessor predicate
               :initform (car (cddddr pospcase-addform--default))

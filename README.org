@@ -152,81 +152,106 @@
   Anchored-matchers. But I’ll explain with more details later.
 
 * An Example Work Flow
-** Custom File
-  #+BEGIN_SRC emacs-lisp
-    (load-file "~/.emacs.d/pospcase-user.el")
-  #+END_SRC
+** Good Old Way
+   We are going to use ~~/.emacs.d/pospcase-user.el~ to store custom
+   highlighting rules. (If you don’t like it, change the following
+   code appropriately)
 
-  In pospcase-user.el, write following code:
-
-  #+BEGIN_SRC emacs-lisp
-    (require 'pospcase)
-
-    (eval
-     `(defun my-add-new-font-lock-keyword ()
-        (interactive)
-        (let* ((str
-                (format "
-    (pospcase-font-lock
-     '%s
-     '(`(foo ,bar ,baz . ,_))
-     '(font-lock-keyword-face
-       (bar . (font-lock-function-name-face))
-       ((baz . list/1) . (font-lock-variable-name-face))))"
-                        major-mode)))
-          (find-file ,(buffer-file-name))
-          (goto-char (point-max))
-          (insert str "\n")
-          (backward-char (- (1+ (length str)) (string-match "foo" str))))))
-  #+END_SRC
-
-  And now whenever you encounter a new keyword which needs extra
-  highlighting for maximum readability, you can just ~M-x
-  my-add-new-font-lock-keyword~ and start writing a new keyword right
-  away with convenient cookie cutter (you can also write a new snippet
-  for Yasnippet if it suits you better).
-
-  If you are satisfied with the new keyword, save the buffer, ~C-M-x~ or
-  ~C-x C-e~ or whatever to activate it, then go back to your project and
-  reactivate the major mode, for example ~M-x lisp-mode~ for a Common
-  Lisp project. Now you see the new font-lock rule is applied and the
-  code is highlighted accordingly.
-
-** Buffer-Local Keywords
-   Lisp’s flexibility sometimes causes unfortunate accidents that two
-   people to choose the exact same keyword for complete different
-   purpose in their own codebases. Two different definitions means two
-   different highlighting rules. You need buffer-local keyword rules
-   for this.
-
-   For example, ASDF package system for Common Lisp defines ~defun*~ and
-   use it internally. To highlight the keyword you wrap your
-   ~pospcase-font-lock~ statement like this:
+   In pospcase-user.el, write following code:
 
    #+BEGIN_SRC emacs-lisp
-     (add-hook
-      'lisp-mode-hook
-      (lambda ()
-        (when (and (buffer-file-name)
-                   (equal (file-name-nondirectory (buffer-file-name)) "asdf.lisp"))
+     (require 'pospcase)
 
-          (pospcase-font-lock 'lisp-mode
-                              '(`(defun* ,name ,args . ,_)
-                                `(defgeneric* ,name ,args . ,_))
-                              '(font-lock-keyword-face
-                                (name .
-                                      (font-lock-function-name-face))
-                                ((args . list/1)
-                                 .
-                                 ((pospcase-font-lock-variable-face-form
-                                   (match-string 1)))))
-                              t))))          ; buffer-local-p
+     (eval
+      `(defun my-add-new-font-lock-keyword ()
+         (interactive)
+         (let* ((str
+                 (format "
+     (pospcase-font-lock
+      '%s
+      '(`(foo ,bar ,baz . ,_))
+      '(font-lock-keyword-face
+        (bar . (font-lock-function-name-face))
+        ((baz . list/1) . (font-lock-variable-name-face))))"
+                         major-mode)))
+           (find-file ,(buffer-file-name))
+           (goto-char (point-max))
+           (insert str "\n")
+           (backward-char (- (1+ (length str)) (string-match "foo" str))))))
    #+END_SRC
 
-   Writing a predicate for detecting which codebase the file belongs
-   is sometimes tricky and I can’t provide universal solution for the
-   problem. So be creative and invent your own method for codebase
-   detection if your use case is more complex than the above one.
+   Hereafter whenever you encounter a new keyword which needs extra
+   highlighting for maximum readability, you can just ~M-x
+   my-add-new-font-lock-keyword~ and start writing a new keyword right
+   away from the convenient cookie cutter (you can also write a new
+   snippet for Yasnippet if it’s your style).
+
+   If you are satisfied with the new keyword, save the buffer, ~C-M-x~
+   or ~C-x C-e~ or whatever command you use to evaluate the code, then
+   go back to your project and reactivate the major mode, for example
+   ~M-x lisp-mode~ for a Common Lisp buffer. Now you see the new
+   font-lock rule is applied and the code is highlighted accordingly.
+
+*** Buffer-Local Keywords
+    Lisp’s flexibility sometimes causes unfortunate accidents that two
+    people to choose the exact same keyword for complete different
+    purpose in their own codebases. Two different definitions means
+    two different highlighting rules. You need buffer-local keyword
+    rules for this.
+
+    For example, ASDF package system for Common Lisp defines ~defun*~
+    and use it internally. To highlight the keyword you wrap your
+    ~pospcase-font-lock~ statement like this:
+
+    #+BEGIN_SRC emacs-lisp
+      (add-hook
+       'lisp-mode-hook
+       (lambda ()
+         (when (and (buffer-file-name)
+                    (equal (file-name-nondirectory (buffer-file-name)) "asdf.lisp"))
+ 
+           (pospcase-font-lock 'lisp-mode
+                               '(`(defun* ,name ,args . ,_)
+                                 `(defgeneric* ,name ,args . ,_))
+                               '(font-lock-keyword-face
+                                 (name .
+                                       (font-lock-function-name-face))
+                                 ((args . list/1)
+                                  .
+                                  ((pospcase-font-lock-variable-face-form
+                                    (match-string 1)))))
+                               t))))          ; buffer-local-p
+    #+END_SRC
+
+    Writing a predicate for detecting which codebase the file belongs
+    is sometimes tricky and I can’t provide universal solution for the
+    problem. So be creative and invent your own method for codebase
+    detection if your use case is more complex than the above one.
+
+** Add-Form
+   All I’ve done in the previous section can be achieved without
+   touching Emacs Lisp code, by using the command ~pospcase-addform~. It
+   doesn’t completely free you from code tweaking but at least it
+   gives you fancy forms to fill.
+
+   To use the command, run ~M-x load-library pospcase-addform~ or
+   evaluate the following code:
+
+   #+BEGIN_SRC emacs-lisp
+     (require 'pospcase-addform)
+   #+END_SRC
+
+   Then ~M-x pospcase-addform~.
+
+   If you read the previous section surely you can guess what each of
+   form represents. So add/delete/edit them to make your own
+   highlighting rule.
+
+   Once done, click on Accept button. It automatically generate
+   identical code to what you wrote in the previous section in the
+   user config file. If you see no problem with the code, evaluate it
+   then reactivate the major-mode to apply the new highlighting rule.
+
 
 * Before Writing Your Own Font-Lock Keywords
   Unfortunately current ~pospcase-font-lock~ design doesn’t simply allow
