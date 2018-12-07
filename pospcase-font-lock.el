@@ -749,7 +749,8 @@ examples."
                         ((slots . list/1) . (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(`(lambda ,args . ,_)
-                        `(with-slots ,args . ,_))
+                        `(with-slots ,args . ,_)
+                        `(with-accessors ,args . ,_))
                       '(font-lock-keyword-face
                         ((args . list/1) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
@@ -768,12 +769,6 @@ examples."
                         ((binds . list/2) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))
                           font-lock-constant-face))))
-  (pospcase-font-lock 'lisp-mode
-                      '(`(with-accessors ,args . ,_))
-                      '(font-lock-keyword-face
-                        ((args . list/2) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))
-                          font-lock-type-face))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defmethod (setf ,name) ,(pred keywordp) ,args . ,_)
                         `(defmethod (setf ,name) ,args . ,_)
