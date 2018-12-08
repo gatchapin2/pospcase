@@ -615,16 +615,7 @@ with better comments."
                           '(save-excursion
                              (condition-case nil
                                  (progn
-                                   (forward-char)
-                                   (forward-sexp 2) ; skip keyword and name
-                                   (forward-comment most-positive-fixnum)
-                                   (when (equal
-                                          (syntax-after (point))
-                                          '(7)) ; skip docstring if it exists
-                                     (forward-sexp)
-                                     (forward-comment most-positive-fixnum))
-                                   (setq pospcase--fence-start
-                                         (ignore-errors (pospcase-read (point))))
+                                   (goto-char (match-end 0))
                                    (up-list)
                                    (point))
                                (error (match-end 0)))))
@@ -637,8 +628,8 @@ with better comments."
                                      (ignore-errors (pospcase-read end)))
                                (condition-case nil
                                    (progn
-                                     (backward-up-list)
-                                     (scan-sexps (point) 1))
+                                     (up-list)
+                                     (point))
                                  (error (goto-char end))))))
 
                          (t (error "Not supported (cdr submatcher): %s" (cdr submatcher))))))
@@ -655,14 +646,24 @@ with better comments."
                         (if (and ,(not (memq (cdr submatcher) pospcase-parameter-group))
                                  (memq nil ,(cons 'list vars))) ; not exact match
                             (goto-char submatcher-end)
+
                           ,(unless (null non-subvars)
                              `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                          ,(if (memq (cdr submatcher) pospcase-list-group)
-                               `(progn
-                                  (goto-char (car ,(car submatcher)))
-                                  (cdr ,(car submatcher)))
-                             'submatcher-end)))
+                          ,(cond
+                            ((memq (cdr submatcher) pospcase-list-group)
+                             `(progn
+                                (goto-char (car ,(car submatcher)))
+                                (cdr ,(car submatcher))))
+
+                            ((memq (cdr submatcher) pospcase-defstruct-group)
+                             `(progn
+                                (setq pospcase--fence-start
+                                      (ignore-errors (pospcase-read (car ,(car submatcher)))))
+                                submatcher-end))
+
+                            (t 'submatcher-end))))
+
                     (error (goto-char submatcher-end))))))))
            (pospcase--postform)
            ,@(cl-loop with i = 0
