@@ -382,11 +382,12 @@
     list. The most notorious example is ~destructuring-bind~ like:
 
     #+BEGIN_SRC emacs-lisp
-      (destructuring-bind (foo (bar
-                                &key (baz 1) (quux 2)))       ; here, the symbol &key change the rule
+      (let ((meow 1) (woof 2))
+        (destructuring-bind (foo (bar
+                                &key (baz meow) (quux woof)))
           '(1 (2 :quux 4 :baz 3))
 
-        (list foo bar baz quux))
+        (list foo bar baz quux)))
     #+END_SRC
 
     It matches in-middle keyword appearance, then overwrite the

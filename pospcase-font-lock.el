@@ -536,71 +536,67 @@ with better comments."
             (goto-char (match-beginning 0))
 
             (let ((table (syntax-ppss)))
-              (cond
-               ((or (nth 3 table)       ; in string
-                    (nth 4 table))      ; in comment
-                (goto-char (match-end 0)))
+              (if (or (nth 3 table)       ; in string
+                      (nth 4 table))      ; in comment
+                  (goto-char (match-end 0))
+                (condition-case nil
+                    (multiple-value-bind ,vars (pospcase-at
+                                                (point)
+                                                ',(mapcar
+                                                   (lambda (pat)
+                                                     (list pat (cons 'values vars)))
+                                                   patterns))
+                      (if (and ,(not (memq (cdr submatcher) pospcase-parameter-group))
+                               (memq nil ,(cons 'list vars))) ; not exact match
+                          (goto-char submatcher-end)
 
-               (t
-                (let ((submatcher-end
-                       ,(cond
+                        ,(unless (null non-subvars)
+                           `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                         ((memq (cdr submatcher) pospcase-list-group)
-                          '(match-end 0))
+                        ,(cond
+                          ((memq (cdr submatcher) pospcase-list-group)
+                           `(progn
+                              (goto-char (car ,(car submatcher)))
+                              (cdr ,(car submatcher))))
 
-                         ((or (null (cdr submatcher))
-                              (memq (cdr submatcher) pospcase-defstruct-group))
-                          '(save-excursion
-                             (condition-case nil
-                                 (progn
-                                   (goto-char (match-end 0))
-                                   (up-list)
-                                   (point))
-                               (error (match-end 0)))))
+                          ((memq (cdr submatcher) pospcase-defstruct-group)
+                           `(progn
+                              (setq pospcase--fence-start
+                                    (ignore-errors (pospcase-read (car ,(car submatcher)))))
+                              (save-excursion
+                                (condition-case nil
+                                    (progn
+                                      (goto-char (match-end 0))
+                                      (up-list)
+                                      (point))
+                                  (error (match-end 0))))))
 
-                         ((memq (cdr submatcher) pospcase-parameter-group)
-                          '(if (memq (char-before (point)) '(?\\ ?\' ?\` ?\,))
-                               (goto-char (match-end 0))
-                             (let ((end (match-end 0)))
-                               (setq pospcase--fence-start
-                                     (ignore-errors (pospcase-read end)))
-                               (condition-case nil
-                                   (progn
-                                     (up-list)
-                                     (point))
-                                 (error (goto-char end))))))
-
-                         (t (error "Not supported (cdr submatcher): %s" (cdr submatcher))))))
-
-                  (condition-case nil
-                      (multiple-value-bind ,vars (pospcase-at
-                                                  (point)
-                                                  ',(mapcar
-                                                     (lambda (pat)
-                                                       (list pat (cons 'values vars)))
-                                                     patterns))
-                        (if (and ,(not (memq (cdr submatcher) pospcase-parameter-group))
-                                 (memq nil ,(cons 'list vars))) ; not exact match
-                            (goto-char submatcher-end)
-
-                          ,(unless (null non-subvars)
-                             `(setq pospcase--prematches ,(cons 'list non-subvars)))
-
-                          ,(cond
-                            ((memq (cdr submatcher) pospcase-list-group)
-                             `(progn
-                                (goto-char (car ,(car submatcher)))
-                                (cdr ,(car submatcher))))
-
-                            ((memq (cdr submatcher) pospcase-defstruct-group)
-                             `(progn
+                          ((memq (cdr submatcher) pospcase-parameter-group)
+                           '(let ((end (match-end 0)))
+                              (if (memq (char-before (point)) '(?\\ ?\' ?\` ?\,))
+                                  (goto-char end)
                                 (setq pospcase--fence-start
-                                      (ignore-errors (pospcase-read (car ,(car submatcher)))))
-                                submatcher-end))
+                                      (ignore-errors (pospcase-read end)))
+                                (condition-case nil
+                                    (prog1
+                                        (save-excursion
+                                          (up-list)
+                                          (point))
+                                      (backward-up-list))
+                                  (error (goto-char end))))))
 
-                            (t 'submatcher-end))))
+                          ((null submatcher)
+                           '(save-excursion
+                              (condition-case nil
+                                  (progn
+                                    (goto-char (match-end 0))
+                                    (up-list)
+                                    (point))
+                                (error (match-end 0)))))
 
-                    (error (goto-char submatcher-end))))))))
+                          (t '(match-end 0)))))
+
+                  (error (goto-char (match-end 0)))))))
 
            (pospcase--postform)
 
