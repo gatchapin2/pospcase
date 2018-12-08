@@ -402,8 +402,6 @@ and strings."
      ,@body))
 
 
-;;; easy font-lock
-
 (defvar pospcase-font-lock-lisp-keywords
   ;;
   ;; non-`pcase' powered
