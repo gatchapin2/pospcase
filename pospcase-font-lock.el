@@ -547,20 +547,11 @@ with better comments."
                 (let ((submatcher-end
                        ,(cond
 
-                         ((null (cdr submatcher))
-                          '(match-end 0))
-
                          ((memq (cdr submatcher) pospcase-list-group)
                           '(match-end 0))
 
-                         ;; Unlike straightforward `pospcase-list-group'
-                         ;; `pospcase-defstruct-group' and
-                         ;; `pospcase-parameter-group' starts
-                         ;; highlighting in middle of a list by
-                         ;; setting `pospcase--fence-start' for
-                         ;; chopping unnecessary heading sexps off.
-
-                         ((memq (cdr submatcher) pospcase-defstruct-group)
+                         ((or (null (cdr submatcher))
+                              (memq (cdr submatcher) pospcase-defstruct-group))
                           '(save-excursion
                              (condition-case nil
                                  (progn
@@ -582,8 +573,6 @@ with better comments."
                                  (error (goto-char end))))))
 
                          (t (error "Not supported (cdr submatcher): %s" (cdr submatcher))))))
-
-                  ;; 
 
                   (condition-case nil
                       (multiple-value-bind ,vars (pospcase-at
