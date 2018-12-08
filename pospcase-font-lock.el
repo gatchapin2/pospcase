@@ -5,32 +5,6 @@
 ;; Non `pcase' powered code.
 ;; Stolen from lisp-extra-font-lock, for a historical reason
 
-(defcustom pospcase-font-lock-dolist-functions
-  '("dolist"
-    "dotimes"
-    "with-open-file"
-    "with-open-stream"
-    "with-output-to-string"
-    "with-input-from-string"
-    "cl-dolist"
-    "cl-dotimes")
-  "List of function using same syntax as `dolist' to bind variables."
-  :type '(repeat string)
-  :group 'pospcase-font-lock)
-
-(defcustom pospcase-font-lock-bind-first-functions
-  '("condition-case"
-    "define-symbol-macro"
-    "defvar*"
-    "defconstant*"
-    "defparameter*"
-    "define-special"
-    "define-interactive-keymap"
-    "define-stumpwm-type")
-  "List of function that bind their first argument."
-  :type '(repeat string)
-  :group 'pospcase-font-lock)
-
 (defcustom pospcase-font-lock-loop-functions
   '("loop"
     "cl-loop")
@@ -155,14 +129,9 @@ the end of the quoted expression."
     "when" "while" "windows")
   "List of `cl-loop' named parameters, excluding variable binding ones.")
 
-(defvar pospcase-font-lock-loop-keywords-with-var '("for"
-                                                    "index"
-                                                    "into"
-                                                    "with"
-                                                    ":for"
-                                                    ":index"
-                                                    ":into"
-                                                    ":with")
+(defvar pospcase-font-lock-loop-keywords-with-var
+  (cl-loop for kw in '("for" "index" "into" "with")
+           append (list kw (concat ":" kw)))
   "List of `cl-loop' named variable binding parameters.")
 
 (defun pospcase-font-lock-match-loop-keywords (limit)
@@ -443,32 +412,12 @@ and strings."
          (symbol-end "\\_>")
          (symbol (concat symbol-start
                          "\\(?:\\sw\\|\\s_\\|\\\\.\\)+"
-                         symbol-end))
-         (space+ "\\s +"))
+                         symbol-end)))
     (cl-flet ((regexp-or (&rest exps)
                          (concat "\\(?:"
                                  (mapconcat #'identity exps "\\|")
                                  "\\)")))
-      `(;; For `dolist'
-        (,(concat "("
-                  (regexp-opt pospcase-font-lock-dolist-functions)
-                  space+
-                  "(\\("
-                  symbol
-                  "\\)")
-         ;; Faces
-         (1 ,(pospcase-font-lock-variable-face-form '(match-string 1))))
-        ;; For `condition-case'
-        (,(concat "("
-                  (regexp-opt pospcase-font-lock-bind-first-functions)
-                  space+
-                  "\\("
-                  symbol
-                  "\\)")
-         ;; Faces
-         (1 (and (not (string= (match-string 1) "nil"))
-                 ,(pospcase-font-lock-variable-face-form '(match-string 1)))))
-        ;; For `cl-loop'
+      `(;; For `cl-loop'
         (,(concat "("
                   (regexp-opt pospcase-font-lock-loop-functions)
                   "\\_>")
@@ -599,7 +548,7 @@ with better comments."
                        ,(cond
 
                          ((null (cdr submatcher))
-                          '(goto-char (match-end 0)))
+                          '(match-end 0))
 
                          ((memq (cdr submatcher) pospcase-list-group)
                           '(match-end 0))
@@ -665,7 +614,9 @@ with better comments."
                             (t 'submatcher-end))))
 
                     (error (goto-char submatcher-end))))))))
+
            (pospcase--postform)
+
            ,@(cl-loop with i = 0
                       for spec in (cdr specs)
                       if (or (symbolp (car spec))
@@ -678,7 +629,8 @@ with better comments."
                                                (apply (car font) (cdr font)))
                                              nil t))
                                      (cdr spec))))))
-      submatchers))))
+
+      (or submatchers '(nil))))))
 
 (defun pospcase-font-lock (mode patterns specs &optional buffer-local-p)
   "Font lock keywords generator with `pcase' powered pattern
@@ -815,8 +767,14 @@ examples."
                          (font-lock-function-name-face
                           (pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(defstruct ,name ,(pred stringp) ,first . ,_)
-                        `(defstruct ,name ,first . ,_))
+                      '(`(defstruct (,name . ,_) ,(pred stringp) ,first . ,_)
+                        `(defstruct (,name . ,_) ,first . ,_)
+                        `(defstruct ,name ,(pred stringp) ,first . ,_)
+                        `(defstruct ,name ,first . ,_)                        
+                        `(cl-defstruct (,name . ,_) ,(pred stringp) ,first . ,_)
+                        `(cl-defstruct (,name . ,_) ,first . ,_)
+                        `(cl-defstruct ,name ,(pred stringp) ,first . ,_)
+                        `(cl-defstruct ,name ,first . ,_))
                       '(font-lock-keyword-face
                         (name . (font-lock-type-face))
                         ((first . defstruct) .
@@ -827,7 +785,30 @@ examples."
                         ((pospcase--dummy . parameter) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))
                           default
-                          default)))))
+                          default))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(dolist (,var . ,_) . ,_)
+                        `(dotimes (,var . ,_) . ,_)
+                        `(with-open-file (,var . ,_) . ,_)
+                        `(with-open-stream (,var . ,_) . ,_)
+                        `(with-output-to-string (,var . ,_) . ,_)
+                        `(with-input-from-string (,var . ,_) . ,_)
+                        `(cl-dolist (,var . ,_) . ,_)
+                        `(cl-dotimes (,var . ,_) . ,_))
+                      '(font-lock-keyword-face
+                        (var . ((pospcase-font-lock-variable-face-form (match-string 1))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(condition-case ,var . ,_)
+                        `(define-symbol-macro ,var . ,_)
+                        `(defvar* ,var . ,_)
+                        `(defconstant* ,var . ,_)
+                        `(defparameter* ,var . ,_)
+                        `(define-special ,var . ,_)
+                        `(define-interactive-keymap ,var . ,_)
+                        `(define-stumpwm-type ,var . ,_))
+                      '(font-lock-keyword-face
+                        (var . ((pospcase-font-lock-variable-face-form (match-string 1)))))))
+
 
 ;;;###autoload
 (defun pospcase-font-lock-lisp-setup ()

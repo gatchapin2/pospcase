@@ -220,9 +220,11 @@ backquotes are not supported."
   (cl-labels
       ((meta-pos-symbol (sym)
                         (list '\,
-                              (intern (concat
-                                       (symbol-name sym)
-                                       "-meta-pos"))))
+                              (if (eq sym '_)
+                                  '_
+                                (intern (concat
+                                         (symbol-name sym)
+                                         "-meta-pos")))))
        (walk (node)
                (if (consp node) ; note that in elisp `,foo' is `(\, foo)'
                    (cond
