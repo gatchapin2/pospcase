@@ -231,7 +231,8 @@ and strings."
   "Catch parsing error, and call `pospcase--iterator'."
   `(condition-case nil
        (when (< (point) ,limit)
-         (unless (or pospcase--matches
+         (unless (or pospcase--ignore
+                     pospcase--matches
                      pospcase--iterating)
            (let ((temp (ignore-errors
                          (read-from-string
@@ -400,7 +401,8 @@ nested list."
   `(progn
      (setq pospcase--matches nil
            pospcase--prematches nil
-           pospcase--fence-start nil)
+           pospcase--fence-start nil
+           pospcase--ignore nil)
      ,@body))
 
 
@@ -558,69 +560,68 @@ with better comments."
                                                    (lambda (pat)
                                                      (list pat (cons 'values vars)))
                                                    patterns))
-                      (if (and ,(not (memq (cdr submatcher) pospcase-parameter-group))
-                               (memq nil ,(cons 'list vars))) ; not exact match
-                          (goto-char submatcher-end)
+                      ,(unless (null non-subvars)
+                         `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                        ,(unless (null non-subvars)
-                           `(setq pospcase--prematches ,(cons 'list non-subvars)))
+                      ,(cond
+                        ((memq (cdr submatcher) pospcase-list-group)
+                         `(progn
+                            (goto-char (car ,(car submatcher)))
+                            (cdr ,(car submatcher))))
 
-                        ,(cond
-                          ((memq (cdr submatcher) pospcase-list-group)
-                           `(progn
-                              (goto-char (car ,(car submatcher)))
-                              (cdr ,(car submatcher))))
-
-                          ((memq (cdr submatcher) pospcase-defstruct-group)
-                           `(progn
-                              (setq pospcase--fence-start
-                                    (ignore-errors (pospcase-read (car ,(car submatcher)))))
-                              (save-excursion
-                                (condition-case nil
-                                    (progn
-                                      (goto-char (match-end 0))
-                                      (up-list)
-                                      (point))
-                                  (error (match-end 0))))))
-
-                          ((memq (cdr submatcher) pospcase-parameter-group)
-                           '(let ((end (match-end 0)))
-                              (if (memq (char-before (point))
-                                        '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
-                                  (goto-char end)
-                                (setq pospcase--fence-start
-                                      (ignore-errors (pospcase-read end)))
-                                (condition-case nil
-                                    (prog1
-                                        (save-excursion
-                                          (up-list)
-                                          (point))
-                                      (backward-up-list))
-                                  (error (goto-char end))))))
-
-                          ((memq (cdr submatcher) pospcase-loop-group)
-                           '(let ((end (match-end 0)))
-                              (if (memq (char-before (point))
-                                        '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
-                                  (goto-char end)
-                                (setq pospcase--fence-start
-                                      (ignore-errors (pospcase-read end)))
-                                (condition-case nil
-                                    (prog1
-                                        (scan-sexps (point) 1)
-                                      (backward-up-list))
-                                  (error (goto-char end))))))
-
-                          ((null submatcher)
-                           '(save-excursion
+                        ((memq (cdr submatcher) pospcase-defstruct-group)
+                         `(progn
+                            (setq pospcase--fence-start
+                                  (ignore-errors (pospcase-read (car ,(car submatcher)))))
+                            (save-excursion
                               (condition-case nil
                                   (progn
                                     (goto-char (match-end 0))
                                     (up-list)
                                     (point))
-                                (error (match-end 0)))))
+                                (error (match-end 0))))))
 
-                          (t '(match-end 0)))))
+                        ((memq (cdr submatcher) pospcase-parameter-group)
+                         '(let ((end (match-end 0)))
+                            (if (memq (char-before (point))
+                                      '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
+                                (progn
+                                  (setq pospcase--ignore t)
+                                  (1+ (goto-char (1- end))))
+                              (setq pospcase--fence-start
+                                    (ignore-errors (pospcase-read end)))
+                              (condition-case nil
+                                  (prog1
+                                      (save-excursion
+                                        (up-list)
+                                        (point))
+                                    (backward-up-list))
+                                (error (goto-char end))))))
+
+                        ((memq (cdr submatcher) pospcase-loop-group)
+                         '(let ((end (match-end 0)))
+                            (if (memq (char-before (point))
+                                      '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
+                                (progn
+                                  (setq pospcase--ignore t)
+                                  (1+ (goto-char (1- end))))
+                              (goto-char end)
+                              (setq pospcase--fence-start
+                                    (ignore-errors (pospcase-read end)))
+                              (condition-case nil
+                                  (scan-sexps (point) 1)
+                                (error (goto-char end))))))
+
+                        ((null submatcher)
+                         '(save-excursion
+                            (condition-case nil
+                                (progn
+                                  (goto-char (match-end 0))
+                                  (up-list)
+                                  (point))
+                              (error (match-end 0)))))
+
+                        (t '(match-end 0))))
 
                   (error (goto-char (match-end 0)))))))
 

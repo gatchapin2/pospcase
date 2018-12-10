@@ -372,3 +372,27 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   - State "TODO"       from              [2018-12-10 Mon 12:55]
 
  Especially I want (and ’foo bar) to work
+
+* DONE quoted parameter/loop-var unhighlight the rest of the line
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-10 Mon 15:32
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-10 Mon 15:32]
+  - State "TODO"       from              [2018-12-10 Mon 15:16]
+
+  not just
+
+  #+BEGIN_SRC emacs-lisp
+    (cl-loop 'for foo for bar)
+  #+END_SRC
+
+  but
+
+  #+BEGIN_SRC emacs-lisp
+    (cl-loop 'for foo) (cl-loop for bar)
+  #+END_SRC
+
