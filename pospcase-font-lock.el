@@ -573,13 +573,12 @@ with better comments."
                          `(progn
                             (setq pospcase--fence-start
                                   (ignore-errors (pospcase-read (car ,(car submatcher)))))
-                            (save-excursion
-                              (condition-case nil
-                                  (progn
-                                    (goto-char (match-end 0))
-                                    (up-list)
-                                    (point))
-                                (error (match-end 0))))))
+                            (condition-case nil
+                                (save-excursion
+                                  (goto-char (match-end 0))
+                                  (up-list)
+                                  (point))
+                              (error (1+ (goto-char (1- (match-end 0))))))))
 
                         ((memq (cdr submatcher) pospcase-parameter-group)
                          '(let ((end (match-end 0)))
@@ -596,7 +595,7 @@ with better comments."
                                         (up-list)
                                         (point))
                                     (backward-up-list))
-                                (error (goto-char end))))))
+                                (error (1+ (goto-char (1- end))))))))
 
                         ((memq (cdr submatcher) pospcase-loop-group)
                          '(let ((end (match-end 0)))
@@ -610,18 +609,14 @@ with better comments."
                                     (ignore-errors (pospcase-read end)))
                               (condition-case nil
                                   (scan-sexps (point) 1)
-                                (error (goto-char end))))))
+                                (error (1+ (goto-char (1- end))))))))
 
                         ((null submatcher)
-                         '(save-excursion
-                            (condition-case nil
-                                (progn
-                                  (goto-char (match-end 0))
-                                  (up-list)
-                                  (point))
-                              (error (match-end 0)))))
+                         '(condition-case nil
+                              (scan-sexps (point) 1)
+                            (error (1+ (goto-char (1- (match-end 0)))))))
 
-                        (t '(match-end 0))))
+                        (t (error "Not supported submatcher: %s" submatcher))))
 
                   (error (goto-char (match-end 0)))))))
 
