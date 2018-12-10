@@ -216,8 +216,20 @@ which returns:
 
 (defmacro pospcase-translate (matcher)
   "Translate `pcase' matcher pattern (usually backquoted) to
-matcher pattern consumable for `pospcase'. Beware nested
-backquotes are not supported."
+matcher pattern consumable for `pospcase'.
+
+Beware this macro support severely limited patterns of
+`pcase'. Only plain symbols are bind-able.
+
+Patterns like
+
+  `,(or (and 'foo bar) (and 'bar quux))
+
+or
+
+  `,(and 'foo (let bar 123))
+
+are beyond the scope of `pospcase'."
   (cl-labels
       ((meta-pos-symbol (sym)
                         (list '\,

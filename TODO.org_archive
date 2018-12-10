@@ -359,3 +359,16 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-12-08 Sat 10:30]
   - State "TODO"       from              [2018-12-08 Sat 10:07]
+
+* HALT more pcase pattern support for pospcase-translate
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-10 Mon 14:12
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: HALT
+  :END:
+  - State "HALT"       from "TODO"       [2018-12-10 Mon 14:12]
+  - State "TODO"       from              [2018-12-10 Mon 12:55]
+
+ Especially I want (and ’foo bar) to work

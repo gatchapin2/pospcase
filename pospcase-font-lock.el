@@ -107,27 +107,34 @@ the end of the quoted expression."
          t)))
 
 (defvar pospcase-font-lock-loop-keywords
-  '("=" "above" "across" "across-ref" "always" "and" "append" "as"
-    "being" "below" "buffer" "buffers" "by"
-    "collect" "collecting" "concat" "count"
-    "do" "doing" "downfrom" "downto"
-    "each" "element" "elements" "else" "end"
-    "extent" "extents" "external-symbol" "external-symbols"
-    "finally" "frames" "from"
-    "hash-key" "hash-keys" "hash-value" "hash-values"
-    "if" "in" "in-ref" "initially" "interval" "intervals"
-    "key-binding" "key-bindings" "key-code" "key-codes" "key-seq" "key-seqs"
-    "maximize" "minimize"
-    "named" "nconc" "nconcing" "never"
-    "of" "of-ref" "on" "overlay" "overlays"
-    "present-symbol" "present-symbols" "property"
-    "repeat" "return"
-    "screen" "screens" "sum" "symbol" "symbols"
-    "the" "then" "thereis" "to"
-    "unless" "until" "upfrom" "upto" "using"
-    "vconcat"
-    "when" "while" "windows")
-  "List of `cl-loop' named parameters, excluding variable binding ones.")
+  (concat
+   "\\_<"
+   "\\("
+   (regexp-opt
+    '("=" "above" "across" "across-ref" "always" "and" "append" "as"
+      "being" "below" "buffer" "buffers" "by"
+      "collect" "collecting" "concat" "count"
+      "do" "doing" "downfrom" "downto"
+      "each" "element" "elements" "else" "end"
+      "extent" "extents" "external-symbol" "external-symbols"
+      "finally" "frames" "from"
+      "hash-key" "hash-keys" "hash-value" "hash-values"
+      "if" "in" "in-ref" "initially" "interval" "intervals"
+      "key-binding" "key-bindings" "key-code" "key-codes" "key-seq" "key-seqs"
+      "maximize" "minimize"
+      "named" "nconc" "nconcing" "never"
+      "of" "of-ref" "on" "overlay" "overlays"
+      "present-symbol" "present-symbols" "property"
+      "repeat" "return"
+      "screen" "screens" "sum" "symbol" "symbols"
+      "the" "then" "thereis" "to"
+      "unless" "until" "upfrom" "upto" "using"
+      "vconcat"
+      "when" "while" "windows"
+      "for" "index" "into" "with"))
+   "\\)"
+   "\\_>")
+  "Regexp of `cl-loop' named parameters, excluding variable binding ones.")
 
 (defun pospcase-font-lock-match-loop-keywords (limit)
   "Match named keyword of `loop' and highlight variable arguments."
@@ -135,13 +142,7 @@ the end of the quoted expression."
       (progn
         (forward-comment most-positive-fixnum)
         (and (< (point) limit)
-             (not (looking-at
-                   (concat
-                    "\\_<"
-                    "\\("
-                    (regexp-opt pospcase-font-lock-loop-keywords)
-                    "\\)"
-                    "\\_>")))))
+             (not (looking-at pospcase-font-lock-loop-keywords))))
     (condition-case nil
         (forward-sexp)
       (error (goto-char limit))))
@@ -529,8 +530,10 @@ with better comments."
     (if (string-match "," matcher)
         (error "In-middle keyword is not supported.")
       (setq matcher (concat matcher "\\_>\\s *")))
-    (cons
-     `(,keyword . ,(car specs))
+    (append
+     (if (car specs)
+         (list `(,keyword . ,(car specs)))
+       nil)
      (mapcar
       (lambda (submatcher)
         `(,matcher
@@ -796,7 +799,7 @@ examples."
                           default))))
   (pospcase-font-lock 'lisp-mode
                       '(for :for index :index into :into with :with)
-                      '(font-lock-keyword-face
+                      '(nil
                         ((pospcase--dummy . loop) .
                          ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
