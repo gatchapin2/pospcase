@@ -1,6 +1,6 @@
 ;;; pospcase.el -- `pcase' powered position extractor -*- lexical-binding: t -*-
 
-(defvar pospcase--elispify-alist
+(defcustom pospcase--elispify-alist
   (let* ((sym "\\(?:\\sw\\|\\s_\\|\\\\.\\)")
          (sym* (concat "\\(" sym "*" "\\)"))
          (sym+ (concat "\\(" sym "+" "\\)"))
@@ -39,7 +39,8 @@
       (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
       (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2)))
   "Used for simple regexp based translation from Common Lisp
-  S-expression to Emacs Lisp.")
+  S-expression to Emacs Lisp."
+  :type 'alist)
 
 (defun pospcase--buffer-substring (start end)
   "`buffer-substring' with regexp based Elisp-ification."

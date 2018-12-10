@@ -129,11 +129,6 @@ the end of the quoted expression."
     "when" "while" "windows")
   "List of `cl-loop' named parameters, excluding variable binding ones.")
 
-(defvar pospcase-font-lock-loop-keywords-with-var
-  (cl-loop for kw in '("for" "index" "into" "with")
-           append (list kw (concat ":" kw)))
-  "List of `cl-loop' named variable binding parameters.")
-
 (defun pospcase-font-lock-match-loop-keywords (limit)
   "Match named keyword of `loop' and highlight variable arguments."
   (while
@@ -144,9 +139,7 @@ the end of the quoted expression."
                    (concat
                     "\\_<"
                     "\\("
-                    (regexp-opt (append
-                                 pospcase-font-lock-loop-keywords-with-var
-                                 pospcase-font-lock-loop-keywords))
+                    (regexp-opt pospcase-font-lock-loop-keywords)
                     "\\)"
                     "\\_>")))))
     (condition-case nil
@@ -155,21 +148,6 @@ the end of the quoted expression."
   (if (not (< (point) limit))
       nil
     (goto-char (match-end 0))
-    (when (member (match-string 1) pospcase-font-lock-loop-keywords-with-var)
-      (forward-comment most-positive-fixnum)
-      (let ((var-start (point)))
-        (when (condition-case nil
-                  (progn
-                    (forward-sexp)
-                    t)
-                (error nil))
-          (set-match-data (list
-                           (match-beginning 0)
-                           (point)
-                           (match-beginning 1)
-                           (match-end 1)
-                           var-start
-                           (point))))))
     t))
 
 (defun pospcase-font-lock-is-in-comment-or-string (pos)
@@ -221,6 +199,9 @@ and strings."
   "Same as `list'. But attaches non-submatcher based matches if they exist."
   (append pospcase--prematches matches))
 
+(defvar pospcase--iterating nil
+  "Internal variable for deciding if the iterator is active.")
+
 (defun pospcase--iterator (limit)
   "Actual iterator."
   (if pospcase--matches
@@ -233,6 +214,7 @@ and strings."
         t)
     (goto-char limit)
     (set-match-data nil)
+    (setq pospcase--iterating nil)
     nil))
 
 (defun pospcase-match-nil (limit)
@@ -244,11 +226,12 @@ and strings."
         (pospcase--iterator limit))
     nil))
 
-(defmacro pospcase--call-iterator (clause limit)
+(defmacro pospcase--call-iterator (clause limit &optional allow-atom-p)
   "Catch parsing error, and call `pospcase--iterator'."
   `(condition-case nil
        (when (< (point) ,limit)
-         (unless pospcase--matches      ; initialize
+         (unless (or pospcase--matches
+                     pospcase--iterating)
            (let ((temp (ignore-errors
                          (read-from-string
                           (pospcase--buffer-substring (point) ,limit)))))
@@ -257,14 +240,16 @@ and strings."
                     ((null temp) nil)
                     ((and (consp temp)
                           (or (null (car temp)) ; empty list at `point'
-                              (atom (car temp)))) ; not even list
+                              ,(if allow-atom-p
+                                   nil
+                                 '(atom (car temp)))))
                      (if pospcase--prematches
                          (prog1
                              (list pospcase--prematches)
                            (setq pospcase--prematches nil))
                        nil))
-                    (t (ignore-errors ,clause)))))
-           (goto-char (1- ,limit)))     ; is there better idea?
+                    (t (ignore-errors ,clause)))
+                   pospcase--iterating t)))
          (pospcase--iterator ,limit))
      (error
       (goto-char ,limit)
@@ -365,7 +350,8 @@ and strings."
   "Matcher iterator for symbols in an arbitrarily nested list."
   (pospcase--call-iterator
    (pospcase-collect-all-symbols (pospcase-read (point)))
-   limit))
+   limit
+   t))
 
 ;; alternate implementation without `pospcase-read'. only collects symbols
 (defun pospcase-match-destructuring-alt (limit)
@@ -378,7 +364,22 @@ and strings."
              (progn
                (read (pospcase--buffer-substring (point) (scan-sexps (point) 1)))
                read-symbol-positions-list)))
-   limit))
+   limit
+   t))
+
+(defun pospcase-match-loop (limit)
+  "Matcher iterator for loop variable symbols in an arbitrarily
+nested list."
+  (if pospcase--matches
+      (pospcase--iterator limit)
+    (if (and (< (point) limit)
+             (memq (save-excursion
+                     (backward-up-list)
+                     (down-list)
+                     (read (current-buffer)))
+                   '(loop cl-loop)))
+        (pospcase-match-destructuring limit)
+      nil)))
 
 (defun pospcase-match-macrolet (limit)
   "Matcher iterator for a lit of `macrolet' bindings"
@@ -462,10 +463,10 @@ and strings."
            symbol
            "\\)")
          (1 font-lock-function-name-face)))))
-  "List of font lock keywords for lisp.")
+  "List of font lock keywords for Lisp.")
 
 (defvar-local pospcase-font-lock-lisp-local-keywords nil
-  "List of font lock buffer local keywords for lisp.")
+  "List of font lock buffer local keywords for Lisp.")
 
 (defvar-local pospcase-font-lock-lisp-keywords--installed nil
   "BUffer local list for `pospcase-font-lock-lisp-mode'.")
@@ -491,11 +492,13 @@ and strings."
 
 
 (defvar pospcase-list-group '(list/2 list/1 destructuring flet macrolet)
-  "Submatchers with same behavior with `pospcase-match-list/2'.")
+  "Submatchers with same behavior of `pospcase-match-list/2'.")
 (defvar pospcase-defstruct-group '(defstruct)
-  "Submatchers with same behavior with `pospcase-match-defstruct'.")
+  "Submatchers with same behavior of `pospcase-match-defstruct'.")
 (defvar pospcase-parameter-group '(parameter)
-  "Submatchers with same behavior with `pospcase-match-parameter'.")
+  "Submatchers with same behavior of `pospcase-match-parameter'.")
+(defvar pospcase-loop-group '(loop)
+  "Submatchers with same behavior of `pospcase-match-loop'.")
 
 (defun pospcase-font-lock-build (patterns specs)
   "Actual font lock keywords generator. Deep magic is
@@ -535,10 +538,16 @@ with better comments."
            (pospcase--preform
             (goto-char (match-beginning 0))
 
-            (let ((table (syntax-ppss)))
-              (if (or (nth 3 table)       ; in string
-                      (nth 4 table))      ; in comment
-                  (goto-char (match-end 0))
+            (cl-flet ((ignore-p ()
+                                (let ((table (syntax-ppss)))
+                                  (or (nth 3 table)     ; in string
+                                      (nth 4 table))))) ; in comment
+              (if (ignore-p)
+                  (progn
+                    (while (and (not (eobp)) (ignore-p))
+                      (forward-char))
+                    (forward-comment most-positive-fixnum)
+                    (point))
                 (condition-case nil
                     (multiple-value-bind ,vars (pospcase-at
                                                 (point)
@@ -573,7 +582,8 @@ with better comments."
 
                           ((memq (cdr submatcher) pospcase-parameter-group)
                            '(let ((end (match-end 0)))
-                              (if (memq (char-before (point)) '(?\\ ?\' ?\` ?\,))
+                              (if (memq (char-before (point))
+                                        '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
                                   (goto-char end)
                                 (setq pospcase--fence-start
                                       (ignore-errors (pospcase-read end)))
@@ -582,6 +592,19 @@ with better comments."
                                         (save-excursion
                                           (up-list)
                                           (point))
+                                      (backward-up-list))
+                                  (error (goto-char end))))))
+
+                          ((memq (cdr submatcher) pospcase-loop-group)
+                           '(let ((end (match-end 0)))
+                              (if (memq (char-before (point))
+                                        '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
+                                  (goto-char end)
+                                (setq pospcase--fence-start
+                                      (ignore-errors (pospcase-read end)))
+                                (condition-case nil
+                                    (prog1
+                                        (scan-sexps (point) 1)
                                       (backward-up-list))
                                   (error (goto-char end))))))
 
@@ -600,6 +623,7 @@ with better comments."
 
            (pospcase--postform)
 
+           ;; fontspecs
            ,@(cl-loop with i = 0
                       for spec in (cdr specs)
                       if (or (symbolp (car spec))
@@ -613,7 +637,8 @@ with better comments."
                                              nil t))
                                      (cdr spec))))))
 
-      (or submatchers '(nil))))))
+      (or submatchers
+          '(nil))))))                   ; no submatcher
 
 (defun pospcase-font-lock (mode patterns specs &optional buffer-local-p)
   "Font lock keywords generator with `pcase' powered pattern
@@ -656,7 +681,7 @@ examples."
                 nil
                 ,(format "List of font lock %skeywords for %s."
                          (if buffer-local-p "buffer local " "")
-                         id)))))
+                         (capitalize id))))))
     (mapc (lambda (keyword)
             (unless (member keyword (symbol-value container))
               (set container (cons keyword (symbol-value container)))))
@@ -769,6 +794,11 @@ examples."
                          ((pospcase-font-lock-variable-face-form (match-string 1))
                           default
                           default))))
+  (pospcase-font-lock 'lisp-mode
+                      '(for :for index :index into :into with :with)
+                      '(font-lock-keyword-face
+                        ((pospcase--dummy . loop) .
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(dolist (,var . ,_) . ,_)
                         `(dotimes (,var . ,_) . ,_)

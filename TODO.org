@@ -1,5 +1,12 @@
 
 #+SEQ_TODO: TODO(t!) NOTE(n!) | DONE(d!) HALT(h!)
+* Scheduled
+** TODO Submatcher reorganization
+   - State "TODO"       from              [2018-12-10 Mon 03:38]
+
+   API design should follow consistent criteria.
+** TODO Comments
+   - State "TODO"       from              [2018-12-10 Mon 03:38]
 * Bugs
 ** TODO Known reader macros so far
    - State "TODO"       from              [2018-11-21 Wed 01:42]

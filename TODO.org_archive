@@ -348,3 +348,14 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-12-07 Fri 10:22]
   - State "TODO"       from              [2018-12-07 Fri 10:13]
+
+* DONE pospcase-translate can’t handle two ,_ ?
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-08 Sat 10:30
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Bugs
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-08 Sat 10:30]
+  - State "TODO"       from              [2018-12-08 Sat 10:07]
