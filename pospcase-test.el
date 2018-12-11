@@ -677,3 +677,67 @@ woof woof
          (car (parse-partial-sexp (point) (+ (point) 10)))
          ?\)))
 (foo (bar (baz (qux (quux
+)))))
+
+;;; mylet nest
+(pospcase-font-lock 'lisp-mode
+                      '(`(mylet ,binds . ,_))
+                      '(nil
+                        ((binds . list/1) .
+                         (font-lock-variable-name-face)))
+                      t)
+
+(let ((font-lock-keywords
+       (list t
+             (car pospcase-font-lock-lisp-local-keywords)
+             (car pospcase-font-lock-lisp-local-keywords))))
+  (car (cddr font-lock-keywords)))
+
+(defun pospcase-match-list/my (limit)
+  (condition-case nil
+      (when (< (point) limit)
+        (unless (or pospcase--ignore
+                    pospcase--matches
+                    pospcase--iterating)
+          (setq pospcase--matches
+                (ignore-errors
+                  (mapcar
+                   (lambda (srpair)
+                     (goto-char (cadr srpair))
+                     (pospcase-at (point) '((`(,name . ,_)
+                                             (progn
+                                               (pp (list (point) limit))
+                                               (list name)))
+                                            (`,name
+                                             (progn
+                                               (pp (list (point) limit))
+                                               (list name))))))
+                   (if pospcase--fence-start
+                       (member pospcase--fence-start
+                               (car (pospcase-read (point))))
+                     (car (pospcase-read (point))))))
+                pospcase--iterating t))
+        (pospcase--iterator limit))
+    (error
+     (goto-char limit)
+     nil)))
+
+(setq pospcase-font-lock-lisp-local-keywords
+      '(("\\(?:(mylet\\)\\_>\\s *"
+         (pospcase-match-list/my
+          (pospcase--preform
+           (goto-char
+            (match-beginning 0))
+           (multiple-value-bind
+               (binds)
+               (pospcase-at
+                (point)
+                '((`(mylet ,binds \, _)
+                   (values binds))))
+             nil
+             (progn
+               (goto-char
+                (car binds))
+               (cdr binds))))
+          (pospcase--postform)
+          (1 'font-lock-variable-name-face nil t)))))
