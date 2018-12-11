@@ -1,5 +1,9 @@
 ;;; pospcase.el -- `pcase' powered position extractor -*- lexical-binding: t -*-
 
+(defgroup pospcase nil
+  "A `pcase' powered position extractor."
+  :group 'pcase)
+
 (defcustom pospcase--elispify-alist
   (let* ((sym "\\(?:\\sw\\|\\s_\\|\\\\.\\)")
          (sym* (concat "\\(" sym "*" "\\)"))
@@ -40,7 +44,8 @@
       (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2)))
   "Used for simple regexp based translation from Common Lisp
   S-expression to Emacs Lisp."
-  :type 'alist)
+  :type 'alist
+  :group 'pospcase)
 
 (defun pospcase--buffer-substring (start end)
   "`buffer-substring' with regexp based Elisp-ification."
@@ -232,18 +237,13 @@ a pattern after comma and don't include comma."
   "Translate `pcase' matcher pattern (usually backquoted) to
 matcher pattern consumable for `pospcase'.
 
-Beware this macro support severely limited patterns of
-`pcase'. Only plain symbols are bind-able.
+Each sub-pattern can only bind positional metadata to the first
+variable. e.g.:
 
-Patterns like
+  (and 'foo bar baz)
 
-  `,(or (and 'foo bar) (and 'bar quux))
-
-or
-
-  `,(and 'foo (let bar 123))
-
-are beyond the scope of `pospcase'."
+bind only bar. Reference to baz returns in this case symbol foo
+and not positional (START . END) pair."
   (cl-labels
       ((meta-pos-symbol (exp)
         (list '\,

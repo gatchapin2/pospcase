@@ -2,12 +2,14 @@
 
 (require 'eieio-custom)
 
-(defgroup pospcase nil
-  "A `pcase' powered position extractor.")
+(defgroup pospcase-addform nil
+  "A `pcase' powered position extractor."
+  :group 'eieio)
 
 (defcustom pospcase-user-file "~/.emacs.d/pospcase-user.el"
   "Elisp file for user customization."
-  :group 'pospcase)
+  :type 'string
+  :group 'pospcase-addform)
 
 (defcustom pospcase-addform--default
   '(lisp-mode
@@ -36,7 +38,7 @@
                              (list :tag "List of Faces"
                                    (sexp :tag "Face"))))
                (sexp :tag "Predicate"))
-  :group 'pospcase)
+  :group 'pospcase-addform)
 
 (defclass pospcase-addform--container ()
   ((patterns :type list
