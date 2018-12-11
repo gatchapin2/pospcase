@@ -510,9 +510,15 @@ with better comments."
   (let* ((keywords (mapcar (lambda (pattern)
                              (let ((str (prin1-to-string
                                          (if (consp pattern)
-                                             (if (memq (car pattern) '(\` \, quote))
-                                                 (cadr pattern)
-                                               (car pattern))
+                                             (cond
+                                              ((eq (car pattern) 'quote) (cadr pattern))
+                                              ((eq (car pattern) '\`)
+                                               (if (eq (caadr pattern) '\,)
+                                                   (if (consp (cadr pattern))
+                                                       (error " Heading `pcase' pattern keyword is not supported.")
+                                                     (cdadr pattern))
+                                                 (cadr pattern)))
+                                              (t (car pattern)))
                                            pattern))))
                                (string-match "^\\S +" str)
                                (match-string 0 str)))

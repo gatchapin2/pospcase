@@ -214,6 +214,20 @@ which returns:
                    (scan-error nil))))
         (walk sexp-end)))))
 
+(defun pospcase--first-pcase-var (exp)
+  "Find first free variable from a `pcase' comma pattern. EXP is
+a pattern after comma and don't include comma."
+  (cl-block found
+    (cl-labels ((search (node)
+                        (if (and (symbolp node)
+                                 (not (eq node '_))
+                                 (not (booleanp node)))
+                            (cl-return-from found node)
+                          (if (memq (car-safe node) '(or and let))
+                              (dolist (child (cdr node))
+                                (search child))))))
+      (search exp))))
+
 (defmacro pospcase-translate (matcher)
   "Translate `pcase' matcher pattern (usually backquoted) to
 matcher pattern consumable for `pospcase'.
@@ -231,13 +245,12 @@ or
 
 are beyond the scope of `pospcase'."
   (cl-labels
-      ((meta-pos-symbol (sym)
-                        (list '\,
-                              (if (eq sym '_)
-                                  '_
-                                (intern (concat
-                                         (symbol-name sym)
-                                         "-meta-pos")))))
+      ((meta-pos-symbol (exp)
+        (list '\,
+              (let ((sym (pospcase--first-pcase-var exp)))
+                (if sym
+                    (intern (concat (symbol-name sym) "-meta-pos"))
+                  '_))))
        (walk (node)
                (if (consp node) ; note that in elisp `,foo' is `(\, foo)'
                    (cond
@@ -247,10 +260,9 @@ are beyond the scope of `pospcase'."
                      ;; ,\\= is NOT supported since it
                      ;; requires fetching and unwrapping
                      ;; next (quote foo) into foo.
-                     (if (or (eq (cadr node) '_)
-                             (and
-                              (consp (cadr node))
-                              (memq (caadr node) '(or and pred guard let app))))
+                     (if (and
+                          (consp (cadr node))
+                          (memq (caadr node) '(pred guard app)))
                          (cons node ',_)
                        (cons node (meta-pos-symbol (cadr node)))))
                     (t (cons
@@ -299,10 +311,9 @@ are beyond the scope of `pospcase'."
               (cl-labels
                   ((collect (node)
                             (cond
-                             ((and (listp node)
-                                   (eq (car node) '\,)
-                                   (not (eq (cadr node) '_)))
-                              (setq symbols (cons (cadr node) symbols)))
+                             ((eq (car-safe node) '\,)
+                              (let ((sym (pospcase--first-pcase-var (cadr node))))
+                                (if sym (setq symbols (cons sym symbols)))))
                              ((consp node)
                               (collect (car node))
                               (collect (cdr node)))))
@@ -314,7 +325,7 @@ are beyond the scope of `pospcase'."
                                               (translate (car node))
                                               (translate (cdr node))))
                                (t node))))
-                (when (consp (car case))(collect (cadar case)))
+                (when (consp (car case)) (collect (cadar case)))
                 (translate (cadr case))))))
          cases))))
 

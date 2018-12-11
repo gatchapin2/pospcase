@@ -396,3 +396,14 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
     (cl-loop 'for foo) (cl-loop for bar)
   #+END_SRC
 
+
+* DONE pospcase first-bound
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-11 Tue 06:23
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Scheduled
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-11 Tue 06:23]
+  - State "TODO"       from              [2018-12-11 Tue 05:02]
