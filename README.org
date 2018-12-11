@@ -282,7 +282,7 @@
    S-expression. But we exactly want that feature in our use
    case. Obvious example is argument list for function declaration. To
    overcome the limitation, you have to choose appropriate
-   submatchers for each arbitrary length list. So far, seven
+   submatchers for each arbitrary length list. So far, eight
    submatchers are implemented.
 
     - ~list/2~
@@ -292,6 +292,7 @@
     - ~macrolet~
     - ~defstruct~ (~list/1~)
     - ~parameter~ (~list/3~)
+    - ~loop~ (~destructuring~ variant)
 
    If you are skilled programmer, maybe you can just skim the actual
    keyword declarations in ~pospcase-font-lock-lisp-setup~ and use them
@@ -400,6 +401,17 @@
     declaration is irregular or non-existent too. They are just a list
     of keywords. Don’t try to see them as patterns in case you really
     need to use this submatcher.)
+
+*** ~loop~ (~destructuring~ variant)
+    This submatcher is for highlighting variables inside the notorious
+    ~loop~ macro of Common Lisp. As it may sound crazy, the ~loop~ macro
+    does destructuring by default when assigning a local variable. So,
+    more than simple regexp based highlighting is needed.
+
+    I’m sure you don’t have to touch this submatcher in your
+    lifetime. (Unless you are implementing ~loop~ macro version 2.0 or
+    something).
+
 
 * Writing Your Own SubMatchers
   I’m certain eventually you’ll outgrow and find the syntaxes that
