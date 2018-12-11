@@ -228,7 +228,7 @@ a pattern after comma and don't include comma."
                                  (not (eq node '_))
                                  (not (booleanp node)))
                             (cl-return-from found node)
-                          (if (memq (car-safe node) '(or and let))
+                          (if (memq (car-safe node) '(or and))
                               (dolist (child (cdr node))
                                 (search child))))))
       (search exp))))
@@ -262,7 +262,7 @@ and not positional (START . END) pair."
                      ;; next (quote foo) into foo.
                      (if (and
                           (consp (cadr node))
-                          (memq (caadr node) '(pred guard app)))
+                          (memq (caadr node) '(pred guard let app)))
                          (cons node ',_)
                        (cons node (meta-pos-symbol (cadr node)))))
                     (t (cons
