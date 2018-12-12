@@ -380,17 +380,15 @@ and strings."
 (defun pospcase-match-loop (limit)
   "Matcher iterator for loop variable symbols in an arbitrarily
 nested list."
-  (if pospcase--matches
-      (pospcase--iterator limit)
-    (if (and (not pospcase--ignore)
-             (< (point) limit)
-             (memq (save-excursion
-                     (backward-up-list)
-                     (down-list)
-                     (read (current-buffer)))
-                   '(loop cl-loop)))
-        (pospcase-match-destructuring limit)
-      nil)))
+  (pospcase--call-iterator
+   (if (memq (save-excursion
+               (backward-up-list)
+               (down-list)
+               (read (current-buffer)))
+             '(loop cl-loop))
+       (pospcase-collect-all-symbols (pospcase-read (point))))
+   limit
+   t))
 
 (defun pospcase-match-macrolet (limit)
   "Matcher iterator for a lit of `macrolet' bindings"
