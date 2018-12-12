@@ -159,7 +159,10 @@ which returns:
            (buf-str-1 (pospcase--buffer-substring buf-off sexp-end))
            (buf-str (with-temp-buffer
                       (insert buf-str-1)
-                      (insert (make-string (car (syntax-ppss)) ?\)))
+                      (insert (make-string
+                               (with-syntax-table emacs-lisp-mode-syntax-table
+                                 (car (syntax-ppss)))
+                               ?\)))
                       (buffer-substring (point-min) (point-max)))))
       (cl-labels
           ((walk (limit)
