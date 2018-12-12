@@ -584,6 +584,7 @@ with better comments."
                          `(progn
                             (setq pospcase--fence-start
                                   (ignore-errors (pospcase-read (car ,(car submatcher)))))
+                            (unless pospcase--fence-start (setq pospcase--ignore t))
                             (condition-case nil
                                 (save-excursion
                                   (goto-char (match-end 0))
@@ -600,6 +601,7 @@ with better comments."
                                   (1+ (goto-char (1- end))))
                               (setq pospcase--fence-start
                                     (ignore-errors (pospcase-read end)))
+                              (unless pospcase--fence-start (setq pospcase--ignore t))
                               (condition-case nil
                                   (prog1
                                       (save-excursion
@@ -618,6 +620,7 @@ with better comments."
                               (goto-char end)
                               (setq pospcase--fence-start
                                     (ignore-errors (pospcase-read end)))
+                              (unless pospcase--fence-start (setq pospcase--ignore t))
                               (condition-case nil
                                   (scan-sexps (point) 1)
                                 (error (1+ (goto-char (1- end))))))))
