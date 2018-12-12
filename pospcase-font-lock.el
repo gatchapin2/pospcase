@@ -382,7 +382,8 @@ and strings."
 nested list."
   (if pospcase--matches
       (pospcase--iterator limit)
-    (if (and (< (point) limit)
+    (if (and (not pospcase--ignore)
+             (< (point) limit)
              (memq (save-excursion
                      (backward-up-list)
                      (down-list)
