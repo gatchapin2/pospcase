@@ -231,6 +231,10 @@ and strings."
         (pospcase--iterator limit))
     nil))
 
+(defvar pospcase--ignore nil
+  "When the variable is set to `t', the `pospcase--matches'
+  assignment part is going to be skipped. ")
+
 (defmacro pospcase--call-iterator (clause limit &optional allow-atom-p)
   "Catch parsing error, and call `pospcase--iterator'."
   `(condition-case nil
@@ -560,6 +564,7 @@ with better comments."
                                       (nth 4 table))))) ; in comment
               (if (ignore-p)
                   (progn
+                    (setq pospcase--ignore t)
                     (while (and (not (eobp)) (ignore-p))
                       (forward-char))
                     (forward-comment most-positive-fixnum)
