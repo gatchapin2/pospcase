@@ -245,8 +245,8 @@ variable. e.g.:
 
   (and 'foo bar baz)
 
-bind only bar. Reference to baz returns in this case symbol foo
-and not positional (START . END) pair."
+bind only bar. Reference to baz returns in this case is the
+symbol foo and not positional (START . END) pair."
   (cl-labels
       ((meta-pos-symbol (exp)
         (list '\,
