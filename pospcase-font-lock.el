@@ -203,6 +203,9 @@ and strings."
 (defvar pospcase--iterating nil
   "Internal variable for deciding if the iterator is active.")
 
+(defvar pospcase--keyword-end nil
+  "End of keyword to jump to when iteration ends.")
+
 (defun pospcase--iterator (limit)
   "Actual iterator."
   (if pospcase--matches
@@ -213,9 +216,10 @@ and strings."
                                 mlist))
         (setq pospcase--matches (cdr pospcase--matches))
         t)
-    (goto-char limit)
+    (goto-char pospcase--keyword-end)
     (set-match-data nil)
-    (setq pospcase--iterating nil)
+    (setq pospcase--iterating nil
+          pospcase--keyword-end nil)
     nil))
 
 (defun pospcase-match-nil (limit)
@@ -230,7 +234,7 @@ and strings."
 (defmacro pospcase--call-iterator (clause limit &optional allow-atom-p)
   "Catch parsing error, and call `pospcase--iterator'."
   `(condition-case nil
-       (when (< (point) ,limit)
+       (progn
          (unless (or pospcase--ignore
                      pospcase--matches
                      pospcase--iterating)
@@ -548,6 +552,7 @@ with better comments."
           (,(intern (concat "pospcase-match-" (symbol-name (cdr submatcher))))
            (pospcase--preform
             (goto-char (match-beginning 0))
+            (setq pospcase--keyword-end (match-end 0))
 
             (cl-flet ((ignore-p ()
                                 (let ((table (syntax-ppss)))

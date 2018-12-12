@@ -526,27 +526,6 @@
   not implemented. Purposely ~pospcase-font-lock~ only supports heading
   keyword patterns.
 
-*** No support for nest in binding list
-   Following doesn’t work:
-   
-  #+BEGIN_SRC emacs-lisp
-    (let ((foo
-           (let ((bar 'baz))
-             bar)))
-      foo)
-  #+END_SRC
-
-  But following works:
-
-  #+BEGIN_SRC emacs-lisp
-    (let ((foo 'bar))
-      (let ((baz foo))
-        baz))
-  #+END_SRC
-
-  Maybe this is due to my ignorance of font-lock internals and not a
-  real technical limitation. I’m eager to fix it.
-
 *** No support for multiple submatcher
    Currently only single arbitrary length list matching per-pattern is
    allowed. For example, ~defclass~ has syntax:
