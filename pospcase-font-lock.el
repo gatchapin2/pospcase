@@ -302,6 +302,14 @@ and strings."
 
 (defalias #'pospcase-match-defstruct #'pospcase-match-list/1)
 
+(defun pospcase-match-setq (limit)
+  "Matcher iterator for variable names of `setq'."
+  (pospcase--call-iterator
+   (cl-loop for (var _) on (cdar (pospcase-read (point))) by #'cddr
+            if (symbolp (car var))
+            collect (pospcase--list (cdr var)))
+   limit))
+
 (defmacro pospcase--call-flet-iterator (clause)
   "Boilerplate code for arbitrary length function list matcher iterator."
   `(pospcase--call-iterator
@@ -506,7 +514,7 @@ nested list."
 
 (defvar pospcase-list-group '(list/2 list/1 destructuring flet macrolet)
   "Submatchers with same behavior of `pospcase-match-list/2'.")
-(defvar pospcase-defstruct-group '(defstruct)
+(defvar pospcase-defstruct-group '(defstruct setq)
   "Submatchers with same behavior of `pospcase-match-defstruct'.")
 (defvar pospcase-parameter-group '(parameter)
   "Submatchers with same behavior of `pospcase-match-parameter'.")
@@ -614,16 +622,18 @@ nested list."
                               (goto-char end)
                               (setq pospcase--fence-start
                                     (ignore-errors (pospcase-read end)))
-                              (unless pospcase--fence-start (setq pospcase--ignore t))
-                              (condition-case nil
-                                  ,(if (memq (cdr submatcher) pospcase-parameter-group)
-                                       '(prog1
-                                            (save-excursion
-                                              (up-list)
-                                              (point))
-                                          (backward-up-list))
-                                     '(scan-sexps (point) 1))
-                                (error (1+ (goto-char (1- end))))))))
+                              (if pospcase--fence-start
+                                  (condition-case nil
+                                      ,(if (memq (cdr submatcher) pospcase-parameter-group)
+                                           '(prog1
+                                                (save-excursion
+                                                  (up-list)
+                                                  (point))
+                                              (backward-up-list))
+                                         '(scan-sexps (point) 1))
+                                    (error (1+ (goto-char (1- end)))))
+                                (setq pospcase--ignore t)
+                                (1+ (goto-char (1- end)))))))
 
                         ((null submatcher)
                          '(condition-case nil
@@ -787,6 +797,12 @@ examples."
                         ((macros . macrolet) .
                          (font-lock-function-name-face
                           (pospcase-font-lock-variable-face-form (match-string 2))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(setq ,first . ,_)
+                        `(setf ,first . ,_))
+                      '(font-lock-keyword-face
+                        ((first . setq) .
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defstruct (,name . ,_) ,(pred stringp) ,first . ,_)
                         `(defstruct (,name . ,_) ,first . ,_)
