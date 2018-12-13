@@ -611,6 +611,7 @@ nested list."
                                 (progn
                                   (setq pospcase--ignore t)
                                   (1+ (goto-char (1- end))))
+                              (goto-char end)
                               (setq pospcase--fence-start
                                     (ignore-errors (pospcase-read end)))
                               (unless pospcase--fence-start (setq pospcase--ignore t))
@@ -623,7 +624,7 @@ nested list."
                                           (backward-up-list))
                                      '(scan-sexps (point) 1))
                                 (error (1+ (goto-char (1- end))))))))
-                        
+
                         ((null submatcher)
                          '(condition-case nil
                               (scan-sexps (point) 1)
