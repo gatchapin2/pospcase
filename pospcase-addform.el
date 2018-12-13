@@ -84,17 +84,17 @@
     (goto-char (point-max))
     (insert (pp-to-string
              (if (pospcase-addform-predicate obj)
-                 `(add-hook ',(intern (concat (symbol-name (mode obj)) "-hook"))
+                 `(add-hook ',(intern (concat (symbol-name (pospcase-addform-mode obj)) "-hook"))
                             (lambda ()
                               (when ,(pospcase-addform-predicate obj)
-                                (pospcase-font-lock ',(mode obj)
+                                (pospcase-font-lock ',(pospcase-addform-mode obj)
                                                     ',(pospcase-addform-patterns obj)
-                                                    ',(cons (keyword-face obj)
+                                                    ',(cons (pospcase-addform-keyword-face obj)
                                                             (pospcase-addform-specs obj))
                                                     t))))
-               `(pospcase-font-lock ',(mode obj)
+               `(pospcase-font-lock ',(pospcase-addform-mode obj)
                                     ',(pospcase-addform-patterns obj)
-                                    ',(cons (keyword-face obj)
+                                    ',(cons (pospcase-addform-keyword-face obj)
                                             (pospcase-addform-specs obj))))))))
 
 (add-hook 'eieio-custom-mode-hook
@@ -119,6 +119,14 @@
                                          " "
                                          (symbol-name g)
                                          "*"))))
-    (eieio-customize-object obj)))
+    (eieio-customize-object obj)
+    (save-excursion
+      (goto-char (point-min))
+      (forward-line 2)
+      (let ((inhibit-read-only t))
+        (delete-region (point) (progn
+                                 (forward-line 3)
+                                 (backward-char)
+                                 (point)))))))
 
 (provide 'pospcase-addform)
