@@ -134,7 +134,8 @@ the end of the quoted expression."
       "for" "index" "into" "with"))
    "\\)"
    "\\_>")
-  "Regexp of `cl-loop' named parameters, excluding variable binding ones.")
+  "Regexp string which matches `loop' and `cl-loop' named
+  parameters.")
 
 (defun pospcase-font-lock-match-loop-keywords (limit)
   "Match named keyword of `loop' and highlight variable arguments."
@@ -247,11 +248,11 @@ and strings."
                           (pospcase--buffer-substring (point) ,limit)))))
              (setq pospcase--matches
                    (cond
-                    ((null temp) nil)
+                    ((null temp) nil) ; caught error while read-from-string
                     ((and (consp temp)
                           (or (null (car temp)) ; empty list at `point'
                               ,(if allow-atom-p
-                                   nil
+                                   nil  ; jump to t branch
                                  '(atom (car temp)))))
                      (if pospcase--prematches
                          (prog1
@@ -363,7 +364,9 @@ and strings."
    limit
    t))
 
-;; alternate implementation without `pospcase-read'. only collects symbols
+;; Unused alternate implementation without using `pospcase-read'.
+;; This function collects only symbols, the above implementation
+;; collects all atoms.
 (defun pospcase-match-destructuring-alt (limit)
   "Matcher iterator for symbols in an arbitrarily nested list."
   (pospcase--call-iterator
@@ -415,7 +418,7 @@ nested list."
 
 (defvar pospcase-font-lock-lisp-keywords
   ;;
-  ;; non-`pcase' powered
+  ;; non-`pcase' powered keywords
   ;;
   (let* ((symbol-start "\\_<")
          (symbol-end "\\_>")
@@ -511,9 +514,7 @@ nested list."
   "Submatchers with same behavior of `pospcase-match-loop'.")
 
 (defun pospcase-font-lock-build (patterns specs)
-  "Actual font lock keywords generator. Deep magic is
-involved. Don't dismay. I'm planning to simplify and to supply it
-with better comments."
+  "Actual font lock keywords generator."
   (let* ((keywords (mapcar (lambda (pattern)
                              (let ((str (prin1-to-string
                                          (if (consp pattern)
@@ -578,6 +579,12 @@ with better comments."
                       ,(unless (null non-subvars)
                          `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
+                      ;; Each preform for submatchers move the cursor
+                      ;; to the beginning of the sexp (usually an
+                      ;; arbitrary length list) it want to parse for
+                      ;; highlighting. Then returns the end point
+                      ;; (limit) of it.
+
                       ,(cond
                         ((memq (cdr submatcher) pospcase-list-group)
                          `(progn
@@ -596,8 +603,9 @@ with better comments."
                                   (point))
                               (error (1+ (goto-char (1- (match-end 0))))))))
 
-                        ((memq (cdr submatcher) pospcase-parameter-group)
-                         '(let ((end (match-end 0)))
+                        ((memq (cdr submatcher) (append pospcase-parameter-group
+                                                        pospcase-loop-group))
+                         `(let ((end (match-end 0)))
                             (if (memq (char-before (point))
                                       '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
                                 (progn
@@ -607,28 +615,15 @@ with better comments."
                                     (ignore-errors (pospcase-read end)))
                               (unless pospcase--fence-start (setq pospcase--ignore t))
                               (condition-case nil
-                                  (prog1
-                                      (save-excursion
-                                        (up-list)
-                                        (point))
-                                    (backward-up-list))
+                                  ,(if (memq (cdr submatcher) pospcase-parameter-group)
+                                       '(prog1
+                                            (save-excursion
+                                              (up-list)
+                                              (point))
+                                          (backward-up-list))
+                                     '(scan-sexps (point) 1))
                                 (error (1+ (goto-char (1- end))))))))
-
-                        ((memq (cdr submatcher) pospcase-loop-group)
-                         '(let ((end (match-end 0)))
-                            (if (memq (char-before (point))
-                                      '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
-                                (progn
-                                  (setq pospcase--ignore t)
-                                  (1+ (goto-char (1- end))))
-                              (goto-char end)
-                              (setq pospcase--fence-start
-                                    (ignore-errors (pospcase-read end)))
-                              (unless pospcase--fence-start (setq pospcase--ignore t))
-                              (condition-case nil
-                                  (scan-sexps (point) 1)
-                                (error (1+ (goto-char (1- end))))))))
-
+                        
                         ((null submatcher)
                          '(condition-case nil
                               (scan-sexps (point) 1)
