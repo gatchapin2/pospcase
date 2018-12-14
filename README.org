@@ -576,6 +576,6 @@
     Note ~pospcase-font-lock~ adds new keyword at the start of a keyword
     list. In other word, the last added keyword will be highlighted
     first and the highlighted text’s property ~fontified~ is set to
-    ~t~. And since keywords are internally processed with ~'append~ flag,
+    ~t~. And since keywords are internally processed with ~append~ flag,
     the below highlighting is not going to be overwritten by the
     following highlighting rules.
