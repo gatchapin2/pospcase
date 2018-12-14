@@ -49,7 +49,7 @@
    (specs :type cons
           :accessor pospcase-addform-specs
           :initarg :specs
-          :initform (cadddr pospcase-addform--default)
+          :initform (caddr pospcase-addform--default)
           :custom (editable-list (cons :tag ""
                                        (choice (symbol :tag "Variable")
                                                (cons :tag "Variable/Submatcher"
@@ -66,7 +66,7 @@
          :documentation "⮴ Specify mode to active the highlighting rule.")
    (predicate :type (or null list)
               :accessor pospcase-addform-predicate
-              :initform (car (cddddr pospcase-addform--default))
+              :initform (car (cdddr pospcase-addform--default))
               :custom (choice (const :tag "Always" nil)
                               (sexp list))
               :documentation "⮴ Specify predicate expression when to enable.")))
