@@ -1,4 +1,25 @@
-;;; pospcase-addform.el: A handy form for `pospcase-font-lock' -*- lexical-binding: t -*-
+;;; pospcase-addform.el: A handy forms for `pospcase-font-lock' customization -*- lexical-binding: t -*-
+
+;; Copyright (C) 2018-2019 gatchapin
+
+;; Author: gatchapin
+;; Keywords: languages, faces
+;; URL: https://github.com/gatchapin2/pospcase
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Code:
 
 (require 'eieio-custom)
 

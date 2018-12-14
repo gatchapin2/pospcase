@@ -1,10 +1,10 @@
 ;;; pospcase-font-lock.el: S-expression   -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2019 gatchapin 
+;; Copyright (C) 2018-2019 gatchapin
 
 ;; Author: gatchapin
 ;; Keywords: languages, faces
-;; URL: https://gitlab.com/
+;; URL: https://github.com/gatchapin2/pospcase
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
