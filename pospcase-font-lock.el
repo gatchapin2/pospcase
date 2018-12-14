@@ -529,39 +529,63 @@ nested list."
                                        sexp))))
   :group 'pospcase)
 
+(defcustom pospcase-pcase-to-string-cases
+  '((`(and (quote ,(and (pred symbolp) sym)) ,_) (format "(%s" sym))
+    (`,_ (error "Unsupported heading keyword pattern.")))
+  "List of `pcase' cases for translating heading `pcase' pattern
+to string for later regexp pattern creation."
+  :type '(repeat (list (sexp :tag "Pattern")
+                       (sexp :tag "String Generator")))
+  :group 'pcase)
+
+(defun pospcase-pcase-to-string (pattern)
+  (eval `(pcase (quote ,pattern)
+           ,@pospcase-pcase-to-string-cases)))
+
 (defun pospcase-font-lock-build (patterns specs)
   "Actual font lock keywords generator."
+
+  ;; Simple symbol heading keyword to (and 'defun heading-keyword)
+  (setq patterns (mapcar
+                  (lambda
+                    (pattern)
+                    (pcase pattern
+                      (``(,(and (pred symbolp) keyword) . ,rest)
+                       (list
+                        '\`
+                        (cons
+                         (list
+                          '\,
+                          `(and ,(list 'quote keyword) heading-keyword))
+                         rest)))
+                      (`,any any)))
+                         patterns))
+
   (let* ((keywords (mapcar (lambda (pattern)
-                             (let ((str (prin1-to-string
-                                         (if (consp pattern)
-                                             (cond
-                                              ((eq (car pattern) 'quote) (cadr pattern))
-                                              ((eq (car pattern) '\`)
-                                               (if (eq (caadr pattern) '\,)
-                                                   (if (consp (cadr pattern))
-                                                       (error " Heading `pcase' pattern keyword is not supported.")
-                                                     (cdadr pattern))
-                                                 (cadr pattern)))
-                                              (t (car pattern)))
-                                           pattern))))
-                               (string-match "^\\S +" str)
-                               (match-string 0 str)))
+                             (if (consp pattern)
+                                 (cond
+                                  ((eq (car pattern) 'quote)
+                                   (concat "'" (prin1-to-string pattern)))
+                                  ((eq (car pattern) '\`)
+                                   (if (and (consp (cadr pattern))
+                                            (consp (caadr pattern))
+                                            (eq (caaadr pattern) '\,))
+                                       (pospcase-pcase-to-string (car (cdaadr pattern)))
+                                     (error "Invalid heading keyword.")))
+                                  (t (error "Invalid heading keyword.")))
+                               (symbol-name pattern)))
                            patterns))
-         (keyword (concat "\\_<"
-                          (regexp-opt
-                           (mapcar (lambda (kw) (substring kw (string-match "[^(]" kw)))
-                                   keywords))
-                          "\\_>"))
          (matcher (regexp-opt keywords))
-         (submatchers (cl-loop for spec in (cdr specs)
+         (submatchers (cl-loop for spec in specs
                                if (consp (car spec)) collect (car spec)))
          (subvars (mapcar #'car submatchers))
          (vars (mapcar (lambda (spec) (if (consp (car spec)) (caar spec) (car spec)))
-                       (cdr specs)))
+                       specs))
          (non-subvars (cl-remove-if (lambda (var) (memq var subvars)) vars)))
     (if (string-match "," matcher)
         (error "In-middle keyword is not supported.")
       (setq matcher (concat matcher "\\_>\\s *")))
+
     (cl-macrolet
         ((submatcher-preform
           ()
@@ -619,77 +643,70 @@ nested list."
             (t (error "Not supported submatcher: %s" submatcher)))))
 
       ;; Let's build font lock keywords
-      (append
-       ;; Add a simple regexp based rule if a face name for the
-       ;; heading keyword is supplied.
-       (if (car specs)
-           (list `(,keyword . ,(car specs)))
-         nil)
-       ;; Then add rules for each submatcher.
-       (mapcar
-        (lambda (submatcher)
-          `(,matcher
-            (,(intern (concat "pospcase-match-" (symbol-name (cdr submatcher))))
-             (pospcase--preform
-              (goto-char (match-beginning 0))
-              (setq pospcase--keyword-end (match-end 0))
+      (mapcar
+       (lambda (submatcher)
+         `(,matcher
+           (,(intern (concat "pospcase-match-" (symbol-name (cdr submatcher))))
+            (pospcase--preform
+             (goto-char (match-beginning 0))
+             (setq pospcase--keyword-end (match-end 0))
 
-              ;; If the keyword is in a string or a comment, a flag
-              ;; for ignoring is set. And the cursor is moved to the
-              ;; end of the string or the comment block.
-              (cl-flet ((ignore-p ()
-                                  (let ((table (syntax-ppss)))
-                                    (or (nth 3 table)     ; in string
-                                        (nth 4 table))))) ; in comment
-                (if (ignore-p)
-                    (progn
-                      (setq pospcase--ignore t)
-                      (while (and (not (eobp)) (ignore-p))
-                        (forward-char))
-                      (forward-comment most-positive-fixnum)
-                      (point))
+             ;; If the keyword is in a string or a comment, a flag
+             ;; for ignoring is set. And the cursor is moved to the
+             ;; end of the string or the comment block.
+             (cl-flet ((ignore-p ()
+                                 (let ((table (syntax-ppss)))
+                                   (or (nth 3 table)     ; in string
+                                       (nth 4 table))))) ; in comment
+               (if (ignore-p)
+                   (progn
+                     (setq pospcase--ignore t)
+                     (while (and (not (eobp)) (ignore-p))
+                       (forward-char))
+                     (forward-comment most-positive-fixnum)
+                     (point))
 
-                  ;; If the keyword appears in actual code section,
-                  ;; positioal data are assigned to appropriate
-                  ;; variables by pattern matching using supplied
-                  ;; PATTERNS.
-                  (condition-case nil
-                      (multiple-value-bind ,vars (pospcase-at
-                                                  (point)
-                                                  ',(mapcar
-                                                     (lambda (pat)
-                                                       (list pat (cons 'values vars)))
-                                                     patterns))
-                        ,(unless (null non-subvars)
-                           `(setq pospcase--prematches ,(cons 'list non-subvars)))
+                 ;; If the keyword appears in actual code section,
+                 ;; positioal data are assigned to appropriate
+                 ;; variables by pattern matching using supplied
+                 ;; PATTERNS.
+                 (condition-case nil
+                     (multiple-value-bind ,vars (pospcase-at
+                                                 (point)
+                                                 ',(mapcar
+                                                    (lambda (pat)
+                                                      (list pat (cons 'values vars)))
+                                                    patterns))
+                       ,(unless (null non-subvars)
+                          `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                        ;; Then appropriate preparation code (extra
-                        ;; validity check, moving the cursor to
-                        ;; appropriate position, calculate the end of
-                        ;; highlighting region) is generated for each
-                        ;; group of submatcher using a macro.
-                        ,(submatcher-preform))
+                       ;; Then appropriate preparation code (extra
+                       ;; validity check, moving the cursor to
+                       ;; appropriate position, calculate the end of
+                       ;; highlighting region) is generated for each
+                       ;; group of submatcher using a macro.
+                       ,(submatcher-preform))
 
-                    (error (goto-char (match-end 0)))))))
+                   (error (goto-char (match-end 0)))))))
 
-             (pospcase--postform)
+            (pospcase--postform)
 
-             ;; fontspecs
-             ,@(cl-loop with i = 0
-                        for spec in (cdr specs)
-                        if (or (symbolp (car spec))
-                               (and (consp (car spec))
-                                    (eq (caar spec) (car submatcher))))
-                        append (mapcar (lambda (font)
-                                         (list (incf i)
-                                               (if (symbolp font)
-                                                   (list 'quote font)
-                                                 (apply (car font) (cdr font)))
-                                               nil t))
-                                       (cdr spec))))))
+            ;; fontspecs
+            ,@(cl-loop with i = 0
+                       for spec in specs
+                       if (or (symbolp (car spec))
+                              (and (consp (car spec))
+                                   (eq (caar spec) (car submatcher))))
+                       append (mapcar (lambda (font)
+                                        (list (incf i)
+                                              (if (symbolp font)
+                                                  (list 'quote font)
+                                                (apply (car font) (cdr font)))
+                                              nil t))
+                                      (cdr spec))))))
 
-        (or submatchers
-            '(nil)))))))                   ; no submatcher
+       (or submatchers
+           '(nil))))))                   ; no submatcher
 
 (defun pospcase-font-lock (mode patterns specs &optional buffer-local-p)
   "Font lock keywords generator with `pcase' powered pattern
@@ -749,13 +766,13 @@ examples."
                         `(cl-defun (setf ,name) ,args . ,_)
                         `(cl-defun ,name ,args . ,_)
                         `(cl-defsubst ,name ,args . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-function-name-face))
                         ((args . list/1) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 3))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defclass ,name ,supers ,slots . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-type-face))
                         ((supers . list/1) . (font-lock-type-face))
                         ((slots . list/1) . (font-lock-variable-name-face))))
@@ -763,23 +780,23 @@ examples."
                       '(`(lambda ,args . ,_)
                         `(with-slots ,args . ,_)
                         `(with-accessors ,args . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         ((args . list/1) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(let ,binds . ,_)
                         `(let* ,binds . ,_)
                         `(multiple-value-bind ,binds . ,_)
                         `(cl-multiple-value-bind ,binds . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         ((binds . list/1) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(symbol-macrolet ,binds . ,_)
                         `(cl-symbol-macrolet ,binds . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         ((binds . list/2) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))
+                         ((pospcase-font-lock-variable-face-form (match-string 2))
                           font-lock-constant-face))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defmethod (setf ,name) ,(pred keywordp) ,args . ,_)
@@ -792,45 +809,45 @@ examples."
                         `(cl-defmethod ,name ,(pred keywordp) ,args . ,_)
                         `(cl-defmethod ,name ,args . ,_)
                         `(cl-defgeneric ,name ,args . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-function-name-face))
                         ((args . list/2) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))
+                         ((pospcase-font-lock-variable-face-form (match-string 3))
                           font-lock-type-face))))
   (pospcase-font-lock 'lisp-mode
                       '(`(destructuring-bind ,binds . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         ((binds . destructuring) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defmacro ,name ,args . ,_)
                         `(cl-defmacro ,name ,args . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-function-name-face))
                         ((args . destructuring) .
-                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 3))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(flet ,funs . ,_)
                         `(labels ,funs . ,_)
                         `(cl-flet ,funs . ,_)
                         `(cl-labels ,funs . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         ((funs . flet) .
                          (font-lock-function-name-face
-                          (pospcase-font-lock-variable-face-form (match-string 2))))))
+                          (pospcase-font-lock-variable-face-form (match-string 3))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(macrolet ,macros . ,_)
                         `(cl-macrolet ,macros . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         ((macros . macrolet) .
                          (font-lock-function-name-face
-                          (pospcase-font-lock-variable-face-form (match-string 2))))))
+                          (pospcase-font-lock-variable-face-form (match-string 3))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(setq ,first . ,_)
                         `(setf ,first . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         ((first . setq) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defstruct (,name . ,_) ,(pred stringp) ,first . ,_)
                         `(defstruct (,name . ,_) ,first . ,_)
@@ -840,22 +857,22 @@ examples."
                         `(cl-defstruct (,name . ,_) ,first . ,_)
                         `(cl-defstruct ,name ,(pred stringp) ,first . ,_)
                         `(cl-defstruct ,name ,first . ,_))
-                      '(font-lock-keyword-face
+                      '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-type-face))
                         ((first . defstruct) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                         (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(&key &aux &optional)
-                      '(font-lock-type-face
+                      '((heading-keyword . (font-lock-type-face))
                         ((pospcase--dummy . parameter) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))
+                         ((pospcase-font-lock-variable-face-form (match-string 2))
                           default
                           default))))
   (pospcase-font-lock 'lisp-mode
                       '(for :for index :index into :into with :with)
                       '(nil
                         ((pospcase--dummy . loop) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(dolist (,var . ,_) . ,_)
                         `(dotimes (,var . ,_) . ,_)
@@ -865,19 +882,23 @@ examples."
                         `(with-input-from-string (,var . ,_) . ,_)
                         `(cl-dolist (,var . ,_) . ,_)
                         `(cl-dotimes (,var . ,_) . ,_))
-                      '(font-lock-keyword-face
-                        (var . ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                      '((heading-keyword . (font-lock-keyword-face))
+                        (var . ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(condition-case ,var . ,_)
                         `(define-symbol-macro ,var . ,_)
-                        `(defvar* ,var . ,_)
-                        `(defconstant* ,var . ,_)
-                        `(defparameter* ,var . ,_)
                         `(define-special ,var . ,_)
                         `(define-interactive-keymap ,var . ,_)
                         `(define-stumpwm-type ,var . ,_))
-                      '(font-lock-keyword-face
-                        (var . ((pospcase-font-lock-variable-face-form (match-string 1)))))))
+                      '((heading-keyword . (font-lock-keyword-face))
+                        (var . ((pospcase-font-lock-variable-face-form (match-string 2))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(defvar ,var . ,_)
+                        `(defconstant ,var . ,_)
+                        `(defparameter ,var . ,_)
+                        `(defcustom ,var . ,_))
+                      '((heading-keyword . (font-lock-keyword-face))
+                        (var . (font-lock-variable-name-face)))))
 
 
 ;;;###autoload

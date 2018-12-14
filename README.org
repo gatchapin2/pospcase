@@ -282,7 +282,7 @@
    S-expression. But we exactly want that feature in our use
    case. Obvious example is argument list for function declaration. To
    overcome the limitation, you have to choose appropriate
-   submatchers for each arbitrary length list. So far, eight
+   submatchers for each arbitrary length list. So far, nine
    submatchers are implemented.
 
     - ~list/2~
@@ -293,11 +293,12 @@
     - ~defstruct~ (~list/1~)
     - ~parameter~ (~list/3~)
     - ~loop~ (~destructuring~ variant)
+    - ~setq~
 
-   If you are skilled programmer, maybe you can just skim the actual
-   keyword declarations in ~pospcase-font-lock-lisp-setup~ and use them
-   without any explanation. But I’m going to explain each of them
-   bellow.
+   If you are a skilled programmer, maybe you can just skim the actual
+   keyword declarations in ~pospcase-font-lock-lisp-setup~ and build
+   your own keyword without any prior information. But I’m going to
+   explain each of them bellow.
 
 *** ~list/2~
     If you pair a ~pcase~ pattern variable with ~list/2~ in the specs of
@@ -412,23 +413,46 @@
     lifetime. (Unless you are implementing ~loop~ macro version 2.0 or
     something).
 
+*** ~setq~
+    This submatcher is for highlighting variable names (plain symbol
+    names only) assigned by ~setq~ and ~setf~. As you know it, ~setq~ and
+    ~setf~ allow indefinite length of variable-value pair for
+    assignments within a single evaluation like:
 
-* Writing Your Own SubMatchers
-  I’m certain eventually you’ll outgrow and find the syntaxes that
-  the build-in ~pospcase-font-lock~ submatchers doesn’t quite cover.
+    #+BEGIN_SRC emacs-lisp
+      (setf foo 1
+            bar 2
+            baz 3)
+    #+END_SRC
 
-  In that case, it’s time to write your own submatcher using raw
-  functions like ~pospcase~, ~pospcase-at~, ~pospcase-read~, or even other
-  functions you can find in the wealth of Emacs Lisp ecosystem.
+    Technically speaking, every even symbols in the list is going to
+    be matched.
 
-  Since S-expression is infinity flexible, I just can’t write
-  universally applicable advice how to write a submatcher.
+    I suppose this submatcher is going to be used only by ~setq~ and
+    ~setf~.
 
-  I think bisecting and explaining the segments of actual working code
-  along with the how the code’s control flow will be like, is the
-  best.
+* Why Are My Patterns Not Supported?
+  Dirty secret of ~pospcase-font-lock~ is it uses regexp search for
+  heading keyword. For example from the pattern:
 
-  The code of ~pospcase-match-list/1~:
+  #+BEGIN_SRC emacs-lisp
+    `(defun ,name ,args . ,_)
+  #+END_SRC
+
+  it extracts the heading keyword ~defun~ and constructs a regexp
+  pattern string:
+
+  #+BEGIN_SRC emacs-lisp
+    "\\(?:(defun\\)\\_>\\s *"
+  #+END_SRC
+
+  Technically it’s possible to search and jump within a buffer using
+  ~pcase~ patterns. But I fear it’s going to be very costly.
+
+  Currently I have no plan to switch from regexp based heading keyword
+  search. But it also means you have to write ~pcase~ pattern to regexp
+  pattern string translator by yourself if you want to use some
+  specific ~pcase~ pattern for heading keyword.
 
 
 * Appendix: Technical Titbits
@@ -497,26 +521,7 @@
    well, accept it as unparsable and give up the fancy highlighting
    for that section.
 
-
-** How to use ~pospcase~, ~pospcase-at~, ~pospcase-read~
-  If you have some reason to directly get positions of S-expressions
-  in a buffer, you can use ~pospcase-at~ with ~pcase~ like syntax:
-
-  #+BEGIN_SRC emacs-lisp
-    (pospcase-at (point-min) '((`,exp exp)))
-  #+END_SRC
-
-  #+RESULTS:
-  : (1 . 41)
-
-  More detailed explanation can be found in ~pospcase-read~ docstring.
-
-
-** Limitation of ~pospcase~, ~pospcase-at~, ~pospcase-read~
-
-
-** Limitation of ~pospcase-font-lock~
-** Secretly using Regular Expression
+*** Secretly using Regular Expression
   ~pospcase-font-lock~ totally depends on ~pcase~. But it still use regexp
   for searching heading keywords. The reason why I don’t use something
   like [[https://github.com/emacsmirror/el-search][el-search]] is I fear further degeneration of performance. And I
@@ -526,40 +531,36 @@
   not implemented. Purposely ~pospcase-font-lock~ only supports heading
   keyword patterns.
 
-*** No support for multiple submatcher
-   Currently only single arbitrary length list matching per-pattern is
-   allowed. For example, ~defclass~ has syntax:
+*** Multiple Submatcher
+    See ~defclass~ syntax:
 
-   #+BEGIN_SRC emacs-lisp
-     `(defclass ,name ,supers ,slots . ,_)
-   #+END_SRC
+    #+BEGIN_SRC emacs-lisp
+      `(defclass ,name ,supers ,slots . ,_)
+    #+END_SRC
 
-   Where ~supers~ is a list of super-classes, and ~slots~ is a list of
-   class’s variables.
+    Where ~supers~ is a list of super-classes, and ~slots~ is a list of
+    class’s variables.
 
-   To over come the limitation, font-lock keyword of ~defclass~ is
-   declared as follow:
+    ~pospcase-font-lock~ internally generates two keywords for ~defclass~
+    equivalent of declaring the following:
 
-   #+BEGIN_SRC emacs-lisp
-     (pospcase-font-lock 'lisp-mode
-                         '(`(defclass ,name ,supers ,slots . ,_))
-                         '(font-lock-keyword-face
-                           (name . (default))
-                           (supers . (default))
-                           ((slots . list/1) . (font-lock-variable-name-face))))
+    #+BEGIN_SRC emacs-lisp
+      (pospcase-font-lock 'lisp-mode
+                          '(`(defclass ,name ,supers ,slots . ,_))
+                          '(font-lock-keyword-face
+                            (name . (font-lock-type-face))
+                            ((slots . list/1) . (font-lock-variable-name-face))))
 
-     (pospcase-font-lock 'lisp-mode
-                         '(`(defclass ,name ,supers . ,_))
-                         '(font-lock-keyword-face
-                           (name . (font-lock-type-face))
-                           ((supers . list/1) . (font-lock-type-face))))
-   #+END_SRC
+      (pospcase-font-lock 'lisp-mode
+                          '(`(defclass ,name ,supers ,slots . ,_))
+                          '(font-lock-keyword-face
+                            (name . (font-lock-type-face))
+                            ((supers . list/1) . (font-lock-type-face))))
+    #+END_SRC
 
-   Note ~pospcase-font-lock~ adds new keyword at the start of a keyword
-   list. In other word, the last added keyword will be highlighted
-   first. And since keywords are internally processed with ~'append~
-   flag, the below highlighting is not going to be overwritten by the
-   above keyword’s ~default~ face.
-
-   I’m aware it’s quite unintuitive. Maybe someday I might properly
-   implement support for multiple submatchers.
+    Note ~pospcase-font-lock~ adds new keyword at the start of a keyword
+    list. In other word, the last added keyword will be highlighted
+    first and the highlighted text’s property ~fontified~ is set to
+    ~t~. And since keywords are internally processed with ~'append~ flag,
+    the below highlighting is not going to be overwritten by the
+    following highlighting rules.
