@@ -521,14 +521,6 @@ nested list."
 (defvar pospcase-loop-group '(loop)
   "Submatchers with same behavior of `pospcase-match-loop'.")
 
-(defcustom pospcase-user-submatcher-conds nil
-  "User defined `cond' branches for `pospcase-font-lock-build'."
-  :type '(choice (const nil)
-                 (repeat (list (sexp :tag "predicate")
-                               (repeat :tag "body"
-                                       sexp))))
-  :group 'pospcase)
-
 (defcustom pospcase-stringify-heading-keyword-cases
   '((`(and (quote ,(and (pred symbolp) sym)) ,_) (symbol-name sym))
     (`,_ (error "Unsupported heading keyword pattern.")))
@@ -541,6 +533,73 @@ to string for later regexp pattern creation."
 (defun pospcase--stringfy-heading-keyword (pattern)
   (eval `(pcase (quote ,pattern)
            ,@pospcase-pcase-to-string-cases)))
+
+(defcustom pospcase-user-submatcher-conds nil
+  "User defined `cond' branches for `pospcase-font-lock-build'."
+  :type '(choice (const nil)
+                 (repeat (list (sexp :tag "predicate")
+                               (repeat :tag "body"
+                                       sexp))))
+  :group 'pospcase)
+
+(defmacro pospcase--generate-submatcher-preform ()
+  "Generate submatcher specific preform code. This macro exists
+to make the following `cond' branching extensible to the users."
+  `(cond
+    ,@pospcase-user-submatcher-conds    ; user defined branches
+
+    ;; Static variable name comes from the bindings of the caller's
+    ;; scope. In this case `submatcher' below.
+    ((null submatcher)
+     '(condition-case nil
+          (scan-sexps (point) 1)
+        (error (1+ (goto-char (1- (match-end 0)))))))
+
+    ((memq (cdr submatcher) pospcase-list-group)
+     `(progn
+        (goto-char (car ,(car submatcher))) ; all nested backquote
+                                            ; comma are evaluated
+                                            ; within the caller's
+                                            ; scope too
+        (cdr ,(car submatcher))))
+
+    ((memq (cdr submatcher) pospcase-defstruct-group)
+     `(progn
+        (setq pospcase--fence-start
+              (ignore-errors (pospcase-read (car ,(car submatcher)))))
+        (unless pospcase--fence-start (setq pospcase--ignore t))
+        (condition-case nil
+            (save-excursion
+              (goto-char (match-end 0))
+              (up-list)
+              (point))
+          (error (1+ (goto-char (1- (match-end 0))))))))
+
+    ((memq (cdr submatcher) (append pospcase-parameter-group
+                                    pospcase-loop-group))
+     `(let ((end (match-end 0)))
+        (if (memq (char-before (point))
+                  '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
+            (progn
+              (setq pospcase--ignore t)
+              (1+ (goto-char (1- end))))
+          (goto-char end)
+          (setq pospcase--fence-start
+                (ignore-errors (pospcase-read end)))
+          (if pospcase--fence-start
+              (condition-case nil
+                  ,(if (memq (cdr submatcher) pospcase-parameter-group)
+                       '(prog1
+                            (save-excursion
+                              (up-list)
+                              (point))
+                          (backward-up-list))
+                     '(scan-sexps (point) 1))
+                (error (1+ (goto-char (1- end)))))
+            (setq pospcase--ignore t)
+            (1+ (goto-char (1- end)))))))
+
+    (t (error "Not supported submatcher: %s" submatcher))))
 
 (defun pospcase-font-lock-build (patterns specs)
   "Actual font lock keywords generator."
@@ -588,127 +647,71 @@ to string for later regexp pattern creation."
         (error "In-middle keyword is not supported.")
       (setq matcher (concat matcher "\\_>\\s *")))
 
-    (cl-macrolet
-        ((submatcher-preform
-          ()
-          ;; This macro exists to allow inserting user defined
-          ;; submatcher into the `cond' branching.
-          `(cond
-            ,@pospcase-user-submatcher-conds
+    ;; Let's build font lock keywords
+    (mapcar
+     (lambda (submatcher)
+       `(,matcher
+         (,(intern (concat "pospcase-match-" (symbol-name (cdr submatcher))))
+          (pospcase--preform
+           (goto-char (match-beginning 0))
+           (setq pospcase--keyword-end (match-end 0))
 
-            ((null submatcher)
-             '(condition-case nil
-                  (scan-sexps (point) 1)
-                (error (1+ (goto-char (1- (match-end 0)))))))
+           ;; If the keyword is in a string or a comment, a flag
+           ;; for ignoring is set. And the cursor is moved to the
+           ;; end of the string or the comment block.
+           (cl-flet ((ignore-p ()
+                               (let ((table (syntax-ppss)))
+                                 (or (nth 3 table)     ; in string
+                                     (nth 4 table))))) ; in comment
+             (if (ignore-p)
+                 (progn
+                   (setq pospcase--ignore t)
+                   (while (and (not (eobp)) (ignore-p))
+                     (forward-char))
+                   (forward-comment most-positive-fixnum)
+                   (point))
 
-            ((memq (cdr submatcher) pospcase-list-group)
-             `(progn
-                (goto-char (car ,(car submatcher)))
-                (cdr ,(car submatcher))))
+               ;; If the keyword appears in actual code section,
+               ;; positioal data are assigned to appropriate
+               ;; variables by pattern matching using supplied
+               ;; PATTERNS.
+               (condition-case nil
+                   (multiple-value-bind ,vars (pospcase-at
+                                               (point)
+                                               ',(mapcar
+                                                  (lambda (pat)
+                                                    (list pat (cons 'values vars)))
+                                                  patterns))
+                     ,(unless (null non-subvars)
+                        `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-            ((memq (cdr submatcher) pospcase-defstruct-group)
-             `(progn
-                (setq pospcase--fence-start
-                      (ignore-errors (pospcase-read (car ,(car submatcher)))))
-                (unless pospcase--fence-start (setq pospcase--ignore t))
-                (condition-case nil
-                    (save-excursion
-                      (goto-char (match-end 0))
-                      (up-list)
-                      (point))
-                  (error (1+ (goto-char (1- (match-end 0))))))))
+                     ;; Then appropriate preparation code (extra
+                     ;; validity check, moving the cursor to
+                     ;; appropriate position, calculate the end of
+                     ;; highlighting region) is generated for each
+                     ;; group of submatcher using a macro.
+                     ,(pospcase--generate-submatcher-preform))
 
-            ((memq (cdr submatcher) (append pospcase-parameter-group
-                                            pospcase-loop-group))
-             `(let ((end (match-end 0)))
-                (if (memq (char-before (point))
-                          '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
-                    (progn
-                      (setq pospcase--ignore t)
-                      (1+ (goto-char (1- end))))
-                  (goto-char end)
-                  (setq pospcase--fence-start
-                        (ignore-errors (pospcase-read end)))
-                  (if pospcase--fence-start
-                      (condition-case nil
-                          ,(if (memq (cdr submatcher) pospcase-parameter-group)
-                               '(prog1
-                                    (save-excursion
-                                      (up-list)
-                                      (point))
-                                  (backward-up-list))
-                             '(scan-sexps (point) 1))
-                        (error (1+ (goto-char (1- end)))))
-                    (setq pospcase--ignore t)
-                    (1+ (goto-char (1- end)))))))
+                 (error (goto-char (match-end 0)))))))
 
-            (t (error "Not supported submatcher: %s" submatcher)))))
+          (pospcase--postform)
 
-      ;; Let's build font lock keywords
-      (mapcar
-       (lambda (submatcher)
-         `(,matcher
-           (,(intern (concat "pospcase-match-" (symbol-name (cdr submatcher))))
-            (pospcase--preform
-             (goto-char (match-beginning 0))
-             (setq pospcase--keyword-end (match-end 0))
+          ;; fontspecs
+          ,@(cl-loop with i = 0
+                     for spec in specs
+                     if (or (symbolp (car spec))
+                            (and (consp (car spec))
+                                 (eq (caar spec) (car submatcher))))
+                     append (mapcar (lambda (font)
+                                      (list (incf i)
+                                            (if (symbolp font)
+                                                (list 'quote font)
+                                              (apply (car font) (cdr font)))
+                                            nil t))
+                                    (cdr spec))))))
 
-             ;; If the keyword is in a string or a comment, a flag
-             ;; for ignoring is set. And the cursor is moved to the
-             ;; end of the string or the comment block.
-             (cl-flet ((ignore-p ()
-                                 (let ((table (syntax-ppss)))
-                                   (or (nth 3 table)     ; in string
-                                       (nth 4 table))))) ; in comment
-               (if (ignore-p)
-                   (progn
-                     (setq pospcase--ignore t)
-                     (while (and (not (eobp)) (ignore-p))
-                       (forward-char))
-                     (forward-comment most-positive-fixnum)
-                     (point))
-
-                 ;; If the keyword appears in actual code section,
-                 ;; positioal data are assigned to appropriate
-                 ;; variables by pattern matching using supplied
-                 ;; PATTERNS.
-                 (condition-case nil
-                     (multiple-value-bind ,vars (pospcase-at
-                                                 (point)
-                                                 ',(mapcar
-                                                    (lambda (pat)
-                                                      (list pat (cons 'values vars)))
-                                                    patterns))
-                       ,(unless (null non-subvars)
-                          `(setq pospcase--prematches ,(cons 'list non-subvars)))
-
-                       ;; Then appropriate preparation code (extra
-                       ;; validity check, moving the cursor to
-                       ;; appropriate position, calculate the end of
-                       ;; highlighting region) is generated for each
-                       ;; group of submatcher using a macro.
-                       ,(submatcher-preform))
-
-                   (error (goto-char (match-end 0)))))))
-
-            (pospcase--postform)
-
-            ;; fontspecs
-            ,@(cl-loop with i = 0
-                       for spec in specs
-                       if (or (symbolp (car spec))
-                              (and (consp (car spec))
-                                   (eq (caar spec) (car submatcher))))
-                       append (mapcar (lambda (font)
-                                        (list (incf i)
-                                              (if (symbolp font)
-                                                  (list 'quote font)
-                                                (apply (car font) (cdr font)))
-                                              nil t))
-                                      (cdr spec))))))
-
-       (or submatchers
-           '(nil))))))                   ; no submatcher
+     (or submatchers
+         '(nil)))))                   ; no submatcher
 
 (defun pospcase-font-lock (mode patterns specs &optional buffer-local-p)
   "Font lock keywords generator with `pcase' powered pattern
