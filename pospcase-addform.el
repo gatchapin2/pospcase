@@ -14,8 +14,8 @@
 (defcustom pospcase-addform--default
   '(lisp-mode
     (`(defun* ,name ,args . ,_))
-    font-lock-keyword-face
-    ((name . (font-lock-function-name-face))
+    ((heading-keyword . (font-lock-keyword-face))
+     (name . (font-lock-function-name-face))
      ((args . list/1) .
       ((pospcase-font-lock-variable-face-form (match-string 1)))))
     (and (buffer-file-name)
@@ -27,7 +27,6 @@
   :type '(list (symbol :tag "Mode")
                (repeat :tag "List of patterns"
                        (sexp :tag "Pattern"))
-               (symbol :tag "Keyword Face")
                (repeat :tag "List of Specs"
                        (cons :tag "Spec"
                              (choice (cons :tag "Name/Submatcher"
@@ -47,12 +46,6 @@
              :initform (cadr pospcase-addform--default)
              :custom (editable-list (sexp :tag ""))
              :documentation "⮴ Add pcase patterns.")
-   (keyword-face :type symbol
-                 :accessor pospcase-addform-keyword-face
-                 :initarg :keyword-face
-                 :initform (caddr pospcase-addform--default)
-                 :custom (sexp :tag "")
-                 :documentation "⮴ Specify a face for the heading keyword.")
    (specs :type cons
           :accessor pospcase-addform-specs
           :initarg :specs
@@ -89,13 +82,11 @@
                               (when ,(pospcase-addform-predicate obj)
                                 (pospcase-font-lock ',(pospcase-addform-mode obj)
                                                     ',(pospcase-addform-patterns obj)
-                                                    ',(cons (pospcase-addform-keyword-face obj)
-                                                            (pospcase-addform-specs obj))
+                                                    ',(pospcase-addform-specs obj)
                                                     t))))
                `(pospcase-font-lock ',(pospcase-addform-mode obj)
                                     ',(pospcase-addform-patterns obj)
-                                    ',(cons (pospcase-addform-keyword-face obj)
-                                            (pospcase-addform-specs obj))))))))
+                                    ',(pospcase-addform-specs obj)))))))
 
 (add-hook 'eieio-custom-mode-hook
           (lambda ()

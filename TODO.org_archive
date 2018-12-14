@@ -461,3 +461,14 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-12-14 Fri 04:28]
   - State "TODO"       from              [2018-12-05 Wed 05:38]
+
+* DONE pospcase-heading-pcase-to-regexp
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-14 Fri 10:59
+  :ARCHIVE_FILE: /mnt/hdd/home/gatchapin/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-14 Fri 10:59]
+  - State "TODO"       from              [2018-12-14 Fri 04:29]

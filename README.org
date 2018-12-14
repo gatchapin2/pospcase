@@ -139,7 +139,7 @@
      '(`(mydefun ,name ,args . ,_))         ; `pcase' pattern to match
 
      ;; font specs
-     '(font-lock-keyword-face               ; face of `mydefun' keyword
+     '((heading-keyword . (font-lock-keyword-face)) ; face of `mydefun' keyword
 
        (name
         . (font-lock-function-name-face))   ; face of new function `name’
@@ -173,7 +173,7 @@
      (pospcase-font-lock
       '%s
       '(`(foo ,bar ,baz . ,_))
-      '(font-lock-keyword-face
+      '((heading-keyword . (font-lock-keyword-face))
         (bar . (font-lock-function-name-face))
         ((baz . list/1) . (font-lock-variable-name-face))))"
                          major-mode)))
@@ -216,13 +216,13 @@
            (pospcase-font-lock 'lisp-mode
                                '(`(defun* ,name ,args . ,_)
                                  `(defgeneric* ,name ,args . ,_))
-                               '(font-lock-keyword-face
+                               '((heading-keyword . (font-lock-keyword-face))
                                  (name .
                                        (font-lock-function-name-face))
                                  ((args . list/1)
                                   .
                                   ((pospcase-font-lock-variable-face-form
-                                    (match-string 1)))))
+                                    (match-string 3)))))
                                t))))          ; buffer-local-p
     #+END_SRC
 
@@ -547,13 +547,13 @@
     #+BEGIN_SRC emacs-lisp
       (pospcase-font-lock 'lisp-mode
                           '(`(defclass ,name ,supers ,slots . ,_))
-                          '(font-lock-keyword-face
+                          '((heading-keyword . (font-lock-keyword-face))
                             (name . (font-lock-type-face))
                             ((slots . list/1) . (font-lock-variable-name-face))))
 
       (pospcase-font-lock 'lisp-mode
                           '(`(defclass ,name ,supers ,slots . ,_))
-                          '(font-lock-keyword-face
+                          '((heading-keyword . (font-lock-keyword-face))
                             (name . (font-lock-type-face))
                             ((supers . list/1) . (font-lock-type-face))))
     #+END_SRC
