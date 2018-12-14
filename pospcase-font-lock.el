@@ -1,4 +1,4 @@
-;;; pospcase-font-lock.el: S-expression   -*- lexical-binding: t -*-
+;;; pospcase-font-lock.el: S-expression code highlighting using pospcase -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2018-2019 gatchapin
 
