@@ -154,6 +154,18 @@
   is ~list/1~. To understand what it is, You have to understand
   Submatchers. But I’ll explain with more details later.
 
+  The symbol ~heading-keyword~ appeared out of nowhere. It’s because
+  internally this pattern is translated to:
+
+  #+BEGIN_SRC emacs-lisp
+    `((and 'mydefun heading-keyword) ,name ,args . ,_)
+  #+END_SRC
+
+  and ~heading-keyword~ is automatically assigned. The pattern is so
+  recurring (and arguably less readable), I took the liberty and made
+  it to a shortcut notation.
+
+
 * An Example Work Flow
 ** Good Old Way
    We are going to use ~~/.emacs.d/pospcase-user.el~ to store custom
