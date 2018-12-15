@@ -175,7 +175,7 @@
 
 * An Example Work Flow
 ** Manual Editing
-   We are going to use ~/.emacs.d/pospcase-user.el~ to store custom
+   We are going to use ~$HOME/.emacs.d/pospcase-user.el~ to store custom
    highlighting rules. (If you don’t like it, change the following
    code appropriately)
 
@@ -202,7 +202,7 @@
            (backward-char (- (1+ (length str)) (string-match "foo" str))))))
    #+END_SRC
 
-   Hereafter whenever you encounter a new keyword which needs extra
+   From now on, whenever you encounter a new keyword which needs extra
    highlighting for maximum readability, you can just ~M-x
    my-add-new-font-lock-keyword~ and start writing a new keyword right
    away from the convenient cookie cutter (you can also write a new
@@ -219,7 +219,7 @@
     people to choose the exact same keyword for complete different
     purpose in their own codebases. Two different definitions means
     two different highlighting rules. You need buffer-local keyword
-    rules for this.
+    rules for them.
 
     For example, ASDF package system for Common Lisp defines ~defun*~
     and use it internally. To highlight the keyword you wrap your
@@ -269,12 +269,12 @@
    entity of the forms represents. Add/delete/edit them accordingly to
    make your own highlighting rule.
 
-   Once done, click on Accept button. It automatically generate
+   Once done, click =Accept= button. It automatically generate
    identical code to what you wrote in the previous section in the
    user config file. If you see no problem with the code, evaluate it
    then reactivate the major-mode to apply the new highlighting rule.
 
-   I like writing Lisp code. Directly writing font-lock rule in my
+   I like writing Lisp code. Manually writing font-lock rule in my
    config file has never bothered me. But sometimes tabbing through
    and tinkering the form entries feels good. So here it is, if you
    like this style of editing, ~pospcase-addform~ is here for you.
@@ -458,8 +458,8 @@
     `(defun ,name ,args . ,_)
   #+END_SRC
 
-  it extracts the heading keyword ~defun~ and constructs a regexp
-  pattern string:
+  The keyword builder function ~pospcase-font-lock-build~ extracts the
+  heading keyword ~defun~ and constructs a regexp pattern string:
 
   #+BEGIN_SRC emacs-lisp
     "\\(?:(defun\\)\\_>\\s *"
@@ -472,6 +472,11 @@
   search. But it also means you have to write ~pcase~ pattern to regexp
   pattern string translator by yourself if you want to use some
   specific ~pcase~ pattern for heading keyword.
+
+  Please register your pattern using ~M-x customize-variable
+  pospcase-stringify-heading-keyword-cases~.
+
+  Sorry for the inconvenience.
 
 
 * Appendix: Technical Titbits
