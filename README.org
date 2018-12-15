@@ -267,6 +267,8 @@
 
    Then ~M-x pospcase-addform~.
 
+   [[./addform-image.png]]
+
    If you read the previous section surely you can guess what each
    entity of the forms represents. Add/delete/edit them accordingly to
    make your own highlighting rule.
