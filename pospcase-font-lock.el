@@ -324,7 +324,7 @@ to string for later regexp pattern creation."
 
 (defun pospcase--stringfy-heading-keyword (pattern)
   (eval `(pcase (quote ,pattern)
-           ,@pospcase-pcase-to-string-cases)))
+           ,@pospcase-stringify-heading-keyword-cases)))
 
 (defcustom pospcase-user-submatcher-conds nil
   "User defined `cond' branches for `pospcase-font-lock-build'."
