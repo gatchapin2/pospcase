@@ -198,19 +198,19 @@ nil."
                                 '((`(,name ,args . ,_) (values name args))))
                  (progn
                    (goto-char (car args))
-                   (let ((arglist (car (pospcase-read (point)))))
+                   (let ((arglist (pospcase-read (point))))
                      ,clause)))))
     limit))
 
 (defun pospcase-match-flet (limit)
   "Matcher iterator for a list of `flet' bindings."
-  (pospcase--call-flet-iterator (if arglist
+  (pospcase--call-flet-iterator (if (car arglist)
                                     (mapcar
                                      (lambda (exp)
-                                       (list name
+                                       (pospcase--list name
                                              (pospcase exp '((`(,arg . ,_) arg)
                                                              (`,arg arg)))))
-                                     arglist)
+                                     (car arglist))
                                   (list (pospcase--list name)))))
 
 (defun pospcase-collect-all-symbols (node)
@@ -232,7 +232,7 @@ nil."
                     (ignore-p temp)) return result
              else if (leaf-p temp) return (append
                                            result
-                                           (list (pospcase--list (cdr temp))))
+                                           (list (cdr temp)))
              else unless (ignore-p (car temp)) do (setq
                                                    result
                                                    (append
@@ -243,7 +243,7 @@ nil."
 (defun pospcase-match-destructuring (limit)
   "Matcher iterator for symbols in an arbitrarily nested list."
   (pospcase--call-iterator
-   (pospcase-collect-all-symbols (pospcase-read (point)))
+   (mapcar #'pospcase--list (pospcase-collect-all-symbols (pospcase-read (point))))
    limit
    t))
 
@@ -272,14 +272,14 @@ nested list."
                (down-list)
                (read (current-buffer)))
              '(loop cl-loop))
-       (pospcase-collect-all-symbols (pospcase-read (point))))
+       (mapcar #'list (pospcase-collect-all-symbols (pospcase-read (point)))))
    limit
    t))
 
 (defun pospcase-match-macrolet (limit)
   "Matcher iterator for a lit of `macrolet' bindings"
   (pospcase--call-flet-iterator (if (car arglist)
-                                    (mapcar (lambda (arg) (cons name arg))
+                                    (mapcar (lambda (arg) (pospcase--list name arg))
                                             (pospcase-collect-all-symbols arglist))
                                   (list (pospcase--list name)))))
 
@@ -344,7 +344,9 @@ to make the following `cond' branching extensible to the users."
     ;; scope. In this case `submatcher' below.
     ((null submatcher)
      '(condition-case nil
-          (scan-sexps (point) 1)
+          (prog1
+              (scan-sexps (point) 1)
+            (goto-char (match-end 0)))
         (error (1+ (goto-char (1- (match-end 0)))))))
 
     ((memq (cdr submatcher) pospcase-list-group)
