@@ -272,7 +272,7 @@ nested list."
                (down-list)
                (read (current-buffer)))
              '(loop cl-loop))
-       (mapcar #'list (pospcase-collect-all-symbols (pospcase-read (point)))))
+       (mapcar #'pospcase--list (pospcase-collect-all-symbols (pospcase-read (point)))))
    limit
    t))
 
@@ -411,6 +411,12 @@ to make the following `cond' branching extensible to the users."
                           '\,
                           `(and ,(list 'quote keyword) heading-keyword))
                          rest)))
+                      (`,(and (pred symbolp) keyword)
+                       (list
+                        '\`
+                        (list
+                         '\,
+                         `(and ,(list 'quote keyword) heading-keyword))))
                       (`,any any)))
                          patterns))
 
@@ -420,12 +426,19 @@ to make the following `cond' branching extensible to the users."
                                   ((eq (car pattern) 'quote)
                                    (concat "'" (prin1-to-string pattern)))
                                   ((eq (car pattern) '\`)
-                                   (if (and (consp (cadr pattern))
-                                            (consp (caadr pattern))
-                                            (eq (caaadr pattern) '\,))
-                                       (concat "("
-                                               (pospcase--stringfy-heading-keyword
-                                                (car (cdaadr pattern))))
+                                   (if (consp (cadr pattern))
+                                       (cond
+                                        ((and
+                                          (consp (caadr pattern))
+                                          (eq (caaadr pattern) '\,))
+                                         (concat "("
+                                                 (pospcase--stringfy-heading-keyword
+                                                  (car (cdaadr pattern)))))
+                                        ((and
+                                          (consp (cadr pattern))
+                                          (eq (caadr pattern) '\,))
+                                         (pospcase--stringfy-heading-keyword
+                                          (car (cdadr pattern)))))
                                      (error "Invalid heading keyword.")))
                                   (t (error "Invalid heading keyword.")))
                                (symbol-name pattern)))
@@ -857,8 +870,9 @@ special variable name or not. And returns appropriate face name."
                          (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(&key &aux &optional)
-                      '(((pospcase--dummy . parameter) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))
+                      '((heading-keyword . (font-lock-type-face))
+                        ((pospcase--dummy . parameter) .
+                         ((pospcase-font-lock-variable-face-form (match-string 2))
                           default
                           default))))
   (pospcase-font-lock 'lisp-mode
