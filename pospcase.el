@@ -62,7 +62,9 @@
       (,(concat "#\\\\" sym+) . ,lambda-1)
       ("#\\\\." . ,lambda-1)
       (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
-      (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2)))
+      (,(concat "#" sym* "\\([(\"]\\)") . ,lambda-2)
+      ("(function\\_>" . ,(concat "(functio" non-printable-1))
+      ("(quote\\_>" . ,(concat "(quot" non-printable-1))))
   "Used for simple regexp based translation from Common Lisp
   S-expression to Emacs Lisp."
   :type 'alist
