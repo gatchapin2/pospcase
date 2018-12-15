@@ -857,16 +857,14 @@ special variable name or not. And returns appropriate face name."
                          (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(&key &aux &optional)
-                      '((heading-keyword . (font-lock-type-face))
-                        ((pospcase--dummy . parameter) .
-                         ((pospcase-font-lock-variable-face-form (match-string 2))
+                      '(((pospcase--dummy . parameter) .
+                         ((pospcase-font-lock-variable-face-form (match-string 1))
                           default
                           default))))
   (pospcase-font-lock 'lisp-mode
                       '(for :for index :index into :into with :with)
-                      '(nil
-                        ((pospcase--dummy . loop) .
-                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
+                      '(((pospcase--dummy . loop) .
+                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(dolist (,var . ,_) . ,_)
                         `(dotimes (,var . ,_) . ,_)
