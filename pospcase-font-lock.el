@@ -397,30 +397,8 @@ to make the following `cond' branching extensible to the users."
 
 (defun pospcase-font-lock-build (patterns specs)
   "Actual font lock keywords generator."
-
-  ;; Simple symbol heading keyword to (and 'defun heading-keyword)
-  (setq patterns (mapcar
-                  (lambda
-                    (pattern)
-                    (pcase pattern
-                      (``(,(and (pred symbolp) keyword) . ,rest)
-                       (list
-                        '\`
-                        (cons
-                         (list
-                          '\,
-                          `(and ,(list 'quote keyword) heading-keyword))
-                         rest)))
-                      (`,(and (pred symbolp) keyword)
-                       (list
-                        '\`
-                        (list
-                         '\,
-                         `(and ,(list 'quote keyword) heading-keyword))))
-                      (`,any any)))
-                         patterns))
-
-  (let* ((keywords (mapcar (lambda (pattern)
+  (let* (noparens
+         (keywords (mapcar (lambda (pattern)
                              (if (consp pattern)
                                  (cond
                                   ((eq (car pattern) 'quote)
@@ -437,22 +415,20 @@ to make the following `cond' branching extensible to the users."
                                         ((and
                                           (consp (cadr pattern))
                                           (eq (caadr pattern) '\,))
+                                         (setq noparens t)
                                          (pospcase--stringfy-heading-keyword
                                           (car (cdadr pattern)))))
                                      (error "Invalid heading keyword.")))
                                   (t (error "Invalid heading keyword.")))
                                (symbol-name pattern)))
                            patterns))
-         (matcher (regexp-opt keywords))
+         (matcher (concat (when noparens "\\_<") (regexp-opt keywords) "\\_>\\s *"))
          (submatchers (cl-loop for spec in specs
                                if (consp (car spec)) collect (car spec)))
          (subvars (mapcar #'car submatchers))
          (vars (mapcar (lambda (spec) (if (consp (car spec)) (caar spec) (car spec)))
                        specs))
          (non-subvars (cl-remove-if (lambda (var) (memq var subvars)) vars)))
-    (if (string-match "," matcher)
-        (error "In-middle keyword is not supported.")
-      (setq matcher (concat matcher "\\_>\\s *")))
 
     ;; Let's build font lock keywords
     (mapcar
@@ -553,7 +529,25 @@ examples."
          (container (intern (format "pospcase-font-lock-%s%s-keywords"
                                     id
                                     (if buffer-local-p "-local" ""))))
-         (keywords (pospcase-font-lock-build patterns specs)))
+         (keywords (pospcase-font-lock-build
+                    ;; Simple symbol heading keyword to (and 'defun heading-keyword)
+                    (mapcar
+                     (lambda
+                       (pattern)
+                       (pcase pattern
+                         (``(,(and (pred symbolp) keyword) . ,rest)
+                          (list '\`
+                                (cons
+                                 (list '\,
+                                       `(and ,(list 'quote keyword) heading-keyword))
+                                 rest)))
+                         (`,(and (pred symbolp) keyword)
+                          (list '\`
+                                (list '\,
+                                      `(and ,(list 'quote keyword) heading-keyword))))
+                         (`,any any)))
+                     patterns)
+                    specs)))
     (unless (boundp container)
       (eval `(progn
                (,(if buffer-local-p 'defvar-local 'defvar)
@@ -643,8 +637,7 @@ special variable name or not. And returns appropriate face name."
       "the" "then" "thereis" "to"
       "unless" "until" "upfrom" "upto" "using"
       "vconcat"
-      "when" "while" "windows"
-      "for" "index" "into" "with"))
+      "when" "while" "windows"))
    "\\)"
    "\\_>")
   "Regexp string which matches `loop' and `cl-loop' named
@@ -877,8 +870,9 @@ special variable name or not. And returns appropriate face name."
                           default))))
   (pospcase-font-lock 'lisp-mode
                       '(for :for index :index into :into with :with)
-                      '(((pospcase--dummy . loop) .
-                         ((pospcase-font-lock-variable-face-form (match-string 1))))))
+                      '((heading-keyword . (font-lock-builtin-face))
+                        ((pospcase--dummy . loop) .
+                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(dolist (,var . ,_) . ,_)
                         `(dotimes (,var . ,_) . ,_)
