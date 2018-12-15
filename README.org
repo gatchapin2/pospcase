@@ -1,5 +1,7 @@
 #+TITLE: ~Pospcase~ is a pcase-powered position extractor for Emacs
 
+[[./code-image.png]]
+
 * About ~pospcase~
   ~pospcase~ is a Emacs Lisp package for extracting S-expression
   positions using ~pcase~ pattern matching capability.
