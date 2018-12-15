@@ -1,33 +1,35 @@
-#+TITLE: ~pospcase~: `pcase' powered position extraction and S-expression font-lock
+#+TITLE: ~Pospcase~ is a pcase-powered position extractor for Emacs
 
 * About ~pospcase~
-  ~pospcase~ is a package for extracting S-expression positions using
-  ~pcase~ pattern matching ability.
+  ~pospcase~ is a Emacs Lisp package for extracting S-expression
+  positions using ~pcase~ pattern matching capability.
 
-  At this moment the package contains a pattern matcher ~pospcase~ and a
-  pretty advanced code highlighter for ~lisp-mode~ and ~emacs-lisp-mode~.
+  The package also contains a pretty advanced code highlighter for
+  ~lisp-mode~ and ~emacs-lisp-mode~, fully extensible by using ~pcase~
+  patterns.
 
 
 * Introduction
   Emacs’s font-locking (highlighting) heavily relies on regular
   expression (regexp).
 
-  There’s already an attempt to do [[https://github.com/Lindydancer/lisp-extra-font-lock][extra highlighting]] for Lisp and
-  Emacs Lisp. Which is completely regexp based. When you follow the
-  above link and look into its [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Search_002dbased-Fontification.html][anchored-matcher]] (for some reason I use
-  the term submatcher instead in this package. Hereafter when I say
-  submatcher you can safely assume I mean anchored-matcher), let’s say
-  ~lisp-extra-font-lock-match-let~ for example.  you’ll notice parsing
-  S-expression with regexp is inherently awkward and error-prone (you
-  also notice in-between comments break the parsing too).
+  There’s already an attempt to do regexp based [[https://github.com/Lindydancer/lisp-extra-font-lock][extra highlighting]] for
+  Lisp and Emacs Lisp.
 
-  To overcome the problem, you basically have to call ~syntax-ppss~ and
-  ~forward-comment~ everywhere in pattern matching part of your
-  code. The resulting code is quite unreadable mess of regexp
-  matchings, constant syntax-table checkings, and numerous corner-case
-  coverages.
+  When you read the code from the link, let’s say
+  ~lisp-extra-font-lock-match-let~, a [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Search_002dbased-Fontification.html][anchored-matcher]] for the keyword
+  ~let~. (BTW I use the word submatcher in this package, but I really
+  means anchored-matcher). you’ll notice parsing S-expressions with
+  regexp is inherently awkward and error-prone (you also notice
+  in-between comments is not supported).
 
-  If you want to see what kind of mess it will be. Here’s an example:
+  To reliably parse S-expressions with regexp, you basically have to
+  call ~syntax-ppss~ and ~forward-comment~ everywhere in pattern matching
+  part of your code. The resulting code is quite unreadable hybrid of
+  regexp matchings, constant syntax-table checkings, and numerous
+  corner-case coverages.
+
+  Here’s an example code for regexp based S-expression parsing:
 
   #+BEGIN_SRC emacs-lisp
     ;;; match and collect all symbol positions within the same nested level
@@ -62,9 +64,8 @@
               (skip-chars-forward skip-pat)))))
   #+END_SRC
 
-  Next I present you what kind of code it will be like if you use
-  ~pospcase-read~, the S-expression reader I implemented, to get the
-  same result:
+  Next a code with nearly identical result but using ~pospcase-read~,
+  the reader function from this package:
 
   #+BEGIN_SRC emacs-lisp
     ;;; collect all symbol positions within the same nested level
@@ -78,21 +79,19 @@
 
   #+END_SRC
 
-  Well, I admit it’s exaggerated to illustrate the point. The actual
-  code is messier than this. But I hope you see some novelty behind
-  it.
+  Of course I prefer the later code much more.
 
-  In addition, Emacs recently got this nice pattern matching macro
-  called ~pcase~. Nowadays You can easily match and destructure any kind
-  of S-expression whenever you want.
+  In addition, Emacs recently got a nice pattern matching macro
+  ~pcase~. Nowadays You can easily match and destructure any
+  S-expression whenever you want.
 
   So I decided it’s a good time to write a ~pcase~-based position
-  extractor and use it for a lisp code highlighter.
+  extractor and use it for a Lisp code highlighter.
 
 
-* How to Enable Pospcase Font-Lock
-  To turn on the font-lock for lisp-mode and emacs-lisp-mode, add the
-  following code to init file:
+* How to Enable Code Highlighting
+  To activate ~pospcase-font-lock~ for lisp-mode and emacs-lisp-mode,
+  add the following code to init file:
 
   #+BEGIN_SRC emacs-lisp
     (add-hook 'after-init-hook
@@ -104,15 +103,20 @@
   #+END_SRC
 
   The above code add ~pospcase-font-lock-lisp-keywords~add~ to the said
-  two lisp major-modes’ hooks. Currently ~pospcase-font-lock~ doesn’t
-  have minor-mode unlike ~lisp-extra-font-lock~. The reason is I
-  designed the font-lock specific functions so I can easily making
-  buffer-local keywords. Then I can simultaneously work on different
-  codebases in a single Emacs session with different highlighting
-  rules with the same keywords for each codebases. It may never
-  happened to you, but I’ve actually seen two codebases define ~defun*~
-  by themselves with completely different meanings with different
-  argument styles (one of them enforce type check with ~->~
+  two lisp major-modes’ hooks.
+
+  Side note:
+
+  Currently ~pospcase-font-lock~ doesn’t have minor-mode unlike
+  ~lisp-extra-font-lock~. The reason is I designed the font-lock
+  specific functions so I can easily making buffer-local
+  keywords. Then I can simultaneously work on different codebases in a
+  single Emacs session with different highlighting rules with the same
+  keywords for each codebases.
+
+  It may never happened to you, but I’ve actually seen two codebases
+  define ~defun*~ by themselves with completely different meanings with
+  different argument styles (one of them enforce type check with ~->~
   (dash-greater-than) as the infix).
 
   If you want to enforce the same highlighting rule to a single
@@ -133,7 +137,7 @@
   written for that purpose.
 
   Suppose I want to add a highlight rule for a new Common Lisp macro
-  ~mydefun,~ I can simply write like this:
+  ~mydefun~, I can simply write like this:
 
   #+BEGIN_SRC emacs-lisp
     (pospcase-font-lock
