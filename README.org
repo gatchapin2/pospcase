@@ -100,12 +100,17 @@
               (lambda ()
                 (add-to-list 'load-path
                              "/path/to/pospcase") ; change it appropriately
-                (require 'pospcase)
+                (require 'pospcase-font-lock)
                 (pospcase-font-lock-lisp-setup)))
   #+END_SRC
 
   The above code add ~pospcase-font-lock-lisp-keywords~add~ to the said
-  two lisp major-modes’ hooks.
+  two lisp major-modes’ hooks. The highlighting will be activated for
+  every future Emacs session. But if you want to activate it right now
+  type: ~M-x load-library pospcase-font-lock~ then ~M-x
+  pospcase-font-lock-lisp-setup~, lastly reactivate the major-mode of
+  each buffer you want to be highlighted, for example ~M-x
+  emacs-lisp-mode~ if the current buffer is Emacs Lisp code.
 
   Side note:
 
