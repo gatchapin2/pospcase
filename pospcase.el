@@ -259,9 +259,9 @@ a pattern after comma and don't include comma."
                                 (search child))))))
       (search exp))))
 
-(defmacro pospcase-translate (matcher)
-  "Translate `pcase' matcher pattern (usually backquoted) to
-matcher pattern consumable for `pospcase'.
+(defun pospcase-translate (pat)
+  "Translate `pcase' pattern (usually backquoted) to a pattern
+consumable for `pospcase'.
 
 Each sub-pattern can only bind positional metadata to the first
 variable. e.g.:
@@ -317,12 +317,12 @@ symbol foo and not positional (START . END) pair."
                              (t (cl-return result))))
                         ',_)))
                  (cons node ',_))))
-    (if (consp matcher)
-        (case (car matcher)
-          ('quote (list 'quote (list '\` (cons matcher ',_))))
-          ('\` (list 'quote (list '\` (walk (cadr matcher)))))
-          (otherwise (list 'quote (walk matcher))))
-      `,(list 'quote (list '\` (cons matcher ',_))))))
+    (if (consp pat)
+        (case (car pat)
+          ('quote (list '\` (cons pat ',_)))
+          ('\` (list '\` (walk (cadr pat))))
+          (otherwise (walk pat)))
+      (list '\` (cons pat ',_)))))
 
 (defun pospcase (exp cases)
   "`pcase' variant for getting positional metadata."
@@ -332,7 +332,7 @@ symbol foo and not positional (START . END) pair."
       ,@(mapcar
          (lambda (case)
            (list
-            (eval `(pospcase-translate ,(car case)))
+            (pospcase-translate (car case))
             (let (symbols)
               (cl-labels
                   ((collect (node)
