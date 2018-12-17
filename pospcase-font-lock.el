@@ -664,9 +664,7 @@ special variable name or not. And returns appropriate face name."
   (or (let ((table (save-excursion (syntax-ppss pos))))
         (or (nth 3 table)
             (nth 4 table)))
-      (memq (char-before pos) '(?? ?#))
-      (and (eq (char-before pos) ?\\)
-           (eq (char-before (1- pos)) ??))))
+      (memq (char-before pos) '(?\\ ?? ?#))))
 
 
 ;;; `lisp-mode' and `emacs-lisp-mode' font-lock
