@@ -38,7 +38,7 @@
     ((heading-keyword . (font-lock-keyword-face))
      (name . (font-lock-function-name-face))
      ((args . list/1) .
-      ((pospcase-font-lock-variable-face-form (match-string 1)))))
+      ((pospcase-font-lock-variable-face-form (match-string 3)))))
     (and (buffer-file-name)
          (equal (file-name-nondirectory (buffer-file-name))
                 "asdf.lisp")))
