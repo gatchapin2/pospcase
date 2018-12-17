@@ -109,10 +109,10 @@
   The above code add ~pospcase-font-lock-lisp-keywords~add~ to the said
   two lisp major-modes’ hooks. The highlighting will be activated for
   every future Emacs session. But if you want to activate it right now
-  type: ~M-x load-library pospcase-font-lock~ then ~M-x
-  pospcase-font-lock-lisp-setup~, lastly reactivate the major-mode of
-  each buffer you want to be highlighted, for example ~M-x
-  emacs-lisp-mode~ if the current buffer is Emacs Lisp code.
+  type: =M-x load-library RET pospcase-font-lock= then =M-x
+  pospcase-font-lock-lisp-setup=, lastly reactivate the major-mode of
+  each buffer you want to be highlighted, for example =M-x
+  emacs-lisp-mode= if the current buffer is Emacs Lisp code.
 
   Side note:
 
@@ -213,15 +213,15 @@
    #+END_SRC
 
    From now on, whenever you encounter a new keyword which needs extra
-   highlighting for maximum readability, you can just ~M-x
-   my-add-new-font-lock-keyword~ and start writing a new keyword right
+   highlighting for maximum readability, you can just =M-x
+   my-add-new-font-lock-keyword= and start writing a new keyword right
    away from the convenient cookie cutter (you can also write a new
    snippet for Yasnippet if it’s your style).
 
-   If you are satisfied with the new keyword, save the buffer, ~C-M-x~
-   or ~C-x C-e~ or whatever command you use to evaluate the code, then
+   If you are satisfied with the new keyword, save the buffer, =C-M-x=
+   or =C-x C-e= or whatever command you use to evaluate the code, then
    go back to your project and reactivate the major mode, for example
-   ~M-x lisp-mode~ for a Common Lisp buffer. Now you see the new
+   =M-x lisp-mode= for a Common Lisp buffer. Now you see the new
    font-lock rule is applied and the code is highlighted accordingly.
 
 *** Buffer-Local Keywords
@@ -266,14 +266,14 @@
    doesn’t completely free you from code tweaking but at least it
    gives you fancy forms to fill.
 
-   To use the command, run ~M-x load-library pospcase-addform~ or
+   To use the command, run =M-x load-library RET pospcase-addform= or
    evaluate the following code:
 
    #+BEGIN_SRC emacs-lisp
      (require 'pospcase-addform)
    #+END_SRC
 
-   Then ~M-x pospcase-addform~.
+   Then =M-x pospcase-addform=.
 
    [[./addform-image.png]]
 
@@ -485,8 +485,8 @@
   pattern string translator by yourself if you want to use some
   specific ~pcase~ pattern for heading keyword.
 
-  Please register your pattern using ~M-x customize-variable
-  pospcase-stringify-heading-keyword-cases~.
+  Please register your pattern using =M-x customize-variable RET
+  pospcase-stringify-heading-keyword-cases=.
 
   Sorry for the inconvenience.
 
