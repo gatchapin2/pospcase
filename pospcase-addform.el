@@ -62,13 +62,11 @@
 
 (defclass pospcase-addform--container ()
   ((patterns :type list
-             :accessor pospcase-addform-patterns
              :initarg :patterns
              :initform (cadr pospcase-addform--default)
              :custom (editable-list (sexp :tag ""))
              :documentation "⮴ Add pcase patterns.")
    (specs :type cons
-          :accessor pospcase-addform-specs
           :initarg :specs
           :initform (caddr pospcase-addform--default)
           :custom (editable-list (cons :tag ""
@@ -80,13 +78,11 @@
                                              (sexp :tag "Face"))))
           :documentation "⮴ Add variable/submatcher pair and face list.")
    (mode :type symbol
-         :accessor pospcase-addform-mode
          :initarg :mode
          :initform (car pospcase-addform--default)
          :custom (sexp :tag "")
          :documentation "⮴ Specify mode to active the highlighting rule.")
    (predicate :type (or null list)
-              :accessor pospcase-addform-predicate
               :initform (car (cdddr pospcase-addform--default))
               :custom (choice (const :tag "Always" nil)
                               (sexp list))
@@ -97,17 +93,17 @@
   (with-current-buffer (find-file-noselect pospcase-user-file)
     (goto-char (point-max))
     (insert (pp-to-string
-             (if (pospcase-addform-predicate obj)
-                 `(add-hook ',(intern (concat (symbol-name (pospcase-addform-mode obj)) "-hook"))
+             (if (slot-value obj 'predicate)
+                 `(add-hook ',(intern (concat (symbol-name (slot-value obj 'mode)) "-hook"))
                             (lambda ()
-                              (when ,(pospcase-addform-predicate obj)
-                                (pospcase-font-lock ',(pospcase-addform-mode obj)
-                                                    ',(pospcase-addform-patterns obj)
-                                                    ',(pospcase-addform-specs obj)
+                              (when ,(slot-value obj 'predicate)
+                                (pospcase-font-lock ',(slot-value obj 'mode)
+                                                    ',(slot-value obj 'patterns)
+                                                    ',(slot-value obj 'specs)
                                                     t))))
-               `(pospcase-font-lock ',(pospcase-addform-mode obj)
-                                    ',(pospcase-addform-patterns obj)
-                                    ',(pospcase-addform-specs obj)))))))
+               `(pospcase-font-lock ',(slot-value obj 'mode)
+                                    ',(slot-value obj 'patterns)
+                                    ',(slot-value obj 'specs)))))))
 
 (add-hook 'eieio-custom-mode-hook
           (lambda ()
