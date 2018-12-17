@@ -1,4 +1,6 @@
 #+TITLE: ~Pospcase~ is a pcase-powered position extractor for Emacs
+#+AUTHOR: gatchapin
+#+EMAIL: (cl-loop for l on (append "gfaxtscdhfajpyieny@sgpmqxd.ucyodmx" nil) by #'cddr concat (string (car l)))
 
 [[./code-image.png]]
 
