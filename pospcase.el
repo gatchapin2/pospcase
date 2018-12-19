@@ -59,7 +59,9 @@
        . ,lambda-3)
       ("[[{]" . "(")
       ("[]}]" . ")")
-      ("#\\([0-9]+\\)#" . "  \\1")
+      ("#\\([0-9]+\\)#" . ,(concat non-printable-1
+                                   "\\1"
+                                   non-printable-1))
       (,(concat "#\\\\" sym+) . ,lambda-1)
       ("#\\\\." . ,lambda-1)
       (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
