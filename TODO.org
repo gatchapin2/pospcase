@@ -126,6 +126,28 @@
    - Example: `((or labels cl-labels) ,name ,args . ,__)
 ** TODO Should I make ~pospcase-let~?
    - State "TODO"       from              [2018-12-04 Tue 11:07]
+** TODO Consider trailing match for submatchers
+   - State "TODO"       from              [2018-12-20 Thu 12:00]
+   Currently use cases I can think are ~defstruct~ and ~setq~:
+
+   #+BEGIN_SRC emacs-lisp
+     `(defstruct ,name . ,slots)
+   #+END_SRC
+
+   and:
+
+   #+BEGIN_SRC emacs-lisp
+     `(setq . ,binds)
+   #+END_SRC
+
+   Advantages:
+     - It looks more proper.
+     - May elegantly cover some future pattern I’m not currently aware of.
+
+   Disadvantage:
+     - Unnecessary computation. (no chopping off)
+     - Doesn’t cooperate well with fence-start (maybe requires rework?)
+
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]
