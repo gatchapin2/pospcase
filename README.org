@@ -162,9 +162,9 @@
         . (font-lock-function-name-face))   ; face of new function `name’
 
        ((args . list/1)                     ; `args' is arbitrary length
-                                            ; list of arguments.
+                                            ; list of symbols and lists.
 
-        . (font-lock-variable-name-face)))) ; face of every arguments
+        . (font-lock-variable-name-face)))) ; face of every argument
   #+END_SRC
 
   Hopefully it’s straightforward enough for you. The most foreign part

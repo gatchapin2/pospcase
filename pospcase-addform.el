@@ -63,12 +63,10 @@
 (defclass pospcase-addform--container ()
   ((patterns :type list
              :initarg :patterns
-             :initform (cadr pospcase-addform--default)
              :custom (editable-list (sexp :tag ""))
              :documentation "⮴ Add pcase patterns.")
    (specs :type cons
           :initarg :specs
-          :initform (caddr pospcase-addform--default)
           :custom (editable-list (cons :tag ""
                                        (choice (symbol :tag "Variable")
                                                (cons :tag "Variable/Submatcher"
@@ -79,11 +77,10 @@
           :documentation "⮴ Add variable/submatcher pair and face list.")
    (mode :type symbol
          :initarg :mode
-         :initform (car pospcase-addform--default)
          :custom (sexp :tag "")
          :documentation "⮴ Specify mode to active the highlighting rule.")
    (predicate :type (or null list)
-              :initform (car (cdddr pospcase-addform--default))
+              :initarg :predicate
               :custom (choice (const :tag "Always" nil)
                               (sexp list))
               :documentation "⮴ Specify predicate expression when to enable.")))
@@ -118,7 +115,11 @@
 ;;;###autoload
 (defun pospcase-addform ()
   (interactive)
-  (let ((obj (make-instance 'pospcase-addform--container))
+  (let ((obj (make-instance 'pospcase-addform--container
+                            :patterns (cadr pospcase-addform--default)
+                            :specs (caddr pospcase-addform--default)
+                            :mode (car pospcase-addform--default)
+                            :predicate (car (cdddr pospcase-addform--default))))
         (g 'default))
     (select-window
      (display-buffer (get-buffer-create (concat
