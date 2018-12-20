@@ -147,7 +147,8 @@
    Disadvantage:
      - Unnecessary computation. (no chopping off)
      - Doesn’t cooperate well with fence-start (maybe requires rework?)
-
+** TODO What to do with case insensitivity?
+   - State "TODO"       from              [2018-12-20 Thu 14:12]
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]
