@@ -14,6 +14,10 @@
    - #H() from cl21
    - #!?[-+]sym
    - #(1 2 3)
+   - #2A((1) (2))
+   - #123#
+   - #| |#
+   - #.(foo)
 
 ** TODO replace-regex-in-string ideas [5/5]
    - State "TODO"       from              [2018-11-21 Wed 01:42]
@@ -30,6 +34,14 @@
 
 ** TODO ~pospcase–buffer-substring~ can’t read "#\\\\"
    - State "TODO"       from              [2018-12-05 Wed 03:50]
+
+** TODO unreliable forward-sexp
+   - State "TODO"       from              [2018-12-21 Fri 14:07]
+   Known problematic cases:
+   - #2A((1) (2))
+   - #.(foo)
+
+   Do they break nth-chop-off?
 
 * Features
 ** TODO Use as much ~pcase~ as possible
