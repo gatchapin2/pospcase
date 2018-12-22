@@ -322,7 +322,7 @@
     - ~destructuring~
     - ~macrolet~
     - ~defstruct~ (~list/1~)
-    - ~parameter~ (~list/3~)
+    - ~parameter~
     - ~loop~ (~destructuring~ variant)
     - ~setq~
 
@@ -408,7 +408,7 @@
     highlighting needs and have no occasion to deal with more strange
     syntax in the wild.
 
-*** ~parameter~ (~list/3~)
+*** ~parameter~
     The most tricky syntax is the parameter keywords for argument list
     (or lambda list). They change following semantic meaning and
     therefore highlighting rules when they appear in the middle of a

@@ -162,13 +162,14 @@ nil."
   (pospcase--call-list-iterator (`(,name ,type) (pospcase--list name type))
                                 (`,name (pospcase--list name))))
 
-(defun pospcase-match-list/3 (limit)
+(defun pospcase-match-parameter (limit)
   "Matcher iterator for a list of symbol, two or three length lists."
-  (pospcase--call-list-iterator (`(,name ,init ,sup) (pospcase--list name init sup))
+  (pospcase--call-list-iterator (`((,kw ,name) ,init ,sup) (list kw name init sup)) ; a hacky use of list
+                                (`((,kw ,name) ,init) (list kw name init))
+                                (`((,kw ,name)) (list kw name))
+                                (`(,name ,init ,sup) (pospcase--list name init sup))
                                 (`(,name ,init) (pospcase--list name init))
                                 (`,name (pospcase--list name))))
-
-(defalias #'pospcase-match-parameter #'pospcase-match-list/3)
 
 (defun pospcase-match-list/1 (limit)
   "Matcher iterator for a symbol or `car's of a list of lists"
@@ -861,7 +862,8 @@ special variable name or not. And returns appropriate face name."
                          (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(&key &aux &optional)
-                      '((heading-keyword . (font-lock-type-face))
+                      '((heading-keyword .
+                                         (font-lock-builtin-face)) ; a hack for &key ((:key var) init sup)
                         ((pospcase--dummy . parameter) .
                          ((pospcase-font-lock-variable-face-form (match-string 2))
                           default
