@@ -27,11 +27,6 @@
    - [X] "#\\+" -> "  "
    - [X] "#|foo|#" -> "/*   */"
 
-** TODO large body sluggishness
-   - State "TODO"       from              [2018-11-30 Fri 16:48]
-
-   - need jit-lock internal understanding
-
 ** TODO ~pospcase–buffer-substring~ can’t read "#\\\\"
    - State "TODO"       from              [2018-12-05 Wed 03:50]
 
@@ -42,6 +37,16 @@
    - #.(foo)
 
    Do they break nth-chop-off?
+
+** TODO Reorder keywords for parameter-group
+   - State "TODO"       from              [2018-12-23 Sun 14:45]
+
+   - Case 1
+     #+BEGIN_SRC emacs-lisp
+       (defun foo (&key (bar #'baz)))
+     #+END_SRC
+
+     ~#'baz~ should be properly highlighted
 
 * Features
 ** TODO Use as much ~pcase~ as possible
@@ -68,42 +73,6 @@
        (pospcase-font-lock-submatcher (`(,arg ,type)
                                        `,arg))
      #+END_SRC
-** TODO add chop-off-p to pospcase-read
-   - State "TODO"       from              [2018-11-21 Wed 05:44]
-
-*** TODO detect trailing ". ,__)", attach closing parens for read-from-string
-
-    - State "TODO"       from              [2018-11-21 Wed 05:44]
-*** TODO use syntax-table
-
-    - State "TODO"       from              [2018-11-23 Fri 08:49]
-
-    #+BEGIN_SRC emacs-lisp
-    (insert (make-string
-         (car (parse-partial-sexp (point) (+ (point) 10)))
-         ?\)))
-    (foo (bar (baz (qux (quux
-    #+END_SRC
-
-*** TODO pospcase--buffer-substring
-    - State "TODO"       from              [2018-11-29 Thu 14:42]
-
-    #+BEGIN_SRC emacs-lisp
-      (let ((str (buffer-substring-no-properties (point) limit))
-            newstr)
-        (with-temp-buffer
-          (insert str)
-          (goto-char (point-max))
-          (insert (make-string (car (syntax-ppss)) ?\)))
-          (setq pospcase--buffer-substring (buffer-substring (point-min) (point-max)))))
-    #+END_SRC
-
-
-*** TODO Entry point should be ~pospcase-at.~ Because ~pospcase-read~ and ~pospcase~ aren’t aware of current patterns.
-    - State "TODO"       from              [2018-11-30 Fri 09:58]
-
-*** TODO ~pospcase-read~ walk down the sexp tree. How should it behave when chop-off point comes?
-    - State "TODO"       from              [2018-11-30 Fri 10:00]
 ** TODO define ~pospcase--after-open-paren~
    - State "TODO"       from              [2018-11-23 Fri 11:11]
 
@@ -161,6 +130,8 @@
      - Doesn’t cooperate well with fence-start (maybe requires rework?)
 ** TODO What to do with case insensitivity?
    - State "TODO"       from              [2018-12-20 Thu 14:12]
+** TODO ignore-errors should be togglable
+   - State "TODO"       from              [2018-12-23 Sun 14:50]
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]
