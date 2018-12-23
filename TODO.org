@@ -41,12 +41,16 @@
 ** TODO Reorder keywords for parameter-group
    - State "TODO"       from              [2018-12-23 Sun 14:45]
 
-   - Case 1
+   - To properly highlight the following declaration:
+
      #+BEGIN_SRC emacs-lisp
        (defun foo (&key (bar #'baz)))
      #+END_SRC
 
-     ~#'baz~ should be properly highlighted
+     The keywords order should be:
+
+     1. ~#'baz~ and ~&key~, by non-pospcase keywords
+     2. parameter-group, (including masked and ignored heading-keyword ~&key~)
 
 * Features
 ** TODO Use as much ~pcase~ as possible
