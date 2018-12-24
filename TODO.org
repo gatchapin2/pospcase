@@ -44,13 +44,14 @@
    - To properly highlight the following declaration:
 
      #+BEGIN_SRC emacs-lisp
-       (defun foo (&key (bar #'baz)))
+       (defun foo (&key (quote #'bar) (function ’baz)))
      #+END_SRC
 
      The keywords order should be:
 
      1. ~#'baz~ and ~&key~, by non-pospcase keywords
      2. parameter-group, (including masked and ignored heading-keyword ~&key~)
+     3. ~quote~ and ~function~, lisp keywords that can be both macro and symbol
 
 * Features
 ** TODO Use as much ~pcase~ as possible
