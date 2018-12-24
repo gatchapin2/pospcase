@@ -52,6 +52,39 @@
      1. ~#'baz~ and ~&key~, by non-pospcase keywords
      2. parameter-group, (including masked and ignored heading-keyword ~&key~)
      3. ~quote~ and ~function~, lisp keywords that can be both macro and symbol
+** TODO fontspecs feels inconsistent
+   - State "TODO"       from              [2018-12-24 Mon 10:35]
+
+   Actually, current design makes sense too.
+
+   - If submatcher is specified with cons cell:
+
+     (name . submatcher)
+
+     Without submatcher:
+
+     name
+
+     not
+
+     (name) or (name . nil)
+
+     Maybe optionally allow this notation?
+
+   - And faces are specified with list:
+
+     (font-lock-variable-name-face
+      font-lock-type-face)
+
+     and requires parenthesis even when single element:
+
+     (font-lock-variable-name-face)
+
+     Because some faces are decided dynamically like:
+
+     ((pospcase-font-lock-variable-face-form (match 1)))
+
+     So mandatory parenthesis makes sense.
 
 * Features
 ** TODO Use as much ~pcase~ as possible
