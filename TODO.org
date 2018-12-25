@@ -166,6 +166,13 @@
    Disadvantage:
      - Unnecessary computation. (no chopping off)
      - Doesn’t cooperate well with fence-start (maybe requires rework?)
+
+   Scheme define needs trailing dot?
+
+   #+BEGIN_SRC scheme
+     (define (foo bar baz) quux)
+   #+END_SRC
+
 ** TODO What to do with case insensitivity?
    - State "TODO"       from              [2018-12-20 Thu 14:12]
 ** TODO ignore-errors should be togglable
