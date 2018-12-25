@@ -499,27 +499,30 @@ to make the following `cond' branching extensible to the users."
 
 (defun pospcase-font-lock (mode patterns specs &optional buffer-local-p)
   "Font lock keywords generator with `pcase' powered pattern
-matching. Currently you can use sub-matchers:
+matching. Currently you can use submatchers:
 
 Group one: list/2, list/1, destructuring, flet, macrolet
 
-Group two:  defstruct
+Group two:  defstruct, setq
 
-Group three: key
+Group three: parameter
 
-So far sufficient portions of Common Lisp and Emacs Lisp could be
-highlighted using them.
+Group four: loop
+
+These submatchers are not comprehensible and only covers the
+S-expression patterns the author's need. By writing your own
+submatcher and registering it to `pospcase-user-submatcher-conds'
+by supplying submatcher specific preform, you can fully extend
+the patterns `pospcase-font-lock' supports.
 
 Argument PATTERNS is a list of `pcase' patterns.
 
 And SPECS is a list of slightly extended fontspec.
 
-The first element is the face name of the heading keyword.
-
 The rest is structured like:
 
   (match-name . (list of font-face-name)) or
-  ((match-name . sub-matcher) . (list of font-face-name))
+  ((match-name . submatcher) . (list of font-face-name))
 
 See the code of `pospcase-font-lock-lisp-setup' for working
 examples."
