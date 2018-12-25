@@ -778,6 +778,10 @@ special variable name or not. And returns appropriate face name."
                       '(`(defun (setf ,name) ,args . ,_)
                         `(defun ,name ,args . ,_)
                         `(defsubst ,name ,args . ,_)
+                        `(define-method-combination ,name ,args . ,_)
+                        `(define-condition ,name ,args . ,_)
+                        `(define-setf-expander ,name ,args . ,_)
+                        `(define-compiler-macro ,name ,args . ,_)
                         `(define-inline ,name ,args . ,_)
                         `(define-modify-macro ,name ,args . ,_)
                         `(cl-defun (setf ,name) ,args . ,_)
@@ -785,6 +789,12 @@ special variable name or not. And returns appropriate face name."
                         `(cl-defsubst ,name ,args . ,_))
                       '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-function-name-face))
+                        ((args . list/1) .
+                         ((pospcase-font-lock-variable-face-form (match-string 3))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(`(deftype ,name ,args . ,_))
+                      '((heading-keyword . (font-lock-keyword-face))
+                        (name . (font-lock-type-face))
                         ((args . list/1) .
                          ((pospcase-font-lock-variable-face-form (match-string 3))))))
   (pospcase-font-lock 'lisp-mode
