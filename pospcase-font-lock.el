@@ -761,7 +761,8 @@ special variable name or not. And returns appropriate face name."
            symbol
            "\\)")
          (1 font-lock-function-name-face)))))
-  "List of font lock keywords for Lisp.")
+  "List of extra font lock keywords for Lisp. The highest
+  fontification priority.")
 
 
 (defun pospcase-font-lock-lisp-init ()
