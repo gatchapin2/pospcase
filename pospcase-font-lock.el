@@ -443,15 +443,13 @@ to make the following `cond' branching extensible to the users."
            ;; If the keyword is in a string or a comment, a flag
            ;; for ignoring is set. And the cursor is moved to the
            ;; end of the string or the comment block.
-           (cl-flet ((ignore-p ()
-                               (let ((table (syntax-ppss)))
-                                 (or (nth 3 table)     ; in string
-                                     (nth 4 table))))) ; in comment
-             (if (ignore-p)
+           (let ((table (syntax-ppss)))
+             (if (nth 8 table)          ; in string or comment
                  (progn
                    (setq pospcase--ignore t)
-                   (while (and (not (eobp)) (ignore-p))
-                     (forward-char))
+                   (when (nth 3 table)     ; in string
+                     (goto-char (or (ignore-errors (scan-sexps (nth 8 table)) 1)
+                                    (point-max))))
                    (forward-comment most-positive-fixnum)
                    (point))
 
