@@ -586,8 +586,11 @@ examples."
 
                )))
     (mapc (lambda (keyword)
-            (unless (member keyword (symbol-value keyvar))
-              (set keyvar (cons keyword (symbol-value keyvar)))))
+            (let ((var (if buffer-local-p
+                           keyvar-local
+                         keyvar)))
+              (unless (member keyword (symbol-value var))
+                (set var (cons keyword (symbol-value var))))))
           keywords)))
 
 
