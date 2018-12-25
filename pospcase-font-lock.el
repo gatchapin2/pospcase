@@ -530,9 +530,12 @@ examples."
                (if (null (cdr split))
                    (error "%s is not a mode name." mode)
                  (car split))))
-         (container (intern (format "pospcase-font-lock-%s%s-keywords"
-                                    id
-                                    (if buffer-local-p "-local" ""))))
+         (keyvar (intern (format "pospcase-font-lock-%s-keywords" id)))
+         (keyvar-local (intern (format "pospcase-font-lock-%s-local-keywords" id)))
+         (keyvar-extra (intern (format "pospcase-font-lock-%s-extra-keywords" id)))
+         (keyvar-installed (intern (format "pospcase-font-lock-%s-keywords--installed" id)))
+         (keyvar-add (intern (format "pospcase-font-lock-%s-keywords-add" id)))
+         (keyvar-remove (intern (format "pospcase-font-lock-%s-keywords-remove" id)))
          (keywords (pospcase-font-lock-build
                     ;; Simple symbol heading keyword to (and 'defun heading-keyword)
                     (mapcar
@@ -552,17 +555,39 @@ examples."
                          (`,any any)))
                      patterns)
                     specs)))
-    (unless (boundp container)
+    (unless (boundp keyvar)
       (eval `(progn
-               (,(if buffer-local-p 'defvar-local 'defvar)
-                ,container
-                nil
-                ,(format "List of font lock %skeywords for %s."
-                         (if buffer-local-p "buffer local " "")
-                         (capitalize id))))))
+               (defvar
+                 ,keyvar
+                 nil
+                 ,(format "List of font lock keywords for %s." (capitalize id)))
+               (defvar-local
+                 ,keyvar-local
+                 nil
+                 ,(format "List of font lock buffer local keywords for %s." (capitalize id)))
+               (defvar-local
+                 ,keyvar-installed
+                 nil
+                 "List of installed font lock keywords for current buffer.")
+               (defun ,keyvar-add ()
+                 ,(format "Activate `pcase' based font lock for %s." (capitalize id))
+                 (set (make-local-variable 'font-lock-multiline) t)
+                 (when (local-variable-p
+                        ',keyvar-installed)
+                   (font-lock-remove-keywords nil ,keyvar-installed))
+                 (set (make-local-variable ',keyvar-installed)
+                      (append ,(if (boundp keyvar-extra) keyvar-extra)
+                              ,keyvar-local
+                              ,keyvar))
+                 (font-lock-add-keywords nil ,keyvar-installed 'append))
+               (defun ,keyvar-remove ()
+                 ,(format "Deactivate `pcase' based font lock for %s." (capitalize id))
+                 (font-lock-remove-keywords nil ,keyvar-installed))
+
+               )))
     (mapc (lambda (keyword)
-            (unless (member keyword (symbol-value container))
-              (set container (cons keyword (symbol-value container)))))
+            (unless (member keyword (symbol-value keyvar))
+              (set keyvar (cons keyword (symbol-value keyvar)))))
           keywords)))
 
 
@@ -673,7 +698,7 @@ special variable name or not. And returns appropriate face name."
 
 ;;; `lisp-mode' and `emacs-lisp-mode' font-lock
 
-(defvar pospcase-font-lock-lisp-keywords
+(defvar pospcase-font-lock-lisp-extra-keywords
   ;;
   ;; non-`pcase' powered keywords
   ;;
@@ -735,27 +760,6 @@ special variable name or not. And returns appropriate face name."
          (1 font-lock-function-name-face)))))
   "List of font lock keywords for Lisp.")
 
-(defvar-local pospcase-font-lock-lisp-local-keywords nil
-  "List of font lock buffer local keywords for Lisp.")
-
-(defvar-local pospcase-font-lock-lisp-keywords--installed nil
-  "BUffer local list for `pospcase-font-lock-lisp-mode'.")
-
-(defun pospcase-font-lock-lisp-keywords-add ()
-  "Activate `pcase' based font lock for Lisp modes."
-  (set (make-local-variable 'font-lock-multiline) t)
-  (when (local-variable-p 'pospcase-font-lock-lisp-keywords--installed)
-    (font-lock-remove-keywords nil pospcase-font-lock-lisp-keywords--installed))
-  (set (make-local-variable 'pospcase-font-lock-lisp-keywords--installed)
-       (append pospcase-font-lock-lisp-local-keywords
-               pospcase-font-lock-lisp-keywords))
-  (font-lock-add-keywords nil
-                          pospcase-font-lock-lisp-keywords--installed
-                          'append))
-
-(defun pospcase-font-lock-lisp-keywords-remove ()
-  "Deactivate `pcase' based font lock for Lisp modes."
-  (font-lock-remove-keywords nil pospcase-font-lock-lisp-keywords--installed))
 
 (defun pospcase-font-lock-lisp-init ()
   "Setup various eye candy font lock keywords for Common Lisp and Emacs Lisp."
