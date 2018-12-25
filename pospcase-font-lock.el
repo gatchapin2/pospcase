@@ -576,7 +576,7 @@ examples."
                         ',keyvar-installed)
                    (font-lock-remove-keywords nil ,keyvar-installed))
                  (set (make-local-variable ',keyvar-installed)
-                      (append ,(if (boundp keyvar-extra) keyvar-extra)
+                      (append (if (boundp ',keyvar-extra) ,keyvar-extra)
                               ,keyvar-local
                               ,keyvar))
                  (font-lock-add-keywords nil ,keyvar-installed 'append))
