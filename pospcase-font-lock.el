@@ -364,10 +364,10 @@ to make the following `cond' branching extensible to the users."
               (ignore-errors (pospcase-read (car ,(car submatcher)))))
         (unless pospcase--fence-start (setq pospcase--ignore t))
         (condition-case nil
-            (save-excursion
-              (goto-char (match-end 0))
-              (up-list)
-              (point))
+            (progn
+              (goto-char (car ,(car submatcher)))
+              (backward-up-list)
+              (scan-sexps (point) 1))
           (error (1+ (goto-char (1- (match-end 0))))))))
 
     ((memq (cdr submatcher) (append pospcase-parameter-group
@@ -860,23 +860,23 @@ special variable name or not. And returns appropriate face name."
                          (font-lock-function-name-face
                           (pospcase-font-lock-variable-face-form (match-string 3))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(setq ,first . ,_)
-                        `(setf ,first . ,_))
+                      '(`(setq . ,binds)
+                        `(setf . ,binds))
                       '((heading-keyword . (font-lock-keyword-face))
-                        ((first . setq) .
+                        ((binds . setq) .
                          ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(defstruct (,name . ,_) ,(pred stringp) ,first . ,_)
-                        `(defstruct (,name . ,_) ,first . ,_)
-                        `(defstruct ,name ,(pred stringp) ,first . ,_)
-                        `(defstruct ,name ,first . ,_)                        
-                        `(cl-defstruct (,name . ,_) ,(pred stringp) ,first . ,_)
-                        `(cl-defstruct (,name . ,_) ,first . ,_)
-                        `(cl-defstruct ,name ,(pred stringp) ,first . ,_)
-                        `(cl-defstruct ,name ,first . ,_))
+                      '(`(defstruct (,name . ,_) ,(pred stringp) . ,slots)
+                        `(defstruct (,name . ,_) . ,slots)
+                        `(defstruct ,name ,(pred stringp) . ,slots)
+                        `(defstruct ,name . ,slots)
+                        `(cl-defstruct (,name . ,_) ,(pred stringp) . ,slots)
+                        `(cl-defstruct (,name . ,_) . ,slots)
+                        `(cl-defstruct ,name ,(pred stringp) . ,slots)
+                        `(cl-defstruct ,name . ,slots))
                       '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-type-face))
-                        ((first . defstruct) .
+                        ((slots . defstruct) .
                          (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(&key &aux &optional)
