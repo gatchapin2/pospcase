@@ -464,7 +464,14 @@ to make the following `cond' branching extensible to the users."
                                                (point)
                                                ',(mapcar
                                                   (lambda (pat)
-                                                    (list pat (cons 'values vars)))
+                                                    (list
+                                                     pat
+                                                     (cons
+                                                      'values
+                                                      (mapcar
+                                                       (lambda (var)
+                                                         (list 'pospcase-pos var))
+                                                       vars))))
                                                   patterns))
                      ,(unless (null non-subvars)
                         `(setq pospcase--prematches ,(cons 'list non-subvars)))
