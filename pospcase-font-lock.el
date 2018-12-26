@@ -150,8 +150,7 @@ nil."
   `(pospcase--call-iterator
     (mapcar
      (lambda (srpair)
-       (goto-char (cadr srpair))
-       (pospcase-at (point) ,(list 'quote patterns)))
+       (pospcase srpair ,(list 'quote patterns)))
      (if pospcase--fence-start
          (member pospcase--fence-start (car (pospcase-read (point))))
        (car (pospcase-read (point)))))
@@ -192,10 +191,9 @@ nil."
     (cl-loop for srpair in (car (pospcase-read (point)))
              append
              (progn
-               (goto-char (cadr srpair))
                (multiple-value-bind
                    (name args)
-                   (pospcase-at (point)
+                   (pospcase srpair
                                 '((`(,name ,args . ,_) (values name args))))
                  (progn
                    (goto-char (car args))

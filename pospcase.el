@@ -233,7 +233,7 @@ which returns:
                                            (save-excursion
                                              (walk rlim))))
                            if dot
-                           do (setq result (cons result temp))
+                           do (setq result (append result temp))
                            else
                            do (setq result (append result (list temp)))
                            until (progn
@@ -390,10 +390,14 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
       (cdr match))
 
      ((and (consp (cdr (car match)))
-           (numberp (cddr (car match))))           ; ((sexp start . end)
-                                                   ;  ... (sexp start . end))
-      (cons (cadr (car match))
-            (cddr (car (last match)))))
+           (numberp (cddr (car match))))
+      (if (numberp (cdr (last match)))
+
+          (cons (cadr (car match))                 ; ((sexp start . end)
+                (cdr (last match)))                ;  ... sexp start . end)
+
+        (cons (cadr (car match))                   ; ((sexp start . end)
+              (cddr (car (last match))))))         ;  ... (sexp start . end))
 
      (t
       (cons (if (numberp (car (car match)))        ; ((start . end) ...)
