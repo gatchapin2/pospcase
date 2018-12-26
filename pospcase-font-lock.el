@@ -148,12 +148,14 @@ nil."
 (defmacro pospcase--call-list-iterator (&rest patterns)
   "Boilerplate code for arbitrary length variable list matcher iterator."
   `(pospcase--call-iterator
-    (mapcar
-     (lambda (srpair)
-       (pospcase srpair ,(list 'quote patterns)))
-     (if pospcase--fence-start
-         (member pospcase--fence-start (car (pospcase-read (point))))
-       (car (pospcase-read (point)))))
+    (if (looking-at "['`,]")
+        nil
+      (mapcar
+       (lambda (srpair)
+         (pospcase srpair ,(list 'quote patterns)))
+       (if pospcase--fence-start
+           (member pospcase--fence-start (car (pospcase-read (point))))
+         (car (pospcase-read (point))))))
     limit))
 
 (defun pospcase-match-list/2 (limit)
