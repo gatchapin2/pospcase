@@ -148,7 +148,7 @@ nil."
 (defmacro pospcase--call-list-iterator (&rest patterns)
   "Boilerplate code for arbitrary length variable list matcher iterator."
   `(pospcase--call-iterator
-    (if (looking-at "['`,]")
+    (if (memq (char-after) '(?\' ?\` ?\,))
         (if pospcase--prematches
             (prog1
                 (list pospcase--prematches)
