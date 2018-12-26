@@ -149,7 +149,11 @@ nil."
   "Boilerplate code for arbitrary length variable list matcher iterator."
   `(pospcase--call-iterator
     (if (looking-at "['`,]")
-        nil
+        (if pospcase--prematches
+            (prog1
+                (list pospcase--prematches)
+              (setq pospcase--prematches nil))
+          nil)
       (mapcar
        (lambda (srpair)
          (pospcase srpair ,(list 'quote patterns)))
