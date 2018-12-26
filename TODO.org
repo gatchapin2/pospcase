@@ -85,7 +85,6 @@
      ((pospcase-font-lock-variable-face-form (match 1)))
 
      So mandatory parenthesis makes sense.
-
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]

@@ -177,7 +177,9 @@ which returns:
                                   (eq (syntax-class (syntax-after (point))) 4)))
                            (progn
                              (down-list)
-                             (forward-sexp pospcase--nth-chop-off))
+                             (ignore-errors
+                               (dotimes (_i pospcase--nth-chop-off)
+                                 (forward-sexp))))
                          (forward-sexp)
                          (forward-comment most-positive-fixnum))
                        (point)))
