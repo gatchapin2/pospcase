@@ -218,3 +218,12 @@
    - State "TODO"       from              [2018-11-30 Fri 09:43]
 ** TODO consistent arity-like submatcher naming convention
    - State "TODO"       from              [2018-12-04 Tue 17:16]
+** TODO prematches should be highlighted even submatchers return nil?
+
+   - State "TODO"       from              [2018-12-27 Thu 18:51]
+
+   #+BEGIN_SRC lisp
+     (setf (foo bar) baz)
+   #+END_SRC
+
+   Should the keyword ~setf~ be highlighted here?
