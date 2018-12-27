@@ -74,7 +74,11 @@ nil."
 
 (defun pospcase--list (&rest matches)
   "Same as `list'. But attaches non-submatcher based matches if they exist."
-  (append pospcase--prematches matches))
+  (prog1
+      (append pospcase--prematches matches)
+    (and pospcase--prematches
+         (setq pospcase--prematches (make-list (length pospcase--prematches)
+                                               '(nil . nil))))))
 
 (defvar pospcase--iterating nil
   "Internal variable for deciding if the iterator is active.")
@@ -129,11 +133,7 @@ nil."
                               ,(if allow-atom-p
                                    nil  ; jump to t branch
                                  '(atom (car temp)))))
-                     (if pospcase--prematches
-                         (prog1
-                             (list pospcase--prematches)
-                           (setq pospcase--prematches nil))
-                       nil))
+                     (and pospcase--prematches (list pospcase--prematches)))
                     (t (ignore-errors ,clause)))
                    pospcase--iterating t)))
          (pospcase--iterator ,limit))
@@ -149,14 +149,10 @@ nil."
   "Boilerplate code for arbitrary length variable list matcher iterator."
   `(pospcase--call-iterator
     (if (memq (char-after) '(?\' ?\` ?\,))
-        (if pospcase--prematches
-            (prog1
-                (list pospcase--prematches)
-              (setq pospcase--prematches nil))
-          nil)
+        (and pospcase--prematches (list pospcase--prematches))
       (mapcan
-       (lambda (srpair)
-         (let ((match (pospcase srpair ,(list 'quote patterns))))
+       (lambda (pair)
+         (let ((match (pospcase pair ,(list 'quote patterns))))
            (if match (list match))))
        (if pospcase--fence-start
            (member pospcase--fence-start (car (pospcase-read (point))))
@@ -205,12 +201,12 @@ nil."
 (defmacro pospcase--call-flet-iterator (clause)
   "Boilerplate code for arbitrary length function list matcher iterator."
   `(pospcase--call-iterator
-    (cl-loop for srpair in (car (pospcase-read (point)))
+    (cl-loop for pair in (car (pospcase-read (point)))
              append
              (progn
                (multiple-value-bind
                    (name args)
-                   (pospcase srpair
+                   (pospcase pair
                                 '((`(,name ,args . ,_) (values name args))))
                  (progn
                    (goto-char (car args))

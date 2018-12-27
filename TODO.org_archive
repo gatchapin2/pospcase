@@ -531,3 +531,14 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
 
 ** TODO ~pospcase-read~ walk down the sexp tree. How should it behave when chop-off point comes?
    - State "TODO"       from              [2018-11-30 Fri 10:00]
+
+* DONE use prematches only once with pospcase--list
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-27 Thu 18:17
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-27 Thu 18:17]
+  - State "TODO"       from              [2018-12-27 Thu 16:40]
