@@ -172,7 +172,7 @@ nil."
 
 (defun pospcase-match-list/2 (limit)
   "Matcher iterator for a list of symbol or two length lists."
-  (pospcase--call-list-iterator (`(,(and (pred symbolp) name) ,(and (pred symbolp) type))
+  (pospcase--call-list-iterator (`(,(and (pred symbolp) name) ,type)
                                  (pospcase--list name type))
                                 (`,(and (pred symbolp) name)
                                  (pospcase--list name))))
