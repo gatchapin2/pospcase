@@ -154,32 +154,43 @@ nil."
                 (list pospcase--prematches)
               (setq pospcase--prematches nil))
           nil)
-      (mapcar
+      (mapcan
        (lambda (srpair)
-         (pospcase srpair ,(list 'quote patterns)))
+         (let ((match (pospcase srpair ,(list 'quote patterns))))
+           (if match (list match))))
        (if pospcase--fence-start
            (member pospcase--fence-start (car (pospcase-read (point))))
          (car (pospcase-read (point))))))
     limit))
 
+(defun pospcase-match-list/1 (limit)
+  "Matcher iterator for a symbol or `car's of a list of lists"
+  (pospcase--call-list-iterator (`(,(and (pred symbolp) name) . ,_)
+                                 (pospcase--list name))
+                                (`,(and (pred symbolp) name)
+                                 (pospcase--list name))))
+
 (defun pospcase-match-list/2 (limit)
   "Matcher iterator for a list of symbol or two length lists."
-  (pospcase--call-list-iterator (`(,name ,type) (pospcase--list name type))
-                                (`,name (pospcase--list name))))
+  (pospcase--call-list-iterator (`(,(and (pred symbolp) name) ,(and (pred symbolp) type))
+                                 (pospcase--list name type))
+                                (`,(and (pred symbolp) name)
+                                 (pospcase--list name))))
 
 (defun pospcase-match-parameter (limit)
   "Matcher iterator for a list of symbol, two or three length lists."
-  (pospcase--call-list-iterator (`((,kw ,name) ,init ,sup) (list kw name init sup)) ; a hacky use of list
-                                (`((,kw ,name) ,init) (list kw name init))
-                                (`((,kw ,name)) (list kw name))
-                                (`(,name ,init ,sup) (pospcase--list name init sup))
-                                (`(,name ,init) (pospcase--list name init))
-                                (`,name (pospcase--list name))))
-
-(defun pospcase-match-list/1 (limit)
-  "Matcher iterator for a symbol or `car's of a list of lists"
-  (pospcase--call-list-iterator (`(,name . ,_) (pospcase--list name))
-                                (`,name (pospcase--list name))))
+  (pospcase--call-list-iterator (`((,kw ,(and (pred symbolp) name)) ,init ,sup)
+                                 (list kw name init sup)) ; a hacky use of list
+                                (`((,kw ,(and (pred symbolp) name)) ,init)
+                                 (list kw name init))
+                                (`((,kw ,(and (pred symbolp) name)))
+                                 (list kw name))
+                                (`(,(and (pred symbolp) name) ,init ,sup)
+                                 (pospcase--list name init sup))
+                                (`(,(and (pred symbolp) name) ,init)
+                                 (pospcase--list name init))
+                                (`,(and (pred symbolp) name)
+                                 (pospcase--list name))))
 
 (defalias #'pospcase-match-defstruct #'pospcase-match-list/1)
 
