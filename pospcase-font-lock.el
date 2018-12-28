@@ -77,6 +77,7 @@ nil."
   (prog1
       (append pospcase--prematches matches)
     (and pospcase--prematches
+         (numberp (caar pospcase--prematches))
          (setq pospcase--prematches (make-list (length pospcase--prematches)
                                                '(nil . nil))))))
 
