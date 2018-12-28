@@ -899,6 +899,11 @@ special variable name or not. And returns appropriate face name."
                         ((slots . defstruct) .
                          (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
+                      '(`(:constructor ,name ,args))
+                      '((heading-keyword . (font-lock-builtin-face))
+                        (name . (font-lock-function-name-face))
+                        ((args . list/1) . (font-lock-variable-name-face))))
+  (pospcase-font-lock 'lisp-mode
                       '(&key &aux &optional)
                       '((heading-keyword .
                                          (font-lock-builtin-face)) ; a hack for &key ((:key var) init sup)

@@ -176,8 +176,6 @@
    - State "TODO"       from              [2018-12-20 Thu 14:12]
 ** TODO ignore-errors should be togglable
    - State "TODO"       from              [2018-12-23 Sun 14:50]
-** TODO Should I add defstruct’s :constructor to defun keywords?
-   - State "TODO"       from              [2018-12-28 Fri 03:33]
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]
