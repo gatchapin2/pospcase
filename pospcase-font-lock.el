@@ -865,7 +865,8 @@ special variable name or not. And returns appropriate face name."
                          ((pospcase-font-lock-variable-face-form (match-string 3))
                           font-lock-type-face))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(destructuring-bind ,binds . ,_))
+                      '(`(destructuring-bind ,binds . ,_)
+                        `(cl-destructuring-bind ,binds . ,_))
                       '((heading-keyword . (font-lock-keyword-face))
                         ((binds . destructuring) .
                          ((pospcase-font-lock-variable-face-form (match-string 2))))))
