@@ -311,7 +311,7 @@ nested list."
            pospcase--ignore-p nil)
      ,@body))
 
-(defvar pospcase--dummy nil
+(defvar pospcase--dummy (cons most-negative-fixnum most-negative-fixnum)
   "Used in a hack for empty `multiple-value-bind'.")
 
 (defvar pospcase-list-group '(list/2 list/1 destructuring flet macrolet)
