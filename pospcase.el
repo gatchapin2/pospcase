@@ -383,6 +383,8 @@ with dot cdr notation for `pospcase' or `pospcase-at' like:
   (when (consp match)
     (cond
 
+     ((null match) nil)                            ; failed match?
+
      ((numberp (cdr match))                        ; (start . end)
       match)
 

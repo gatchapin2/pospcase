@@ -483,15 +483,21 @@ to make the following `cond' branching extensible to the users."
                                                          (list 'pospcase-pos var))
                                                        vars))))
                                                   patterns))
-                     ,(unless (null non-subvars)
-                        `(setq pospcase--prematches ,(cons 'list non-subvars)))
 
-                     ;; Then appropriate preparation code (extra
-                     ;; validity check, moving the cursor to
-                     ;; appropriate position, calculate the end of
-                     ;; highlighting region) is generated for each
-                     ;; group of submatcher using a macro.
-                     ,(pospcase--generate-submatcher-preform))
+                     (if (memq nil ,(cons 'list vars)) ; failed match after heading keyword
+                         (progn
+                           (setq pospcase--ignore-p t)
+                           (goto-char (match-end 0)))
+
+                       ,(unless (null non-subvars)
+                          `(setq pospcase--prematches ,(cons 'list non-subvars)))
+
+                       ;; Then appropriate preparation code (extra
+                       ;; validity check, moving the cursor to
+                       ;; appropriate position, calculate the end of
+                       ;; highlighting region) is generated for each
+                       ;; group of submatcher using a macro.
+                       ,(pospcase--generate-submatcher-preform)))
 
                  (error (goto-char (match-end 0)))))))
 
