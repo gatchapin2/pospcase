@@ -784,7 +784,13 @@ special variable name or not. And returns appropriate face name."
            "\\("
            symbol
            "\\)")
-         (1 font-lock-function-name-face)))))
+         (1 font-lock-function-name-face))
+        (,(concat ":metaclass"
+                  "[ \t\n]+"
+                  "\\("
+                  symbol
+                  "\\)")
+         (1 font-lock-type-face)))))
   "List of extra font lock keywords for Lisp. The highest
   fontification priority.")
 
