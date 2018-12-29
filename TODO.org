@@ -176,10 +176,6 @@
    - State "TODO"       from              [2018-12-20 Thu 14:12]
 ** TODO ignore-errors should be togglable
    - State "TODO"       from              [2018-12-23 Sun 14:50]
-** TODO add ~:method-combination~ to non-pcase keyword
-   - State "TODO"       from              [2018-12-28 Fri 15:06]
-** TODO change ~defmethod~ qualifier accept function name?
-   - State "TODO"       from              [2018-12-28 Fri 15:06]
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]

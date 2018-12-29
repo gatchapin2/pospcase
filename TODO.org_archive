@@ -553,3 +553,25 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-12-28 Fri 03:39]
   - State "TODO"       from              [2018-12-28 Fri 03:33]
+
+* DONE add ~:method-combination~ to non-pcase keyword
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-29 Sat 03:46
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-29 Sat 03:46]
+  - State "TODO"       from              [2018-12-28 Fri 15:06]
+
+* DONE change ~defmethod~ qualifier accept function name?
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2018-12-29 Sat 03:46
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2018-12-29 Sat 03:46]
+  - State "TODO"       from              [2018-12-28 Fri 15:06]

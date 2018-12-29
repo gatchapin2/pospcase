@@ -778,7 +778,8 @@ special variable name or not. And returns appropriate face name."
         ;; For `defclass' slots
         (,(concat
            (regexp-opt '(":accessor" ":constructor" ":copier" ":predicate"
-                         ":reader" ":0writer" ":print-function" ":print-object"))
+                         ":reader" ":0writer" ":print-function" ":print-object"
+                         ":method-combination"))
            "[ \t\n]+"
            "\\("
            symbol
@@ -842,14 +843,14 @@ special variable name or not. And returns appropriate face name."
                          ((pospcase-font-lock-variable-face-form (match-string 2))
                           font-lock-constant-face))))
   (pospcase-font-lock 'lisp-mode
-                      '(`(defmethod (setf ,name) ,(pred keywordp) ,args . ,_)
+                      '(`(defmethod (setf ,name) ,(pred symbolp) ,args . ,_)
                         `(defmethod (setf ,name) ,args . ,_)
-                        `(defmethod ,name ,(pred keywordp) ,args . ,_)
+                        `(defmethod ,name ,(pred symbolp) ,args . ,_)
                         `(defmethod ,name ,args . ,_)
                         `(defgeneric ,name ,args . ,_)
-                        `(cl-defmethod (setf ,name) ,(pred keywordp) ,args . ,_)
+                        `(cl-defmethod (setf ,name) ,(pred symbolp) ,args . ,_)
                         `(cl-defmethod (setf ,name) ,args . ,_)
-                        `(cl-defmethod ,name ,(pred keywordp) ,args . ,_)
+                        `(cl-defmethod ,name ,(pred symbolp) ,args . ,_)
                         `(cl-defmethod ,name ,args . ,_)
                         `(cl-defgeneric ,name ,args . ,_))
                       '((heading-keyword . (font-lock-keyword-face))
