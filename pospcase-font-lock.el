@@ -82,7 +82,7 @@ nil."
                                                '(nil . nil))))))
 
 (defvar pospcase--iterating-p nil
-  "Internal variable for deciding if the iterator is active.")
+  "Internal variable for deciding if the iterator is on-going.")
 
 (defvar pospcase--keyword-end nil
   "End of keyword to jump to when iteration ends.")
@@ -112,15 +112,15 @@ nil."
         (pospcase--iterator limit))
     nil))
 
-(defvar pospcase--ignore-p nil
-  "When the variable is set to `t', the `pospcase--matches'
+(defvar pospcase--no-iteration-p nil
+  "When the variable is set to non-`nil', the `pospcase--matches'
   assignment part is going to be skipped. ")
 
 (defmacro pospcase--call-iterator (clause limit &optional allow-atom-p)
   "Catch parsing error, and call `pospcase--iterator'."
   `(condition-case nil
        (progn
-         (unless (or pospcase--ignore-p
+         (unless (or pospcase--no-iteration-p
                      pospcase--matches
                      pospcase--iterating-p)
            (let ((temp (ignore-errors
@@ -308,7 +308,7 @@ nested list."
      (setq pospcase--matches nil
            pospcase--prematches nil
            pospcase--fence-start nil
-           pospcase--ignore-p nil)
+           pospcase--no-iteration-p nil)
      ,@body))
 
 (defvar pospcase--dummy (cons most-negative-fixnum most-negative-fixnum)
@@ -374,13 +374,13 @@ to make the following `cond' branching extensible to the users."
      `(progn
         (setq pospcase--fence-start
               (ignore-errors (pospcase-read (car ,(car submatcher)))))
-        (unless pospcase--fence-start (setq pospcase--ignore-p t))
+        (unless pospcase--fence-start (setq pospcase--no-iteration-p t))
         (condition-case nil
             (progn
               (goto-char (car ,(car submatcher)))
               (backward-up-list)
               (scan-sexps (point) 1))
-          (error (setq pospcase--ignore-p t)
+          (error (setq pospcase--no-iteration-p t)
                  (1+ (goto-char (1- (match-end 0))))))))
 
     ((memq (cdr submatcher) (append pospcase-parameter-group
@@ -389,7 +389,7 @@ to make the following `cond' branching extensible to the users."
         (if (memq (char-before (point))
                   '(?\\ ?\' ?\` ?\,)) ; when keyword is use as symbol
             (progn
-              (setq pospcase--ignore-p t)
+              (setq pospcase--no-iteration-p t)
               (1+ (goto-char (1- end))))
           (goto-char end)
           (setq pospcase--fence-start
@@ -403,9 +403,9 @@ to make the following `cond' branching extensible to the users."
                               (point))
                           (backward-up-list))
                      '(scan-sexps (point) 1))
-                (error (setq pospcase--ignore-p t)
+                (error (setq pospcase--no-iteration-p t)
                        (1+ (goto-char (1- end)))))
-            (setq pospcase--ignore-p t)
+            (setq pospcase--no-iteration-p t)
             (1+ (goto-char (1- end)))))))
 
     (t (error "Not supported submatcher: %s" submatcher))))
@@ -460,7 +460,7 @@ to make the following `cond' branching extensible to the users."
            (let ((table (syntax-ppss)))
              (if (nth 8 table)          ; in string or comment
                  (progn
-                   (setq pospcase--ignore-p t)
+                   (setq pospcase--no-iteration-p t)
                    (when (nth 3 table)     ; in string
                      (goto-char (or (ignore-errors (scan-sexps (nth 8 table)) 1)
                                     (point-max))))
@@ -488,7 +488,7 @@ to make the following `cond' branching extensible to the users."
 
                      (if (memq nil ,(cons 'list vars)) ; failed match after heading keyword
                          (progn
-                           (setq pospcase--ignore-p t)
+                           (setq pospcase--no-iteration-p t)
                            (goto-char (match-end 0)))
 
                        ,(unless (null non-subvars)
