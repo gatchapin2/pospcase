@@ -380,7 +380,8 @@ to make the following `cond' branching extensible to the users."
               (goto-char (car ,(car submatcher)))
               (backward-up-list)
               (scan-sexps (point) 1))
-          (error (1+ (goto-char (1- (match-end 0))))))))
+          (error (setq pospcase--ignore-p t)
+                 (1+ (goto-char (1- (match-end 0))))))))
 
     ((memq (cdr submatcher) (append pospcase-parameter-group
                                     pospcase-loop-group))
@@ -402,7 +403,8 @@ to make the following `cond' branching extensible to the users."
                               (point))
                           (backward-up-list))
                      '(scan-sexps (point) 1))
-                (error (1+ (goto-char (1- end)))))
+                (error (setq pospcase--ignore-p t)
+                       (1+ (goto-char (1- end)))))
             (setq pospcase--ignore-p t)
             (1+ (goto-char (1- end)))))))
 
