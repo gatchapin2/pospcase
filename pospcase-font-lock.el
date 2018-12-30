@@ -926,7 +926,7 @@ special variable name or not. And returns appropriate face name."
                         ((pospcase--dummy . parameter) .
                          ((pospcase-font-lock-variable-face-form (match-string 2))
                           default
-                          default))))
+                          (pospcase-font-lock-variable-face-form (match-string 4))))))
   (pospcase-font-lock 'lisp-mode
                       '(for :for index :index into :into with :with)
                       '((heading-keyword . (font-lock-builtin-face))
