@@ -177,17 +177,17 @@ nil."
 (defun pospcase-match-parameter (limit)
   "Matcher iterator for a list of symbol, two or three length lists."
   (pospcase--call-list-iterator (`((,kw ,(and (pred symbolp) name)) ,init ,sup)
-                                 (list kw name init sup)) ; a hacky use of list
+                                 (pospcase--list kw name init sup))
                                 (`((,kw ,(and (pred symbolp) name)) ,init)
-                                 (list kw name init))
+                                 (pospcase--list kw name init))
                                 (`((,kw ,(and (pred symbolp) name)))
-                                 (list kw name))
+                                 (pospcase--list kw name))
                                 (`(,(and (pred symbolp) name) ,init ,sup)
-                                 (pospcase--list name init sup))
+                                 (pospcase--list '(nil . nil) name init sup))
                                 (`(,(and (pred symbolp) name) ,init)
-                                 (pospcase--list name init))
+                                 (pospcase--list '(nil . nil) name init))
                                 (`,(and (pred symbolp) name)
-                                 (pospcase--list name))))
+                                 (pospcase--list '(nil . nil) name))))
 
 (defalias #'pospcase-match-defstruct #'pospcase-match-list/1)
 
@@ -921,10 +921,10 @@ special variable name or not. And returns appropriate face name."
                         ((args . list/1) . (font-lock-variable-name-face))))
   (pospcase-font-lock 'lisp-mode
                       '(&key &aux &optional)
-                      '((heading-keyword .
-                                         (font-lock-builtin-face)) ; a hack for &key ((:key var) init sup)
+                      '((heading-keyword . (font-lock-type-face))
                         ((pospcase--dummy . parameter) .
-                         ((pospcase-font-lock-variable-face-form (match-string 2))
+                         (font-lock-builtin-face
+                          (pospcase-font-lock-variable-face-form (match-string 2))
                           default
                           (pospcase-font-lock-variable-face-form (match-string 4))))))
   (pospcase-font-lock 'lisp-mode
