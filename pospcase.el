@@ -201,7 +201,9 @@ which returns:
                                    (read-from-string buf-str (- (point) buf-off))
                                  (invalid-read-syntax
                                   (cons 'pospcase-invalid-read-syntax
-                                        (- limit (point))))))
+                                        (- limit (point))))
+                                 (end-of-file
+                                  (cons 'pospcase-end-of-file (- limit (point))))))
                        (incf lim buf-off)
                        (forward-comment most-positive-fixnum)
                        (cons
@@ -227,7 +229,9 @@ which returns:
                                              (forward-sexp)
                                              (forward-comment most-positive-fixnum)
                                              (read-from-string buf-str (- (point) buf-off)))
-                                         (cons nil (- limit (point))))))
+                                         (cons 'pospcase-invalid-read-syntax (- limit (point)))))
+                                      (end-of-file
+                                       (cons 'pospcase-end-of-file (- limit (point)))))
                                     rlim (+ (cdr rpair) buf-off)
                                     temp (if (or (atom (car rpair))
                                                  (memq (car rpair) '(\` \, quote function)))
@@ -238,12 +242,13 @@ which returns:
                            do (setq result (append result temp))
                            else
                            do (setq result (append result (list temp)))
-                           until (progn
+                           until (let ((p (point)))
                                    (ignore-errors (forward-sexp))
                                    (forward-comment most-positive-fixnum)
                                    (while (> (skip-syntax-forward ")") 0)
                                      (forward-comment most-positive-fixnum))
                                    (or (>= (point) lim)
+                                       (= (point) p)
                                        (eobp)))
                            finally return result))
                         (cons start lim)))
