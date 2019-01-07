@@ -838,7 +838,11 @@ special variable name or not. And returns appropriate face name."
   (pospcase-font-lock 'lisp-mode
                       '(`(let ,binds . ,_)
                         `(let* ,binds . ,_)
+                        `(do ,binds . ,_)
+                        `(do* ,binds . ,_)
                         `(multiple-value-bind ,binds . ,_)
+                        `(cl-do ,binds . ,_)
+                        `(cl-do* ,binds . ,_)
                         `(cl-multiple-value-bind ,binds . ,_))
                       '((heading-keyword . (font-lock-keyword-face))
                         ((binds . list/1) .
