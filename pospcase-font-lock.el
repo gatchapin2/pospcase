@@ -516,7 +516,7 @@ to make the following `cond' branching extensible to the users."
                                             (if (symbolp font)
                                                 (list 'quote font)
                                               (apply (car font) (cdr font)))
-                                            nil t))
+                                            'keep t))
                                     (cdr spec))))))
 
      (or submatchers
