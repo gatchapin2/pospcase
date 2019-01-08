@@ -85,6 +85,15 @@
      ((pospcase-font-lock-variable-face-form (match 1)))
 
      So mandatory parenthesis makes sense.
+** TODO lisp-mode.el supplied keyword are too dumb.
+   - State "TODO"       from              [2019-01-08 Tue 03:48]
+
+   Better to unhighlight keywords in quoted sexp?
+
+   In that case ~pospcase-font-lock-match-quoted-content~ should be
+   tweaked to ignore comment blocks.
+
+
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]
@@ -144,34 +153,6 @@
    - Example: `((or labels cl-labels) ,name ,args . ,__)
 ** TODO Should I make ~pospcase-let~?
    - State "TODO"       from              [2018-12-04 Tue 11:07]
-** TODO Consider trailing match for submatchers
-   - State "TODO"       from              [2018-12-20 Thu 12:00]
-   Currently use cases I can think are ~defstruct~ and ~setq~:
-
-   #+BEGIN_SRC emacs-lisp
-     `(defstruct ,name . ,slots)
-   #+END_SRC
-
-   and:
-
-   #+BEGIN_SRC emacs-lisp
-     `(setq . ,binds)
-   #+END_SRC
-
-   Advantages:
-     - It looks more proper.
-     - May elegantly cover some future pattern I’m not currently aware of.
-
-   Disadvantage:
-     - Unnecessary computation. (no chopping off)
-     - Doesn’t cooperate well with fence-start (maybe requires rework?)
-
-   Scheme define needs trailing dot?
-
-   #+BEGIN_SRC scheme
-     (define (foo bar baz) quux)
-   #+END_SRC
-
 ** TODO What to do with case insensitivity?
    - State "TODO"       from              [2018-12-20 Thu 14:12]
 ** TODO ignore-errors should be togglable

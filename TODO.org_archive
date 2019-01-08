@@ -575,3 +575,40 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   :END:
   - State "DONE"       from "TODO"       [2018-12-29 Sat 03:46]
   - State "TODO"       from              [2018-12-28 Fri 15:06]
+
+* DONE Consider trailing match for submatchers
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2019-01-08 Tue 03:46
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2019-01-08 Tue 03:46]
+  - State "TODO"       from              [2018-12-20 Thu 12:00]
+  Currently use cases I can think are ~defstruct~ and ~setq~:
+
+  #+BEGIN_SRC emacs-lisp
+    `(defstruct ,name . ,slots)
+  #+END_SRC
+
+  and:
+
+  #+BEGIN_SRC emacs-lisp
+    `(setq . ,binds)
+  #+END_SRC
+
+  Advantages:
+    - It looks more proper.
+    - May elegantly cover some future pattern I’m not currently aware of.
+
+  Disadvantage:
+    - Unnecessary computation. (no chopping off)
+    - Doesn’t cooperate well with fence-start (maybe requires rework?)
+
+  Scheme define needs trailing dot?
+
+  #+BEGIN_SRC scheme
+    (define (foo bar baz) quux)
+  #+END_SRC
+
