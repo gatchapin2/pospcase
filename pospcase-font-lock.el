@@ -730,69 +730,61 @@ special variable name or not. And returns appropriate face name."
   ;;
   ;; non-`pcase' powered keywords
   ;;
-  (let* ((symbol-start "\\_<")
-         (symbol-end "\\_>")
-         (symbol (concat symbol-start
-                         "\\(?:\\sw\\|\\s_\\|\\\\.\\)+"
-                         symbol-end)))
-    (cl-flet ((regexp-or (&rest exps)
-                         (concat "\\(?:"
-                                 (mapconcat #'identity exps "\\|")
-                                 "\\)")))
-      `(;; For `cl-loop'
-        (,(concat "("
-                  (regexp-opt '("loop" "cl-loop"))
-                  "\\_>")
-         (pospcase-font-lock-match-loop-keywords
-          ;; Pre-match form
-          (progn
-            (goto-char (match-end 0))
-            (save-excursion
-              (goto-char (match-beginning 0))
-              (ignore-errors (scan-sexps (point) 1))))
-          ;; Post-match form.
+  (let ((symbol "\\_<\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\_>"))
+    `(;; For `cl-loop'
+      (,(concat "("
+                (regexp-opt '("loop" "cl-loop"))
+                "\\_>")
+       (pospcase-font-lock-match-loop-keywords
+        ;; Pre-match form
+        (progn
           (goto-char (match-end 0))
-          ;; Faces
-          (1 font-lock-builtin-face)
-          (2 ,(pospcase-font-lock-variable-face-form '(match-string 2)) nil t)))
-        (;; For quote and backquote
-         ;;
-         ;; Matcher: Set match-data 1 if backquote.
-         pospcase-font-lock-match-quote-and-backquote
-         (1 pospcase-font-lock-backquote-face nil t)
-         (;; Submatcher, match part of quoted expression or comma.
-          pospcase-font-lock-match-quoted-content
-          ;; Pre-match form. Value of expression is limit for submatcher.
-          (progn
-            (goto-char (match-end 0))
-            ;; Search limit
-            (ignore-errors (scan-sexps (point) 1)))
-          ;; Post-match form
+          (save-excursion
+            (goto-char (match-beginning 0))
+            (ignore-errors (scan-sexps (point) 1))))
+        ;; Post-match form.
+        (goto-char (match-end 0))
+        ;; Faces
+        (1 font-lock-builtin-face)
+        (2 ,(pospcase-font-lock-variable-face-form '(match-string 2)) nil t)))
+      (;; For quote and backquote
+       ;;
+       ;; Matcher: Set match-data 1 if backquote.
+       pospcase-font-lock-match-quote-and-backquote
+       (1 pospcase-font-lock-backquote-face nil t)
+       (;; Submatcher, match part of quoted expression or comma.
+        pospcase-font-lock-match-quoted-content
+        ;; Pre-match form. Value of expression is limit for submatcher.
+        (progn
           (goto-char (match-end 0))
-          ;; Faces
-          (1 pospcase-font-lock-quoted-face append)
-          (2 pospcase-font-lock-backquote-face nil t)))
-        ;; For function read syntax
-        (,(concat "#'\\("
-                  symbol
-                  "\\)")
-         1 pospcase-font-lock-quoted-function-face)
-        ;; For `defclass' slots
-        (,(concat
-           (regexp-opt '(":accessor" ":constructor" ":copier" ":predicate"
-                         ":reader" ":0writer" ":print-function" ":print-object"
-                         ":method-combination"))
-           "[ \t\n]+"
-           "\\("
-           symbol
-           "\\)")
-         (1 font-lock-function-name-face))
-        (,(concat ":metaclass"
-                  "[ \t\n]+"
-                  "\\("
-                  symbol
-                  "\\)")
-         (1 font-lock-type-face)))))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        (goto-char (match-end 0))
+        ;; Faces
+        (1 pospcase-font-lock-quoted-face append)
+        (2 pospcase-font-lock-backquote-face nil t)))
+      ;; For function read syntax
+      (,(concat "#'\\("
+                symbol
+                "\\)")
+       1 pospcase-font-lock-quoted-function-face)
+      ;; For `defclass' slots
+      (,(concat
+         (regexp-opt '(":accessor" ":constructor" ":copier" ":predicate"
+                       ":reader" ":0writer" ":print-function" ":print-object"
+                       ":method-combination"))
+         "[ \t\n]+"
+         "\\("
+         symbol
+         "\\)")
+       (1 font-lock-function-name-face))
+      (,(concat ":metaclass"
+                "[ \t\n]+"
+                "\\("
+                symbol
+                "\\)")
+       (1 font-lock-type-face))))
   "List of extra font lock keywords for Lisp. The highest
   fontification priority.")
 
