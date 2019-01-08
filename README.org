@@ -189,13 +189,14 @@
    highlighting rules. (If you don’t like it, change the following
    code appropriately)
 
-   In pospcase-user.el, write following code:
+   In pospcase-user.el, insert the following code:
 
    #+BEGIN_SRC emacs-lisp
+     -*- lexical-binding: t -*-
      (require 'pospcase)
 
-     (eval
-      `(defun my-add-new-font-lock-keyword ()
+     (let ((user-file load-file-name))
+       (defun my-add-new-font-lock-keyword ()
          (interactive)
          (let* ((str
                  (format "
@@ -206,7 +207,7 @@
         (bar . (font-lock-function-name-face))
         ((baz . list/1) . (font-lock-variable-name-face))))"
                          major-mode)))
-           (find-file ,(buffer-file-name))
+           (find-file user-file)
            (goto-char (point-max))
            (insert str "\n")
            (backward-char (- (1+ (length str)) (string-match "foo" str))))))
