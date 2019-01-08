@@ -85,15 +85,6 @@
      ((pospcase-font-lock-variable-face-form (match 1)))
 
      So mandatory parenthesis makes sense.
-** TODO lisp-mode.el supplied keyword are too dumb.
-   - State "TODO"       from              [2019-01-08 Tue 03:48]
-
-   Better to unhighlight keywords in quoted sexp?
-
-   In that case ~pospcase-font-lock-match-quoted-content~ should be
-   tweaked to ignore comment blocks.
-
-
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]

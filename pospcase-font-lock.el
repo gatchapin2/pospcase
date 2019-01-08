@@ -642,28 +642,31 @@ special variable name or not. And returns appropriate face name."
   "Submatcher for quote and backquote."
   (and (< (point) limit)
        (let ((p (point))
-             res)
-         (while
-             (progn
-               (setq res (re-search-forward "\\(,@?\\|[`']\\)" limit t))
-               (and res
-                    (pospcase-font-lock-is-in-comment-or-string
-                     (match-beginning 0)))))
+             res comment-p)
+         (while (and
+                 (setq res (re-search-forward "\\([^\\];\\|,@?\\|[`']\\)" limit t))
+                 (not (setq comment-p (eq (char-after (1+ (match-beginning 0))) ?\;)))
+                 (pospcase-font-lock-is-in-comment-or-string
+                  (match-beginning 0))))
          (if res
              ;; Match up to next quoted subpart or comma operator.
-             (let ((is-comma (eq (char-after (match-beginning 0)) ?,)))
+             (let ((comma-p (eq (char-after (match-beginning 0)) ?,)))
                (set-match-data (list
                                 ;; Match data 0: Full match.
                                 p (match-end 0)
                                 ;; Match data 1: Part of the quoted expression
                                 p
-                                (match-beginning 0)
+                                (if comment-p (1+ (match-beginning 0)) (match-beginning 0))
                                 ;; Match data 2; Comma operator (if present)
-                                (and is-comma (match-beginning 0))
-                                (and is-comma (match-end 0))))
-               (condition-case nil
-                   (forward-sexp)
-                 (error (goto-char limit))))
+                                (and comma-p (match-beginning 0))
+                                (and comma-p (match-end 0))))
+               (if comment-p
+                   (progn
+                     (goto-char (1+ (match-beginning 0)))
+                     (forward-comment most-positive-fixnum))
+                 (condition-case nil
+                     (forward-sexp)
+                   (error (goto-char limit)))))
            ;; Match to the end of the quoted expression.
            (set-match-data (list p limit
                                  p limit))
@@ -731,7 +734,24 @@ special variable name or not. And returns appropriate face name."
   ;; non-`pcase' powered keywords
   ;;
   (let ((symbol "\\_<\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\_>"))
-    `(;; For `cl-loop'
+    `((;; For quote and backquote
+       ;;
+       ;; Matcher: Set match-data 1 if backquote.
+       pospcase-font-lock-match-quote-and-backquote
+       (1 pospcase-font-lock-backquote-face nil t)
+       (;; Submatcher, match part of quoted expression or comma.
+        pospcase-font-lock-match-quoted-content
+        ;; Pre-match form. Value of expression is limit for submatcher.
+        (progn
+          (goto-char (match-end 0))
+          ;; Search limit
+          (ignore-errors (scan-sexps (point) 1)))
+        ;; Post-match form
+        (goto-char (match-end 0))
+        ;; Faces
+        (1 pospcase-font-lock-quoted-face t)
+        (2 pospcase-font-lock-backquote-face nil t)))
+      ;; For `cl-loop'
       (,(concat "("
                 (regexp-opt '("loop" "cl-loop"))
                 "\\_>")
@@ -747,23 +767,6 @@ special variable name or not. And returns appropriate face name."
         ;; Faces
         (1 font-lock-builtin-face)
         (2 ,(pospcase-font-lock-variable-face-form '(match-string 2)) nil t)))
-      (;; For quote and backquote
-       ;;
-       ;; Matcher: Set match-data 1 if backquote.
-       pospcase-font-lock-match-quote-and-backquote
-       (1 pospcase-font-lock-backquote-face nil t)
-       (;; Submatcher, match part of quoted expression or comma.
-        pospcase-font-lock-match-quoted-content
-        ;; Pre-match form. Value of expression is limit for submatcher.
-        (progn
-          (goto-char (match-end 0))
-          ;; Search limit
-          (ignore-errors (scan-sexps (point) 1)))
-        ;; Post-match form
-        (goto-char (match-end 0))
-        ;; Faces
-        (1 pospcase-font-lock-quoted-face append)
-        (2 pospcase-font-lock-backquote-face nil t)))
       ;; For function read syntax
       (,(concat "#'\\("
                 symbol
