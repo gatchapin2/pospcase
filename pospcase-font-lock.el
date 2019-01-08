@@ -806,12 +806,13 @@ special variable name or not. And returns appropriate face name."
                         `(define-method-combination ,name ,args . ,_)
                         `(define-condition ,name ,args . ,_)
                         `(define-setf-expander ,name ,args . ,_)
-                        `(define-compiler-macro ,name ,args . ,_)
                         `(define-inline ,name ,args . ,_)
+                        `(iter-defun ,name ,args . ,_)
                         `(define-modify-macro ,name ,args . ,_)
                         `(cl-defun (setf ,name) ,args . ,_)
                         `(cl-defun ,name ,args . ,_)
-                        `(cl-defsubst ,name ,args . ,_))
+                        `(cl-defsubst ,name ,args . ,_)
+                        `(cl-iter-defun ,name ,args . ,_))
                       '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-function-name-face))
                         ((args . list/1) .
@@ -878,7 +879,9 @@ special variable name or not. And returns appropriate face name."
                          ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(defmacro ,name ,args . ,_)
-                        `(cl-defmacro ,name ,args . ,_))
+                        `(define-compiler-macro ,name ,args . ,_)
+                        `(cl-defmacro ,name ,args . ,_)
+                        `(cl-define-compiler-macro ,name ,args . ,_))
                       '((heading-keyword . (font-lock-keyword-face))
                         (name . (font-lock-function-name-face))
                         ((args . destructuring) .
@@ -901,7 +904,8 @@ special variable name or not. And returns appropriate face name."
                           (pospcase-font-lock-variable-face-form (match-string 3))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(setq . ,binds)
-                        `(setf . ,binds))
+                        `(setf . ,binds)
+                        `(psetq . ,binds))
                       '((heading-keyword . (font-lock-keyword-face))
                         ((binds . setq) .
                          ((pospcase-font-lock-variable-face-form (match-string 2))))))
@@ -939,12 +943,16 @@ special variable name or not. And returns appropriate face name."
   (pospcase-font-lock 'lisp-mode
                       '(`(dolist (,var . ,_) . ,_)
                         `(dotimes (,var . ,_) . ,_)
+                        `(do-symbols (,var . ,_) . ,_)
+                        `(do-all-symbols (,var . ,_) . ,_)
                         `(with-open-file (,var . ,_) . ,_)
                         `(with-open-stream (,var . ,_) . ,_)
                         `(with-output-to-string (,var . ,_) . ,_)
                         `(with-input-from-string (,var . ,_) . ,_)
                         `(cl-dolist (,var . ,_) . ,_)
-                        `(cl-dotimes (,var . ,_) . ,_))
+                        `(cl-dotimes (,var . ,_) . ,_)
+                        `(cl-do-symbols (,var . ,_) . ,_)
+                        `(cl-do-all-symbols (,var . ,_) . ,_))
                       '((heading-keyword . (font-lock-keyword-face))
                         (var . ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
