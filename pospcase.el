@@ -32,7 +32,9 @@
          (non-printable-1 (make-string 1 8203)) ; ZERO WIDTH SPACE
          (non-printable-2 (make-string 1 8204)) ; ZERO WIDTH NON-JOINTER
          (non-printable-3 (make-string 1 8205)) ; ZERO WIDTH JOINTER
-         (lambda-1 (lambda (str) (concat "\"" (substring str 2) "\"")))
+         (lambda-1 (lambda (str) (concat non-printable-1
+                                         non-printable-1
+                                         (substring str 2))))
          (lambda-2 (lambda (str) (concat
                                   (make-string
                                    (- (match-end 1) (match-beginning 0))
@@ -62,8 +64,12 @@
       ("#\\([0-9]+\\)#" . ,(concat non-printable-1
                                    "\\1"
                                    non-printable-1))
-      ("#\\\\\\\\" . ,(concat "\"" non-printable-1 "\""))
-      ("#\\\\\"" . ,(concat "\"" non-printable-1 "\""))
+      ("#\\\\\\\\" . ,(concat non-printable-1
+                              non-printable-1
+                              non-printable-1))
+      ("#\\\\\"" . ,(concat non-printable-1
+                            non-printable-1
+                            non-printable-1))
       (,(concat "#\\\\" sym+) . ,lambda-1)
       ("#\\\\." . ,lambda-1)
       (,(concat "\\(#!?[-.+]\\)" sym+) . ,lambda-2)
