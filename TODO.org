@@ -148,6 +148,22 @@
    - State "TODO"       from              [2018-12-20 Thu 14:12]
 ** TODO ignore-errors should be togglable
    - State "TODO"       from              [2018-12-23 Sun 14:50]
+** TODO unlocking heading-keyword restriction?
+   - State "TODO"       from              [2019-01-11 Fri 05:29]
+
+   I can’t think any use case, but heading-keyword requirement can be
+   lifted by searching the first quoted symbol in the pattern:
+
+   #+BEGIN_SRC emacs-lisp
+     `(,name ,(and 'bizarre-syntax-keyword heading-keyword) ,args . ,_)
+   #+END_SRC
+
+   or the first non-comma symbol:
+
+   #+BEGIN_SRC emacs-lisp
+     `(,name bizarre-syntax-keyword ,args . ,_)
+   #+END_SRC
+
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]
