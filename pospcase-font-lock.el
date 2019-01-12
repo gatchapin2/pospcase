@@ -644,10 +644,11 @@ special variable name or not. And returns appropriate face name."
        (let ((p (point))
              res comment-p)
          (while (and
-                 (setq res (re-search-forward "\\([^\\];\\|,@?\\|[`']\\)" limit t))
-                 (not (setq comment-p (eq (char-after (1+ (match-beginning 0))) ?\;)))
-                 (pospcase-font-lock-is-in-comment-or-string
-                  (match-beginning 0))))
+                 (setq res (re-search-forward "\\(,@?\\|[`';]\\)" limit t))
+                 (or (pospcase-font-lock-is-in-comment-or-string
+                      (match-beginning 0))
+                     (and (eq (char-before (point)) ?\;)
+                          (eq (char-before (1- (point))) ?\\)))))
          (if res
              ;; Match up to next quoted subpart or comma operator.
              (let ((comma-p (eq (char-after (match-beginning 0)) ?,)))
