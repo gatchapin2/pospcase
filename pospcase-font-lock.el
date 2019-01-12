@@ -642,13 +642,15 @@ special variable name or not. And returns appropriate face name."
   "Submatcher for quote and backquote."
   (and (< (point) limit)
        (let ((p (point))
-             res comment-p)
+             res comment-started-p)
          (while (and
                  (setq res (re-search-forward "\\(,@?\\|[`';]\\)" limit t))
                  (or (pospcase-font-lock-is-in-comment-or-string
                       (match-beginning 0))
                      (and (eq (char-before (point)) ?\;)
-                          (eq (char-before (1- (point))) ?\\)))))
+                          (or (eq (char-before (1- (point))) ?\\)
+                              (and (setq comment-started-p t)
+                                   (backward-char))))))) ; returns nil
          (if res
              ;; Match up to next quoted subpart or comma operator.
              (let ((comma-p (eq (char-after (match-beginning 0)) ?,)))
@@ -656,15 +658,12 @@ special variable name or not. And returns appropriate face name."
                                 ;; Match data 0: Full match.
                                 p (match-end 0)
                                 ;; Match data 1: Part of the quoted expression
-                                p
-                                (if comment-p (1+ (match-beginning 0)) (match-beginning 0))
+                                p (match-beginning 0)
                                 ;; Match data 2; Comma operator (if present)
                                 (and comma-p (match-beginning 0))
                                 (and comma-p (match-end 0))))
-               (if comment-p
-                   (progn
-                     (goto-char (1+ (match-beginning 0)))
-                     (forward-comment most-positive-fixnum))
+               (if comment-started-p
+                   (forward-comment most-positive-fixnum)
                  (condition-case nil
                      (forward-sexp)
                    (error (goto-char limit)))))
