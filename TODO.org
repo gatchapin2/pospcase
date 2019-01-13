@@ -85,6 +85,29 @@
      ((pospcase-font-lock-variable-face-form (match 1)))
 
      So mandatory parenthesis makes sense.
+** TODO ~defmethod~ ~*feature*~ idiom
+   - State "TODO"       from              [2019-01-13 Sun 02:44]
+
+   #+BEGIN_SRC lisp
+     (defmethod #+foo-1.0 old-func
+                #+foo-2.0 new-func
+       :before
+       ((bar baz) (qux quux))
+       body)
+   #+END_SRC
+
+   Supporting this idiom is very difficult for multiple reasons:
+
+     1. ~#+foo~ sexp is invalid in elisp, so elispify hack is involved.
+
+     2. Number of feature cases are arbitrary.
+
+   So, very involved extension to both ~pospcase-read~ and ~pcase~ are
+   required.
+
+   Even worse, what if a user want to pattern match against ~#+foo~? In
+   that case some kind of global toggle switch is needed too.
+
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]
