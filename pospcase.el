@@ -89,12 +89,16 @@
   "Used for chopping off trailing `. ,_', often happens in
   font-lock patterns.")
 
-(defun pospcase-read (pos)
-  "Read a s-expression at POS. Recursively wrap each s-expression
+(defun pospcase-read (pos &optional max-depth)
+  "Read a s-expression at POS. Recursively wrap each S-expression
 in cons cell then attach positional metadata (start . end) at
-each `cdr'.
+each `cdr'. When MAX-DEPTH is set depth of recursive consing is
+limited to the number.
 
-For example, when reading from a buffer with contents:
+Here is an example to illustrate how the resulting S-expression
+looks like.
+
+When reading from a buffer with contents:
 
   (defun foo (bar)
     (if bar
@@ -196,9 +200,10 @@ which returns:
                                (with-syntax-table emacs-lisp-mode-syntax-table
                                  (car (syntax-ppss)))
                                ?\)))
-                      (buffer-substring (point-min) (point-max)))))
+                      (buffer-substring (point-min) (point-max))))
+           (max-depth (or max-depth most-positive-fixnum)))
       (cl-labels
-          ((walk (limit)
+          ((walk (limit depth)
                  (condition-case nil
                      (destructuring-bind (start sexp . lim)
                          (cons (point)
@@ -238,11 +243,12 @@ which returns:
                                       (end-of-file
                                        (cons 'pospcase-end-of-file (- limit (point)))))
                                     rlim (+ (cdr rpair) buf-off)
-                                    temp (if (or (atom (car rpair))
+                                    temp (if (or (< depth 1)
+                                                 (atom (car rpair))
                                                  (memq (car rpair) '(\` \, quote function)))
                                              (cons (car rpair) (cons (point) rlim))
                                            (save-excursion
-                                             (walk rlim))))
+                                             (walk rlim (1- depth)))))
                            if dot
                            do (setq result (append result temp))
                            else
@@ -258,7 +264,7 @@ which returns:
                            finally return result))
                         (cons start lim)))
                    (scan-error nil))))
-        (walk sexp-end)))))
+        (walk sexp-end max-depth)))))
 
 (defun pospcase--first-pcase-var (exp)
   "Find first free variable from a `pcase' comma pattern. EXP is
@@ -378,7 +384,19 @@ symbol foo and not positional (START . END) pair."
                                            (consp (car (cdaar cases)))
                                            (equal (last (car (cdaar cases)) 2) ',_))
                                   (- (length (car (cdaar cases))) 2))))
-    (pospcase (pospcase-read pos) cases)))
+    (pospcase (pospcase-read pos
+                             (let (depths)
+                               (cl-labels ((walk (node &optional d)
+                                                 (unless d (setq d 0))
+                                                 (if (or (atom node)
+                                                         (memq (car node)
+                                                               '(\` \, quote function pred guard let app)))
+                                                     (push d depths)
+                                                   (cl-loop for temp on node
+                                                            do (walk (car temp) (1+ d))))))
+                                 (mapc #'walk (mapcar #'cdar cases))
+                                 (- (apply #'max depths) 2))))
+              cases)))
 
 (defun pospcase-pos (match)
   "Extract a positional metadata cons cell (start . end) from a

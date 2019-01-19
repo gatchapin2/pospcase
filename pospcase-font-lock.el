@@ -194,7 +194,7 @@ nil."
 (defun pospcase-match-setq (limit)
   "Matcher iterator for variable names of `setq'."
   (pospcase--call-iterator
-   (cl-loop for (var _) on (cdar (pospcase-read (point))) by #'cddr
+   (cl-loop for (var _) on (cdar (pospcase-read (point) 0)) by #'cddr
             if (symbolp (car var))
             collect (pospcase--list (cdr var)))
    limit))
@@ -202,12 +202,12 @@ nil."
 (defmacro pospcase--call-flet-iterator (clause)
   "Boilerplate code for arbitrary length function list matcher iterator."
   `(pospcase--call-iterator
-    (cl-loop for pair in (car (pospcase-read (point)))
+    (cl-loop for pair in (car (pospcase-read (point) 0))
              append
              (progn
                (multiple-value-bind
                    (name args)
-                   (pospcase pair
+                   (pospcase-at (cadr pair)
                                 '((`(,name ,args . ,_) (values name args))))
                  (progn
                    (goto-char (car args))
