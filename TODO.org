@@ -197,10 +197,6 @@
 
    Also use it in ~pospcase--call-list-iterator~,
    ~pospcase--call-flet-iterator.~
-** TODO no highlighting for quoted match
-   - State "TODO"       from              [2019-01-19 Sat 16:38]
-   Make submatcher-preform to set ~pospcase--no-iteration-p~ when face
-   at match-beginning is ~pospcase-font-lock-quoted-face~
 * Documentation
 ** NOTE should I mention the difference between ~pospcase-read~ and ~read-symbol-positions-list~ ?
    - State "NOTE"       from              [2018-12-02 Sun 04:10]

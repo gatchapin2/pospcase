@@ -630,3 +630,16 @@ Archived entries from file /home/gatchapin/src/pospcase/HACKING.org
   tweaked to ignore comment blocks.
 
 
+
+* DONE no highlighting for quoted match
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2019-01-19 Sat 17:35
+  :ARCHIVE_FILE: ~/src/pospcase/TODO.org
+  :ARCHIVE_OLPATH: Features
+  :ARCHIVE_CATEGORY: TODO
+  :ARCHIVE_TODO: DONE
+  :END:
+  - State "DONE"       from "TODO"       [2019-01-19 Sat 17:35]
+  - State "TODO"       from              [2019-01-19 Sat 16:38]
+  Make submatcher-preform to set ~pospcase--no-iteration-p~ when face
+  at match-beginning is ~pospcase-font-lock-quoted-face~

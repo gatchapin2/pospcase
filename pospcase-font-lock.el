@@ -458,7 +458,8 @@ to make the following `cond' branching extensible to the users."
            ;; for ignoring is set. And the cursor is moved to the
            ;; end of the string or the comment block.
            (let ((table (syntax-ppss)))
-             (if (nth 8 table)          ; in string or comment
+             (if (or (nth 8 table)          ; in string or comment
+                     (eq (face-at-point) pospcase-font-lock-quoted-face))
                  (progn
                    (setq pospcase--no-iteration-p t)
                    (when (nth 3 table)     ; in string
