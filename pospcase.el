@@ -390,7 +390,7 @@ symbol foo and not positional (START . END) pair."
                                                  (unless d (setq d 0))
                                                  (if (or (atom node)
                                                          (memq (car node)
-                                                               '(\` \, quote function pred guard let app)))
+                                                               '(\` \, quote function)))
                                                      (push d depths)
                                                    (cl-loop for temp on node
                                                             do (walk (car temp) (1+ d))))))
