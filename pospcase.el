@@ -386,11 +386,10 @@ symbol foo and not positional (START . END) pair."
     (pospcase (pospcase-read pos
                              (let (depths)
                                (cl-labels ((walk (node &optional d)
-                                                 (unless d (setq d 0))
                                                  (if (or (atom node)
                                                          (memq (car node)
                                                                '(\` \, quote function)))
-                                                     (push d depths)
+                                                     (push (or d 0) depths)
                                                    (cl-loop for temp on node
                                                             do (walk (car temp) (1+ d))))))
                                  (mapc #'walk (mapcar #'cdar cases))
