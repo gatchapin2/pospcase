@@ -200,8 +200,7 @@ which returns:
                                (with-syntax-table emacs-lisp-mode-syntax-table
                                  (car (syntax-ppss)))
                                ?\)))
-                      (buffer-substring (point-min) (point-max))))
-           (max-depth (or max-depth most-positive-fixnum)))
+                      (buffer-substring (point-min) (point-max)))))
       (cl-labels
           ((walk (limit depth)
                  (condition-case nil
@@ -264,7 +263,7 @@ which returns:
                            finally return result))
                         (cons start lim)))
                    (scan-error nil))))
-        (walk sexp-end max-depth)))))
+        (walk sexp-end (or max-depth most-positive-fixnum))))))
 
 (defun pospcase--first-pcase-var (exp)
   "Find first free variable from a `pcase' comma pattern. EXP is
