@@ -1,4 +1,3 @@
-
 #+SEQ_TODO: TODO(t!) NOTE(n!) | DONE(d!) HALT(h!)
 * Scheduled
 ** TODO Submatcher reorganization

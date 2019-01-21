@@ -391,7 +391,7 @@ symbol foo and not positional (START . END) pair."
                                                                '(\` \, quote function)))
                                                      (push (or d 0) depths)
                                                    (cl-loop for temp on node
-                                                            do (walk (car temp) (1+ d))))))
+                                                            do (walk (car temp) (1+ (or d 0)))))))
                                  (mapc #'walk (mapcar #'cdar cases))
                                  (- (apply #'max depths) 2))))
               cases)))
