@@ -645,24 +645,29 @@ special variable name or not. And returns appropriate face name."
        (let ((p (point))
              res comment-started-p)
          (while (and
-                 (setq res (re-search-forward "\\(,@?\\|[`';]\\)" limit t))
-                 (or (pospcase-font-lock-is-in-comment-or-string
-                      (match-beginning 0))
-                     (and (eq (char-before (point)) ?\;)
-                          (or (eq (char-before (1- (point))) ?\\)
-                              (and (setq comment-started-p t)
-                                   (backward-char))))))) ; returns nil
+                 (setq res (re-search-forward "\\(,@?\\|[`';\"]\\)" limit t))
+                 (let ((beg (match-beginning 0)))
+                   (or (pospcase-font-lock-is-in-comment-or-string beg)
+                       (cond
+                        ((eq (char-after beg) ?\")
+                         (backward-char)) ; returns nil
+                        ((eq (char-after beg) ?\;)
+                         (or (eq (char-before beg) ?\\)
+                             (and (setq comment-started-p t)
+                                  (backward-char))))))))) ; returns nil
          (if res
              ;; Match up to next quoted subpart or comma operator.
-             (let ((comma-p (eq (char-after (match-beginning 0)) ?,)))
+             (let ((comma-p (eq (char-after beg) ?,))
+                   (beg (match-beginning 0))
+                   (end (match-end 0)))
                (set-match-data (list
                                 ;; Match data 0: Full match.
-                                p (match-end 0)
+                                p end
                                 ;; Match data 1: Part of the quoted expression
-                                p (match-beginning 0)
+                                p beg
                                 ;; Match data 2; Comma operator (if present)
-                                (and comma-p (match-beginning 0))
-                                (and comma-p (match-end 0))))
+                                (and comma-p beg)
+                                (and comma-p end)))
                (if comment-started-p
                    (forward-comment most-positive-fixnum)
                  (condition-case nil
