@@ -657,9 +657,9 @@ special variable name or not. And returns appropriate face name."
                                   (backward-char))))))))) ; returns nil
          (if res
              ;; Match up to next quoted subpart or comma operator.
-             (let ((comma-p (eq (char-after beg) ?,))
-                   (beg (match-beginning 0))
-                   (end (match-end 0)))
+             (let* ((beg (match-beginning 0))
+                    (end (match-end 0))
+                    (comma-p (eq (char-after beg) ?,)))
                (set-match-data (list
                                 ;; Match data 0: Full match.
                                 p end
