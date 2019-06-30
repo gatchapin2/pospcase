@@ -106,7 +106,8 @@
 
    Even worse, what if a user want to pattern match against ~#+foo~? In
    that case some kind of global toggle switch is needed too.
-
+** TODO unhighlighted ~bar~ in ~(loop with foo and bar)~
+   - State "TODO"       from              [2019-06-30 Sun 08:11]
 * Features
 ** TODO Use as much ~pcase~ as possible
    - State "TODO"       from              [2018-11-19 Mon 12:27]
