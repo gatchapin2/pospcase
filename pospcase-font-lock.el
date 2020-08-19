@@ -293,16 +293,15 @@ nested list."
   "Matcher iterator for loop `and' keyword variable symbol
 following `with' keyword."
   (pospcase--call-iterator
-   (if (save-excursion
-         (and (memq (save-excursion
-                      (backward-up-list)
-                      (down-list)
-                      (read (current-buffer)))
-                    '(loop cl-loop))
-              (progn
-                (goto-char (match-beginning 0))
-                (backward-sexp 2)
-                (memq (read (current-buffer)) '(and :and with :with = :=)))))
+   (if (and (memq (save-excursion
+                    (backward-up-list)
+                    (down-list)
+                    (read (current-buffer)))
+                  '(loop cl-loop))
+            (save-excursion
+              (goto-char (match-beginning 0))
+              (backward-sexp 2)
+              (memq (read (current-buffer)) '(and :and with :with = :=))))
        (list (pospcase--list (cdr (pospcase-read (point) 0)))))
    limit
    t))
