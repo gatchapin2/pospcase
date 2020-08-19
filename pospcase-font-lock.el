@@ -293,19 +293,17 @@ nested list."
   "Matcher iterator for loop `and' keyword variable symbol
 following `with' keyword."
   (pospcase--call-iterator
-   (multiple-value-bind (head bound level) (save-excursion
-                                             (backward-up-list)
-                                             (down-list)
-                                             (list (read (current-buffer))
-                                                   (point)
-                                                   (car (syntax-ppss))))
-     (if (save-excursion
-           (and (memq head '(loop cl-loop))
-                (progn
-                  (goto-char (match-beginning 0))
-                  (backward-sexp 2)
-                  (memq (read (current-buffer)) '(and with =)))))
-         (list (pospcase--list (cdr (pospcase-read (point) 0))))))
+   (if (save-excursion
+         (and (memq (save-excursion
+                      (backward-up-list)
+                      (down-list)
+                      (read (current-buffer)))
+                    '(loop cl-loop))
+              (progn
+                (goto-char (match-beginning 0))
+                (backward-sexp 2)
+                (memq (read (current-buffer)) '(and with =)))))
+       (list (pospcase--list (cdr (pospcase-read (point) 0)))))
    limit
    t))
 
