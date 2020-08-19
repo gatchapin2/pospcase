@@ -289,6 +289,25 @@ nested list."
    limit
    t))
 
+(defun pospcase-match-loop-and (limit)
+  "Matcher iterator for loop `and' keyword variable symbol
+following `with' keyword."
+  (pospcase--call-iterator
+   (multiple-value-bind (head bound level) (save-excursion
+                                             (backward-up-list)
+                                             (down-list)
+                                             (list (read (current-buffer))
+                                                   (point)
+                                                   (car (syntax-ppss))))
+     (if (save-excursion
+           (and (memq head '(loop cl-loop))
+                (re-search-backward pospcase-font-lock-loop-keywords bound t 2)
+                (member (match-string 0) '("with" "and"))
+                (= (car (syntax-ppss)) level)))
+         (list (pospcase--list (cdr (pospcase-read (point) 0))))))
+   limit
+   t))
+
 (defun pospcase-match-macrolet (limit)
   "Matcher iterator for a lit of `macrolet' bindings"
   (pospcase--call-flet-iterator (if (car arglist)
@@ -323,7 +342,7 @@ nested list."
 (defvar pospcase-parameter-group '(parameter)
   "Submatchers with same behavior of `pospcase-match-parameter'.")
 
-(defvar pospcase-loop-group '(loop)
+(defvar pospcase-loop-group '(loop loop-and)
   "Submatchers with same behavior of `pospcase-match-loop'.")
 
 (defcustom pospcase-stringify-heading-keyword-cases
@@ -684,15 +703,15 @@ special variable name or not. And returns appropriate face name."
    "\\_<"
    "\\("
    (regexp-opt
-    '("=" "above" "across" "across-ref" "always" "and" "append" "as"
+    '("=" "above" "across" "and" "across-ref" "always" "and" "append" "as"
       "being" "below" "buffer" "buffers" "by"
       "collect" "collecting" "concat" "count"
       "do" "doing" "downfrom" "downto"
       "each" "element" "elements" "else" "end"
       "extent" "extents" "external-symbol" "external-symbols"
-      "finally" "frames" "from"
+      "finally" "for" "frames" "from"
       "hash-key" "hash-keys" "hash-value" "hash-values"
-      "if" "in" "in-ref" "initially" "interval" "intervals"
+      "if" "in" "index" "in-ref" "initially" "interval" "intervals" "into"
       "key-binding" "key-bindings" "key-code" "key-codes" "key-seq" "key-seqs"
       "maximize" "minimize"
       "named" "nconc" "nconcing" "never"
@@ -703,7 +722,7 @@ special variable name or not. And returns appropriate face name."
       "the" "then" "thereis" "to"
       "unless" "until" "upfrom" "upto" "using"
       "vconcat"
-      "when" "while" "windows"))
+      "when" "while" "windows" "with"))
    "\\)"
    "\\_>")
   "Regexp string which matches `loop' and `cl-loop' named
@@ -940,6 +959,11 @@ special variable name or not. And returns appropriate face name."
                       '(for :for index :index into :into with :with)
                       '((heading-keyword . (font-lock-builtin-face))
                         ((pospcase--dummy . loop) .
+                         ((pospcase-font-lock-variable-face-form (match-string 2))))))
+  (pospcase-font-lock 'lisp-mode
+                      '(and :and)
+                      '((heading-keyword . (font-lock-builtin-face))
+                        ((pospcase--dummy . loop-and) .
                          ((pospcase-font-lock-variable-face-form (match-string 2))))))
   (pospcase-font-lock 'lisp-mode
                       '(`(dolist (,var . ,_) . ,_)
