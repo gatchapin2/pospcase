@@ -301,9 +301,10 @@ following `with' keyword."
                                                    (car (syntax-ppss))))
      (if (save-excursion
            (and (memq head '(loop cl-loop))
-                (re-search-backward pospcase-font-lock-loop-keywords bound t 2)
-                (member (match-string 0) '("with" "and"))
-                (= (car (syntax-ppss)) level)))
+                (progn
+                  (goto-char (match-beginning 0))
+                  (backward-sexp 2)
+                  (memq (read (current-buffer)) '(and with =)))))
          (list (pospcase--list (cdr (pospcase-read (point) 0))))))
    limit
    t))
@@ -703,15 +704,15 @@ special variable name or not. And returns appropriate face name."
    "\\_<"
    "\\("
    (regexp-opt
-    '("=" "above" "across" "and" "across-ref" "always" "and" "append" "as"
+    '("=" "above" "across" "across-ref" "always" "and" "append" "as"
       "being" "below" "buffer" "buffers" "by"
       "collect" "collecting" "concat" "count"
       "do" "doing" "downfrom" "downto"
       "each" "element" "elements" "else" "end"
       "extent" "extents" "external-symbol" "external-symbols"
-      "finally" "for" "frames" "from"
+      "finally" "frames" "from"
       "hash-key" "hash-keys" "hash-value" "hash-values"
-      "if" "in" "index" "in-ref" "initially" "interval" "intervals" "into"
+      "if" "in" "in-ref" "initially" "interval" "intervals"
       "key-binding" "key-bindings" "key-code" "key-codes" "key-seq" "key-seqs"
       "maximize" "minimize"
       "named" "nconc" "nconcing" "never"
@@ -722,7 +723,7 @@ special variable name or not. And returns appropriate face name."
       "the" "then" "thereis" "to"
       "unless" "until" "upfrom" "upto" "using"
       "vconcat"
-      "when" "while" "windows" "with"))
+      "when" "while" "windows"))
    "\\)"
    "\\_>")
   "Regexp string which matches `loop' and `cl-loop' named
