@@ -302,7 +302,7 @@ following `with' keyword."
               (progn
                 (goto-char (match-beginning 0))
                 (backward-sexp 2)
-                (memq (read (current-buffer)) '(and with =)))))
+                (memq (read (current-buffer)) '(and :and with :with = :=)))))
        (list (pospcase--list (cdr (pospcase-read (point) 0)))))
    limit
    t))
