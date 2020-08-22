@@ -301,8 +301,11 @@ following `with' keyword."
             (save-excursion
               (goto-char (match-beginning 0))
               (backward-sexp 2)
-              (memq (read (current-buffer)) '(and :and with :with = :=))))
-       (list (pospcase--list (cdr (pospcase-read (point) 0)))))
+              (memq
+               (read (current-buffer))
+               '(= above across-ref and below by downfrom downto
+                   from in in-ref on to upfrom upto with))))
+       (mapcar #'pospcase--list (pospcase-collect-all-symbols (pospcase-read (point)))))
    limit
    t))
 
