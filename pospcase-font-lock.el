@@ -303,8 +303,9 @@ following `with' keyword."
               (backward-sexp 2)
               (memq
                (read (current-buffer))
-               '(= above across-ref and below by downfrom downto
-                   from in in-ref on to upfrom upto with))))
+               '(= := above :above across-ref :across-ref and :and below :below by :by
+                   downfrom :downfrom downto :downto from :from in :in in-ref :in-ref
+                   on :on to :to upfrom :upfrom upto :upto with :with))))
        (mapcar #'pospcase--list (pospcase-collect-all-symbols (pospcase-read (point)))))
    limit
    t))
