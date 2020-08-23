@@ -313,9 +313,9 @@
    particularly designed for pattern-matching arbitrary length
    S-expression. But we exactly want that feature in our use
    case. Obvious example is argument list for function declaration. To
-   overcome the limitation, you have to choose appropriate
-   submatchers for each arbitrary length list. So far, nine
-   submatchers are implemented.
+   overcome the limitation, you have to choose appropriate submatchers
+   for each arbitrary length list. So far, the following submatchers
+   are implemented.
 
     - ~list/2~
     - ~list/1~
@@ -325,6 +325,7 @@
     - ~defstruct~ (~list/1~)
     - ~parameter~
     - ~loop~ (~destructuring~ variant)
+    - ~loop-and~
     - ~setq~
 
    If you are a skilled programmer, maybe you can just skim the actual
@@ -444,6 +445,10 @@
     I’m sure you don’t have to touch this submatcher in your
     lifetime. (Unless you are implementing ~loop~ macro version 2.0 or
     something).
+
+*** ~loop-and~
+    A variant of ~loop~ submatcher made just to support the ~loop~ macro's
+    ~and~ keyword.
 
 *** ~setq~
     This submatcher is for highlighting variable names (plain symbol
