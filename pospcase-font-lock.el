@@ -484,7 +484,7 @@ to make the following `cond' branching extensible to the users."
                  (progn
                    (setq pospcase--no-iteration-p t)
                    (when (nth 3 table)     ; in string
-                     (goto-char (or (ignore-errors (scan-sexps (nth 8 table)) 1)
+                     (goto-char (or (ignore-errors (scan-sexps (nth 8 table) 1))
                                     (point-max))))
                    (forward-comment most-positive-fixnum)
                    (point))
